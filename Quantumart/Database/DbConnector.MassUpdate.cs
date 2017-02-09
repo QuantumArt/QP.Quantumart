@@ -375,6 +375,10 @@ namespace Quantumart.QPublishing.Database
 
             var contentId = attrs[0].ContentId;
             var attrNames = string.Join(", ", attrs.Select(n => n.Name));
+            sb.AppendLine("declare @default_num int, @default_date datetime;");
+            sb.AppendLine("set @default_num = -2147483648;");
+            sb.AppendLine("set @default_date = getdate();");
+
             sb.AppendLine($"WITH X(CONTENT_ITEM_ID, {attrNames})");
             sb.AppendLine(@"AS (SELECT doc.col.value('./@id', 'int') CONTENT_ITEM_ID");
             foreach (var attr in attrs)
@@ -388,15 +392,15 @@ namespace Quantumart.QPublishing.Database
             {
                 if (attr.IsNumeric)
                 {
-                    sb.AppendLine($"AND c.[{attr.Name}] = cast (X.[{attr.Name}] as numeric(18, {attr.Size}))");
+                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], @default_num) = case when X.[{attr.Name}] = '' then @default_num else cast (X.[{attr.Name}] as numeric(18, {attr.Size})) end");
                 }
                 else if (attr.IsDateTime)
                 {
-                    sb.AppendLine($"AND c.[{attr.Name}] = cast (X.[{attr.Name}] as datetime)");
+                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], @default_date) = case when X.[{attr.Name}] = '' then @default_date else cast (X.[{attr.Name}] as datetime) end");
                 }
                 else
                 {
-                    sb.AppendLine($"AND c.[{attr.Name}] = X.[{attr.Name}]");
+                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], '') = ISNULL(X.[{attr.Name}], '')");
                 }
             }
 
@@ -452,6 +456,7 @@ namespace Quantumart.QPublishing.Database
                     else if (!string.IsNullOrEmpty(result))
                     {
                         result = FormatResult(attr, result, longUploadUrl, longSiteStageUrl, longSiteLiveUrl, replaceUrls);
+                        result = XmlValidChars(result);
                     }
                     else if (isNewArticle)
                     {
@@ -461,7 +466,10 @@ namespace Quantumart.QPublishing.Database
                     if (isNewArticle || valueExists)
                     {
                         ValidateAttributeValue(attr, result, true);
-                        elem.Add(new XElement(attr.DbField, XmlValidChars(result)));
+                        if (result != null)
+                        {
+                            elem.Add(new XElement(attr.DbField, result));
+                        }
                         dataDoc.Root?.Add(elem);
                     }
 

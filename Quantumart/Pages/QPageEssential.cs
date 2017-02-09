@@ -66,7 +66,17 @@ namespace Quantumart.QPublishing.Pages
 
         public string PageFolder { get; set; }
 
-        public string UrlToSave { get; set; } = HttpContext.Current.Request.ServerVariables["URL"] + "?" + HttpContext.Current.Request.ServerVariables["QUERY_STRING"];
+        public string UrlToSave { get; set; } = GetUrlToSave();
+
+        private static string GetUrlToSave()
+        {
+            if (HttpContext.Current != null)
+            {
+                return HttpContext.Current.Request.ServerVariables["URL"] + "?" + HttpContext.Current.Request.ServerVariables["QUERY_STRING"];
+            }
+
+            return null;
+        }
 
         public QScreen QScreen { get; set; }
 
@@ -1193,6 +1203,11 @@ namespace Quantumart.QPublishing.Pages
 
             var ctx = HttpContext.Current;
 
+            if (ctx == null)
+            {
+                return;
+            }
+
             foreach (string item in ctx.Request.QueryString)
             {
                 AddValue(item, ctx.Request.QueryString[item]);
@@ -1244,27 +1259,28 @@ namespace Quantumart.QPublishing.Pages
 
         public string DirtyValue(string key)
         {
-            string functionReturnValue;
-            key = Strings.LCase(key);
-            if (key != null && _valuesCollection.ContainsKey(key))
+            if (key == null)
             {
-                functionReturnValue = _valuesCollection[key].ToString();
+                return "";
             }
-            else
+
+            key = key.ToLowerInvariant();
+            if (_valuesCollection.ContainsKey(key))
             {
-                functionReturnValue = key != null && _objectValuesCollection.ContainsKey(key) ? _objectValuesCollection[key].ToString() : "";
+                return _valuesCollection[key]?.ToString();
             }
-            return functionReturnValue;
+
+            return _objectValuesCollection.ContainsKey(key) ? _objectValuesCollection[key]?.ToString() : "";
         }
 
         public string Value(string key)
         {
-            return DirtyValue(key).Replace("'", "");
+            return DirtyValue(key)?.Replace("'", "");
         }
 
         public string Value(string key, string defaultValue)
         {
-            var resValue = DirtyValue(key).Replace("'", "");
+            var resValue = DirtyValue(key)?.Replace("'", "");
             if (string.IsNullOrEmpty(resValue))
             {
                 resValue = defaultValue;
