@@ -147,7 +147,7 @@ namespace Quantumart.QPublishing.Database
                 FROM @xmlParameter.nodes('/ITEMS/ITEM') doc(col)
             )
             UPDATE CONTENT_DATA
-            SET CONTENT_DATA.DATA = X.DATA, CONTENT_DATA.BLOB_DATA = X.BLOB_DATA, NOT_FOR_REPLICATION = 1, MODIFIED = GETDATE()
+            SET CONTENT_DATA.DATA = case when X.DATA = '' then NULL else X.DATA end, CONTENT_DATA.BLOB_DATA = case when X.BLOB_DATA = '' then NULL else X.BLOB_DATA end, NOT_FOR_REPLICATION = 1, MODIFIED = GETDATE()
             FROM dbo.CONTENT_DATA
             INNER JOIN X ON CONTENT_DATA.CONTENT_ITEM_ID = X.CONTENT_ITEM_ID AND dbo.CONTENT_DATA.ATTRIBUTE_ID = X.ATTRIBUTE_ID            ";
 
@@ -202,8 +202,11 @@ namespace Quantumart.QPublishing.Database
             return dataDoc;
         }
 
-        private static object XmlValidChars(string token)
+        private static string XmlValidChars(string token)
         {
+            if (String.IsNullOrEmpty(token))
+                return token;
+
             try
             {
                 return XmlConvert.VerifyXmlChars(token);
