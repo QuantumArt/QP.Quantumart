@@ -9,8 +9,8 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <releaseNotes>Fix deadlocks with UpdateModified</releaseNotes>
-    <copyright>Copyright 2016</copyright>
-    <tags>QP8 Frontend API</tags>
+    <copyright>$copyright$</copyright>
+    <tags>QP</tags>
   </metadata>
   <files>
     <file src="$OutputPath$*.dll" target="lib\net45" />
