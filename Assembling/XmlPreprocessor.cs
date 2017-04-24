@@ -17,9 +17,12 @@ namespace Quantumart.QP8.Assembling
     {
         public AssembleContentsController Controller { get; set; }
 
-        public XmlPreprocessor(AssembleContentsController caller)
+        public bool InMemory { get; set; }
+
+        public XmlPreprocessor(AssembleContentsController caller, bool inMemory)
         {
             Controller = caller;
+            InMemory = inMemory;
         }
 
         internal class ContentProperties
@@ -879,33 +882,50 @@ namespace Quantumart.QP8.Assembling
             }
 
             var doc = XDocument.Load(source);
+            ResolveMapping(doc);
+            doc.Save(destination);
+        }
+
+        private void ResolveMapping(XDocument doc)
+        {
             SetRootParams(doc, Controller);
             CreateEmptyMappedNames(doc);
             SetFieldParams(doc);
             CorrectLinks(doc);
             RemoveEmptyRelations(doc);
             AppendStatuses(doc);
-
-            doc.Save(destination);
+            MappingResultXml = doc;
         }
 
-        public void GenerateMainMapping(FileNameHelper helper)
+        public XDocument MappingResultXml { get; private set; }
+
+        public SchemaInfo GenerateMainMapping(FileNameHelper helper)
         {
             var info = SchemaInfo.Create(Controller.SiteRow);
             var contentView = new DataView(Controller.ContentsTable);
             var contentToContentView = new DataView(Controller.ContentToContentTable);
-            CreateMapping(false, info, contentView, contentToContentView, helper);
+            var doc = CreateMapping(false, info, contentView, contentToContentView, helper);
             if (Controller.ProceedMappingWithDb)
             {
                 contentView.RowFilter = "map_as_class = 1";
                 contentToContentView.RowFilter = "map_as_class = 1";
-                CreateMapping(true, info, contentView, contentToContentView, helper);
+                doc = CreateMapping(true, info, contentView, contentToContentView, helper);
             }
 
-            ResolveMapping(helper.UsableMappingXmlFileName, helper.MappingResultXmlFileName);
+            if (InMemory)
+            {
+                ResolveMapping(doc);
+            }
+            else
+            {
+                ResolveMapping(helper.UsableMappingXmlFileName, helper.MappingResultXmlFileName);
+            }
+
+
+            return info;
         }
 
-        public void GeneratePartialMapping(FileNameHelper helper, ContextClassInfo info)
+        public SchemaInfo GeneratePartialMapping(FileNameHelper helper, ContextClassInfo info)
         {
             var schemaInfo = SchemaInfo.Create(Controller.SiteRow);
             schemaInfo.IsPartial = true;
@@ -921,11 +941,21 @@ namespace Quantumart.QP8.Assembling
             };
 
             var contentToContentView = new DataView(Controller.ContentToContentTable) { RowFilter = "map_as_class = 1" };
-            CreateMapping(true, schemaInfo, contentView, contentToContentView, helper);
-            ResolveMapping(helper.UsableMappingXmlFileName, helper.MappingResultXmlFileName);
+            var doc = CreateMapping(true, schemaInfo, contentView, contentToContentView, helper);
+
+            if (InMemory)
+            {
+                ResolveMapping(doc);
+            }
+            else
+            {
+                ResolveMapping(helper.UsableMappingXmlFileName, helper.MappingResultXmlFileName);
+            }
+
+            return schemaInfo;
         }
 
-        public void CreateMapping(bool useDb, SchemaInfo info, DataView contentView, DataView contentToContentView, FileNameHelper helper)
+        public XDocument CreateMapping(bool useDb, SchemaInfo info, DataView contentView, DataView contentToContentView, FileNameHelper helper)
         {
             var doc = new XDocument(new XDeclaration("1.0", "UTF-8", "yes"), GetSchemaElement(info));
             foreach (DataRowView drv in contentView)
@@ -939,14 +969,34 @@ namespace Quantumart.QP8.Assembling
                 AppendToSchema(doc, GetLinkElement(drv.Row, equalCounts, useDb));
             }
 
-            doc.Save(useDb ? helper.MappingXmlFileName : helper.OldGeneratedMappingXmlFileName);
+            if (!InMemory)
+            {
+                CreateLinqFolders(helper);
+                doc.Save(useDb ? helper.MappingXmlFilePath : helper.OldGeneratedMappingXmlFileName);
+            }
+
+
+            return doc;
+        }
+
+        private void CreateLinqFolders(FileNameHelper helper)
+        {
+            if (!Directory.Exists(helper.AppDataFolder))
+            {
+                Directory.CreateDirectory(helper.AppDataFolder);
+            }
+
+            if (!Directory.Exists(helper.AppCodeFolder))
+            {
+                Directory.CreateDirectory(helper.AppCodeFolder);
+            }
         }
 
         public void ImportMapping(FileNameHelper helper)
         {
-            ResolveMapping(helper.ImportedMappingXmlFileName, helper.OldMappingResultXmlFileName);
+            ResolveMapping(helper.ImportedMappingXmlFileName, helper.OldMappingResultXmlFilePath);
 
-            var doc = XDocument.Load(helper.OldMappingResultXmlFileName);
+            var doc = XDocument.Load(helper.OldMappingResultXmlFilePath);
             ProcessRootNode(doc.Root);
             if (doc.Root != null)
             {
@@ -965,7 +1015,7 @@ namespace Quantumart.QP8.Assembling
                 }
             }
 
-            File.Delete(helper.OldMappingResultXmlFileName);
+            File.Delete(helper.OldMappingResultXmlFilePath);
         }
     }
 }
