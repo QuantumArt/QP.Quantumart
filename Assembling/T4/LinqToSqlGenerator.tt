@@ -15,7 +15,7 @@ var code = new CSharpCodeLanguage();
 var data = new Data(options.DbmlFileName);
 var manager = Manager.Create(Host, GenerationEnvironment);
 data.ContextNamespace = Namespace ?? (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedContextNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
-data.EntityNamespace = (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedEntityNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
+data.EntityNamespace = Namespace ?? (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedEntityNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
 manager.StartHeader();
 #>#pragma warning disable 1591
 //------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ if (GenerateDbAttributes && !String.IsNullOrEmpty(data.DatabaseName)) {#>
 
         #region Extensibility Method Definitions
         partial void OnCreated();
-<#	var tableOperations = new List<TableOperation>();
+<#    var tableOperations = new List<TableOperation>();
     foreach(var table in data.Tables)
         tableOperations.AddRange(table.Operations);
     foreach(var table in data.Tables)
@@ -97,70 +97,73 @@ if (GenerateDbAttributes && !String.IsNullOrEmpty(data.DatabaseName)) {#>
 <#if(data.Tables.Count > 0) {#>
 
         #region Tables
-<#	foreach(var table in data.Tables) {
+<#    foreach(var table in data.Tables) {
 #>        <#=code.GetAccess(table.TypeAttributes)#>Table<<#=table.BaseClass.QualifiedName#>> <#=table.Member#>
         {
             get { return GetTable<<#=table.BaseClass.QualifiedName#>>(); }
         }
 
-<#	}
+<#    }
 #>        #endregion
 <#}
 if (data.Functions.Count > 0) {#>
 
         #region Functions
-<#	foreach(var function in data.Functions) {
+<#    foreach(var function in data.Functions) {
+        if (GenerateDbAttributes) {
 #>
         [Function(Name=@"<#=function.Name#>"<#
-        if (function.IsComposable) {#>, IsComposable=true<#}
+            if (function.IsComposable) {#>, IsComposable=true<#}
         #>)]
-<#		if (function.Return != null && function.Return.DbType != null) {
+<#            if (function.Return != null && function.Return.DbType != null) {
 #>        [return: Parameter(DbType=@"<#=function.Return.DbType#>")]
-<#      }
-        if (function.HasMultipleResults) {
-            foreach(var class1 in function.Classes) {#>
+<#          }
+            if (function.HasMultipleResults) {
+                foreach(var class1 in function.Classes) {#>
         [ResultType(typeof(<#=class1.QualifiedName#>))]
-<#			}
+<#                }
+            }
         }#>
         <#=code.Format(function.MemberAttributes)#><#=code.Format(function.ReturnType)#> <#=function.Method#>(<#
-        foreach(var parameter in function.Parameters) {#>
-
-                [Parameter(<#if (parameter.DbName != parameter.Name) {#>Name=@"<#=parameter.DbName#>", <#}#>DbType=@"<#=parameter.DbType#>")] <#=code.Format(parameter.Direction)#><#=code.Format(parameter.Type)#> <#=parameter.Name#><#
+        foreach(var parameter in function.Parameters) {
+            if (GenerateDbAttributes) {#>
+                [Parameter(<#if (parameter.DbName != parameter.Name) {#>Name=@"<#=parameter.DbName#>", <#}#>DbType=@"<#=parameter.DbType#>")]<# }
+                #> <#=code.Format(parameter.Direction)#><#=code.Format(parameter.Type)#> <#=parameter.Name#><#
             if (parameter != function.Parameters.Last()) {#>,<# }
         }
         #>) {
-<#		foreach(var outParameter in function.Parameters.Where(p => p.Direction == ParameterDirection.Out)) {#>
+<#        foreach(var outParameter in function.Parameters.Where(p => p.Direction == ParameterDirection.Out)) {#>
             <#=outParameter.Name#> = default(<#=code.Format(outParameter.Type)#>);
-<#		}
+<#        }
         if (function.IsComposableQuery) { #>
             return CreateMethodCallQuery<<#=code.Format(function.ResultType)#>>(this, ((MethodInfo)(MethodInfo.GetCurrentMethod()))<#=String.Join("", function.Parameters.Select(p => ", " + p.Name).ToArray())#>);
-<#		} else { #>
+<#        } else { #>
             IExecuteResult result = ExecuteMethodCall(this, (MethodInfo) MethodInfo.GetCurrentMethod()<#=String.Join("", function.Parameters.Select(p => ", " + p.Name).ToArray())#>);
-<#			int paramIdx = 0;
+<#            int paramIdx = 0;
             foreach(var parameter in function.Parameters) {
                 if (parameter.Direction != ParameterDirection.In) {#>
             <#=parameter.Name#> = (<#=code.Format(parameter.Type)#>) result.GetParameterValue(<#=paramIdx#>);
-<#				}
+<#                }
                 paramIdx++;
             }
 #>            return (<#=code.Format(function.ReturnType)#>) result.ReturnValue;
-<#		}#>
+<#        }#>
         }
 
-<#	}#>
+<#    }#>
         #endregion
 
-<#	if (tableOperations.Count > 0) { #>
+<#    if (tableOperations.Count > 0) { #>
         #region Table Operations
-<#		foreach(var operation in tableOperations) { #>
+<#        foreach(var operation in tableOperations) { #>
         private void <#=operation.Type#><#=operation.Table.BaseClass.Name#>(<#=operation.Table.BaseClass.QualifiedName#> obj) {
-<#			if (operation.Arguments.Any(a => a.Version == ArgumentVersion.Original)) {
+<#            if (operation.Arguments.Any(a => a.Version == ArgumentVersion.Original)) {
 #>           var original = <#=operation.Table.Member#>.GetOriginalEntityState(obj);
-<#			}
+<#            }
             int paramIdx = 1;
             foreach(var argument in operation.Arguments.Where(a => a.Parameter.Direction != ParameterDirection.In)) {
 #>            <#=code.Format(argument.Parameter.Type)#> p<#=paramIdx++#> = obj.<#=argument.Member#>;
-<#			}#>
+<#            }#>
             <# if (options.StoredProcedureConcurrency) {#>var rowCount = <#}#><#=operation.Function.Method#>(<#
             paramIdx = 1;
             foreach(var argument in operation.Arguments) {
@@ -172,22 +175,22 @@ if (data.Functions.Count > 0) {#>
             if (argument != operation.Arguments.Last()) {#>, <#}
             }
             #>);
-<#			if (options.StoredProcedureConcurrency) {#>
+<#            if (options.StoredProcedureConcurrency) {#>
             if (rowCount != 1) {
                 throw new ChangeConflictException();
             }
-<#			}
+<#            }
             paramIdx = 1;
             foreach(var argument in operation.Arguments.Where(a => a.Parameter.Direction != ParameterDirection.In)) {
-#>			obj.<#=argument.Member#> = p<#=paramIdx++#>.GetValueOrDefault();
-<#			}#>
+#>            obj.<#=argument.Member#> = p<#=paramIdx++#>.GetValueOrDefault();
+<#            }#>
         }
 
 <#
         }
 #>
         #endregion
-<#	}
+<#    }
 }#>
     }
 <#if (!String.IsNullOrEmpty(data.ContextNamespace)) {
@@ -200,18 +203,20 @@ foreach(var table in data.Tables) {
 
 namespace <#=data.EntityNamespace#>
 {
-<#		}
+<#        }
         if (data.Serialization && class1.IsSerializable) {
-#>	[DataContract(<#=dataContractAttributes#>)]
-<#		}
-        if (class1 == table.BaseClass) {#>
+#>    [DataContract(<#=dataContractAttributes#>)]
+<#        }
+        if (class1 == table.BaseClass) {
+            if (GenerateDbAttributes) {#>
     [Table(Name=@"<#=table.Name#>")]
-<#			foreach(var subclass in data.TableClasses.Where(c => c.Table == table)) {
+<#            }
+            foreach(var subclass in data.TableClasses.Where(c => c.Table == table)) {
                 if (!String.IsNullOrEmpty(subclass.InheritanceCode)) {#>
     [InheritanceMapping(Code=@"<#=subclass.InheritanceCode#>", Type=typeof(<#=subclass.Name#>)<# if (subclass.IsInheritanceDefault) {#>, IsDefault=true<#}#>)]
-<#				}
+<#                }
                 if (data.Serialization && subclass.IsSerializable) {
-#>	[KnownType(typeof(<#=subclass.Name#>))]
+#>    [KnownType(typeof(<#=subclass.Name#>))]
 <#}
             }
 #>    <#=code.Format(class1.TypeAttributes)#>partial class <#=class1.Name#> :<#if (!String.IsNullOrEmpty(data.EntityBase)) {#> <#=data.EntityBase#>, <#}#> INotifyPropertyChanging, INotifyPropertyChanged
@@ -237,75 +242,77 @@ namespace <#=data.EntityNamespace#>
         }
         #endregion
 
-<#		} else {
-#>	<#=code.Format(class1.TypeAttributes)#>partial class <#=class1.Name#> : <#=class1.SuperClass.Name#>
+<#        } else {
+#>    <#=code.Format(class1.TypeAttributes)#>partial class <#=class1.Name#> : <#=class1.SuperClass.Name#>
     {
-<#		}#>
+<#        }#>
         #region Extensibility Method Definitions
         partial void OnLoaded();
         partial void OnValidate(ChangeAction action);
-<#		if (class1.HasPrimaryKey) {#>
+<#        if (class1.HasPrimaryKey) {#>
         partial void OnCreated();
-<#		}#>
+<#        }#>
         #endregion
 
         #region Construction
         public <#=class1.Name#>()
         {
-<#		if (data.Serialization) {
-#>			Initialize();
+<#        if (data.Serialization) {
+#>            Initialize();
         }
 
         private void Initialize()
         {
-<#		}
+<#        }
         foreach(var association in class1.Associations) {
 #>            <#=association.Storage#> = <#
             if (association.IsMany) {
                 #>new EntitySet<<#=association.Type.Name#>>(attach_<#=association.Member#>, detach_<#=association.Member#>);
-<#			} else {
+<#            } else {
                 #>default(EntityRef<<#=association.Type.Name#>>);
-<#			}
+<#            }
         }
         if (class1.HasPrimaryKey) {#>
             OnCreated();
-<#		}#>
+<#        }#>
         }
         #endregion
 
-<#		int dataMemberIndex = 1;
+<#        int dataMemberIndex = 1;
         if (class1.Columns.Count > 0) {
 #>        #region Column Mappings
-<#			foreach(var column in class1.Columns) {#>
+<#            foreach(var column in class1.Columns) {#>
         partial void On<#=column.Member#>Changing(<#=code.Format(column.Type)#> value);
         partial void On<#=column.Member#>Changed();
         private <#=code.Format(column.StorageType)#> <#=column.Storage#><# if (column.IsReadOnly) {#> = default(<#=code.Format(column.StorageType)#>)<#}#>;
-        [Column(Storage=@"<#=column.Storage#>"<#
-                if (column.Name != column.Member) {#>, Name=@"<#=column.Name#>"<#}
-                if (column.AutoSync != AutoSync.Default) {#>, AutoSync=AutoSync.<#=column.AutoSync.ToString()#><#}
-                if (!String.IsNullOrEmpty(column.DbType)) {#>, DbType=@"<#=column.DbType#>"<#}
-                if (column.IsPrimaryKey) {#>, IsPrimaryKey=true<#}
-                if (column.IsDiscriminator) {#>, IsDiscriminator=true<#}
-                if (column.IsDbGenerated) {#>, IsDbGenerated=true<#}
-                if (column.IsVersion) {#>, IsVersion=true<#}
-                if (!column.CanBeNull && !column.IsPrimaryKey) {#>, CanBeNull=false<#}
-                if (column.UpdateCheck != UpdateCheck.Always) {#>, UpdateCheck=UpdateCheck.<#=column.UpdateCheck.ToString()#><#}
-                if (!String.IsNullOrEmpty(column.Expression)) {#>, Expression=@"<#=column.Expression#>"<#}
+<#              if (GenerateDbAttributes) {
+#>        [Column(Storage=@"<#=column.Storage#>"<#
+                    if (column.Name != column.Member) {#>, Name=@"<#=column.Name#>"<#}
+                    if (column.AutoSync != AutoSync.Default) {#>, AutoSync=AutoSync.<#=column.AutoSync.ToString()#><#}
+                    if (!String.IsNullOrEmpty(column.DbType)) {#>, DbType=@"<#=column.DbType#>"<#}
+                    if (column.IsPrimaryKey) {#>, IsPrimaryKey=true<#}
+                    if (column.IsDiscriminator) {#>, IsDiscriminator=true<#}
+                    if (column.IsDbGenerated) {#>, IsDbGenerated=true<#}
+                    if (column.IsVersion) {#>, IsVersion=true<#}
+                    if (!column.CanBeNull && !column.IsPrimaryKey) {#>, CanBeNull=false<#}
+                    if (column.UpdateCheck != UpdateCheck.Always) {#>, UpdateCheck=UpdateCheck.<#=column.UpdateCheck.ToString()#><#}
+                    if (!String.IsNullOrEmpty(column.Expression)) {#>, Expression=@"<#=column.Expression#>"<#}
         #>)]
-<#				if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
-#>		[DataMember(Order=<#=dataMemberIndex++#>)]
-<#				}
+<#              }
+                if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
+#>        [DataMember(Order=<#=dataMemberIndex++#>)]
+<#                }
 #>        <#=code.Format(column.MemberAttributes)#><#=code.Format(column.Type)#> <#=column.Member#>
         {
             get { return <#=column.StorageValue#>; }
-<#				if (!column.IsReadOnly) { #>
+<#                if (!column.IsReadOnly) { #>
             set {
                 if (<#=column.StorageValue#> != value) {
-<#					if (column.ForeignKeyAssociations.Count > 0) {#>
+<#                    if (column.ForeignKeyAssociations.Count > 0) {#>
                     if (<#=String.Join(" || ", column.ForeignKeyAssociations.Select(a => a.Storage + ".HasLoadedOrAssignedValue").ToArray())#>) {
                         throw new ForeignKeyReferenceAlreadyHasValueException();
                     }
-<#					}#>
+<#                    }#>
                     On<#=column.Member#>Changing(value);
                     SendPropertyChanging();
                     <#=column.StorageValue#> = value;
@@ -313,68 +320,70 @@ namespace <#=data.EntityNamespace#>
                     On<#=column.Member#>Changed();
                 }
             }
-<#				}#>
+<#                }#>
         }
 
-<#			}#>
+<#            }#>
         #endregion
-<#		}
+<#        }
         bool needsSerializationFlag = class1.IsSerializable && class1.Associations.Any(a => !a.ManagesKeys);
         if (class1.Associations.Count > 0) {
 #>
         #region Associations
-<#			foreach(var association in class1.Associations) {#>
+<#            foreach(var association in class1.Associations) {#>
         private Entity<#=(association.IsMany) ? "Set" : "Ref"#><<#=association.Type.Name#>> <#=association.Storage#>;
+<#                if (GenerateDbAttributes) { #>
         [Association(Name=@"<#=association.Name#>"<#
             #>, Storage=@"<#=association.Storage#>"<#
-                if (association.ThisKeyMembers != null) {#>, ThisKey=@"<#=String.Join(",", association.ThisKeyMembers)#>"<#}
-                if (association.OtherKeyMembers != null) {#>, OtherKey=@"<#=String.Join(",", association.OtherKeyMembers)#>"<#}
-                if (association.IsForeignKey) {#>, IsForeignKey=true<#}
-                if (association.IsUnique) {#>, IsUnique=true, IsForeignKey=false<#}
-                if (association.DeleteOnNull) {#>, DeleteOnNull=true<#}
-                if (association.DeleteRule != null) {#>, DeleteRule=@"<#=association.DeleteRule #>"<#}
+                      if (association.ThisKeyMembers != null) {#>, ThisKey=@"<#=String.Join(",", association.ThisKeyMembers)#>"<#}
+                      if (association.OtherKeyMembers != null) {#>, OtherKey=@"<#=String.Join(",", association.OtherKeyMembers)#>"<#}
+                      if (association.IsForeignKey) {#>, IsForeignKey=true<#}
+                      if (association.IsUnique) {#>, IsUnique=true, IsForeignKey=false<#}
+                      if (association.DeleteOnNull) {#>, DeleteOnNull=true<#}
+                      if (association.DeleteRule != null) {#>, DeleteRule=@"<#=association.DeleteRule #>"<#}
         #>)]
-<#				bool serialization = association.IsSerializable && data.Serialization &&
+<#              }
+                bool serialization = association.IsSerializable && data.Serialization &&
                     (options.SerializeDataContractSP1 || !association.ManagesKeys);
                 if (serialization) {
-#>		[DataMember(Order=<#=dataMemberIndex++#>, EmitDefaultValue=false)]
-<#				}
+#>        [DataMember(Order=<#=dataMemberIndex++#>, EmitDefaultValue=false)]
+<#                }
                 if (!association.IsMany) {#>
         <#=code.Format(association.MemberAttributes)#><#=association.Type.Name#> <#=association.Member#>
         {
             get {
-<#					if (needsSerializationFlag && serialization) {#>
+<#                    if (needsSerializationFlag && serialization) {#>
                 if (serializing && !<#=association.Storage#>.HasLoadedOrAssignedValue) {
                     return null;
                 }
-<#					}#>
+<#                    }#>
                 return <#=association.Storage#>.Entity;
             }
             set {
                 <#=association.Type.Name#> previousValue = <#=association.Storage#>.Entity;
                 if ((previousValue != value)<#if (association.OtherSide != null) {#> || (!<#=association.Storage#>.HasLoadedOrAssignedValue)<#}#>) {
                     SendPropertyChanging();
-<#					if (association.OtherSide != null) {#>
+<#                    if (association.OtherSide != null) {#>
                     if (previousValue != null) {
                         <#=association.Storage#>.Entity = null;
                         previousValue.<#=association.OtherSide.Member#><#if (!association.OtherSide.IsMany) {#> = null<#} else {#>.Remove(this)<#}#>;
                     }
-<#					}
+<#                    }
 #>                    <#=association.Storage#>.Entity = value;
-<#					if (association.OtherSide != null || association.ManagesKeys) {#>
+<#                    if (association.OtherSide != null || association.ManagesKeys) {#>
                     if (value != null) {
-<#						if (association.OtherSide != null) {#>
+<#                        if (association.OtherSide != null) {#>
                         value.<#=association.OtherSide.Member#><#if (!association.OtherSide.IsMany) {#> = this<#} else {#>.Add(this)<#}#>;
-<#						}
+<#                        }
                         if (association.ManagesKeys) {
                             for(int keyIdx=0;keyIdx<association.ThisKey.Count();keyIdx++) {#>
                         <#=association.ThisKey[keyIdx].Storage#> = value.<#=association.OtherKey[keyIdx].Member#>;
-<#							}#>
+<#                            }#>
                     }
                     else {
-<#							for(int keyIdx=0;keyIdx<association.ThisKey.Count();keyIdx++) {
+<#                            for(int keyIdx=0;keyIdx<association.ThisKey.Count();keyIdx++) {
 #>                             <#=association.ThisKey[keyIdx].Storage#> = default(<#=code.Format(association.ThisKey[keyIdx].Type)#>);
-<#							}
+<#                            }
                         }
 #>                    }
 <#                         }#>
@@ -383,15 +392,15 @@ namespace <#=data.EntityNamespace#>
             }
         }
 
-<#				} else {#>
+<#                } else {#>
         <#=code.Format(association.MemberAttributes)#>EntitySet<<#=association.Type.Name#>> <#=association.Member#>
         {
             get {
-<#					if (needsSerializationFlag && serialization) {#>
+<#                    if (needsSerializationFlag && serialization) {#>
                 if (serializing && !<#=association.Storage#>.HasLoadedOrAssignedValues) {
                     return null;
                 }
-<#					} #>
+<#                    } #>
                 return <#=association.Storage#>;
             }
             set {
@@ -411,14 +420,14 @@ namespace <#=data.EntityNamespace#>
             entity.<#=association.OtherSide.Member#> = null;
         }
 
-<#				}
+<#                }
             }#>
         #endregion
-<#		}
+<#        }
         if (data.Serialization) {#>
 
         #region Serialization
-<#			if (needsSerializationFlag) {#>
+<#            if (needsSerializationFlag) {#>
         private bool serializing;
 
         [OnSerializing()]
@@ -435,7 +444,7 @@ namespace <#=data.EntityNamespace#>
             serializing = false;
         }
 
-<#			}#>
+<#            }#>
         [OnDeserializing()]
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         public <#if (class1 != table.BaseClass) {#>new<#}#> void OnDeserializing(StreamingContext context)
@@ -443,11 +452,11 @@ namespace <#=data.EntityNamespace#>
             Initialize();
         }
         #endregion
-<#		}
-#>	}
-<#		if (!String.IsNullOrEmpty(data.EntityNamespace)) {#>
+<#        }
+#>    }
+<#        if (!String.IsNullOrEmpty(data.EntityNamespace)) {#>
 }
-<#		}
+<#        }
         manager.EndBlock();
     }
 }
@@ -458,13 +467,13 @@ if (data.FunctionClasses.Count > 0) {
 
 namespace <#=data.EntityNamespace#>
 {
-<#		}
+<#        }
         if (data.Serialization) {
-#>	[DataContract(<#=dataContractAttributes#>)]
-<#		} #>
+#>    [DataContract(<#=dataContractAttributes#>)]
+<#        } #>
     <#=code.Format(class1.TypeAttributes)#>partial class <#=class1.Name#>
     {
-<#		int dataMemberIndex = 1;
+<#        int dataMemberIndex = 1;
         foreach(var column in class1.Columns) {#>
 
         private <#=code.Format(column.Type)#> <#=column.Storage#>;
@@ -473,10 +482,10 @@ namespace <#=data.EntityNamespace#>
                 if (!String.IsNullOrEmpty(column.DbType)) {#>, DbType=@"<#=column.DbType#>"<#}
                 if (!column.CanBeNull && !column.IsPrimaryKey) {#>, CanBeNull=false<#}
         #>)]
-<#			if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
-#>		[DataMember(Order=<#=dataMemberIndex++#>)]
-<#			}
-#>		<#=code.Format(column.MemberAttributes)#><#=code.Format(column.Type)#> <#=column.Member#> {
+<#            if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
+#>        [DataMember(Order=<#=dataMemberIndex++#>)]
+<#            }
+#>        <#=code.Format(column.MemberAttributes)#><#=code.Format(column.Type)#> <#=column.Member#> {
             get { return <#=column.Storage#>; }
             set {
                 if (<#=column.Storage#> != value) {
@@ -484,11 +493,11 @@ namespace <#=data.EntityNamespace#>
                 }
             }
         }
-<#		} #>
+<#        } #>
     }
-<#		if (!String.IsNullOrEmpty(data.EntityNamespace)) {#>
+<#        if (!String.IsNullOrEmpty(data.EntityNamespace)) {#>
 }
-<#		}
+<#        }
         manager.EndBlock();
     }
 }

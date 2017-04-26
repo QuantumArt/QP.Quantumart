@@ -135,8 +135,7 @@ namespace Quantumart.QP8.Assembling
             CurrentAssembleMode = AssembleMode.Contents;
             SiteId = siteId;
             SqlMetalPath = sqlMetalPath;
-            UseT4 = (sqlMetalPath == null);
-            FileNameHelper = new FileNameHelper { SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb };
+            UseT4 = String.IsNullOrEmpty(sqlMetalPath);
         }
 
         private string _siteRoot;
@@ -186,7 +185,9 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        public FileNameHelper FileNameHelper { get; private set; }
+        private FileNameHelper _fileNameHelper;
+
+        public FileNameHelper FileNameHelper => _fileNameHelper ?? (_fileNameHelper = new FileNameHelper {SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb});
 
         public XmlPreprocessor XmlPreprocessor { get; private set;  }
 
