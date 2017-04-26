@@ -384,6 +384,36 @@ namespace Quantumart.QP8.Assembling
                 paramElem.SetAttributeValue("Parameter", paramElem.Attribute("Name")?.Value);
             }
 
+            var columns = MapFile.Descendants(xn + "Column").Union(MapFile.Descendants(xn + "Association")).ToArray();
+            foreach (var c in columns)
+            {
+                var member = c.Attribute("Member")?.Value;
+                var name = c.Attribute("Name")?.Value;
+                var value = "_" + member;
+                if (c.Attribute("OtherKey")?.Value == "Id")
+                {
+                    var thisKey = c.Attribute("ThisKey")?.Value;
+                    if (thisKey?.EndsWith("_ID2") ?? false)
+                    {
+                        value = "_" + thisKey.Replace("_ID2", "12");
+                    }
+                    else if (thisKey != "StatusTypeId")
+                    {
+                        value = value + "1";
+                    }
+                }
+                else if (c.Name == xn + "Column" && (member?.EndsWith("_ID") ?? false) && name != "LINKED_ITEM_ID" && name != "ITEM_ID")
+                {
+                    value = value.Substring(0, value.Length - 3);
+                }
+                else if (name == "LINKED_ITEM_ID" || name == "ITEM_ID")
+                {
+                    value = "_" + name;
+                }
+
+                c.SetAttributeValue("Storage", value);
+            }
+
 
         }
 
@@ -391,7 +421,7 @@ namespace Quantumart.QP8.Assembling
         {
             if (UseT4)
             {
-                var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath);
+                var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
                 var result = generator.TransformText();
                 File.WriteAllText(FileNameHelper.MainCodeFilePath, result);
             }

@@ -57,7 +57,7 @@ var options = new {
 var code = new CSharpCodeLanguage();
 var data = new Data(options.DbmlFileName);
 var manager = Manager.Create(Host, GenerationEnvironment);
-data.ContextNamespace = (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedContextNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
+data.ContextNamespace = Namespace ?? (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedContextNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
 data.EntityNamespace = (new string[] { manager.GetCustomToolNamespace(data.DbmlFileName), data.SpecifiedEntityNamespace, manager.DefaultProjectNamespace }).FirstOrDefault(s => !String.IsNullOrEmpty(s));
 manager.StartHeader();
 
@@ -119,33 +119,42 @@ if(!String.IsNullOrEmpty(data.ContextNamespace)){
             
             #line 45 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
+
+if (GenerateDbAttributes && !String.IsNullOrEmpty(data.DatabaseName)) {
             
             #line default
             #line hidden
             this.Write("    [DatabaseAttribute(Name=@\"");
             
-            #line 46 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 48 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.DatabaseName));
             
             #line default
             #line hidden
-            this.Write("\")]\r\n    ");
+            this.Write("\")]\r\n");
             
-            #line 47 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 49 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+}
+            
+            #line default
+            #line hidden
+            this.Write("    ");
+            
+            #line 49 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(data.TypeAttributes)));
             
             #line default
             #line hidden
             this.Write("partial class ");
             
-            #line 47 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 49 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
             #line hidden
             this.Write(" : ");
             
-            #line 47 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 49 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.BaseClassName));
             
             #line default
@@ -154,7 +163,7 @@ if(!String.IsNullOrEmpty(data.ContextNamespace)){
                     "gSource();\r\n\r\n        #region Extensibility Method Definitions\r\n        partial " +
                     "void OnCreated();\r\n");
             
-            #line 53 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 55 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	var tableOperations = new List<TableOperation>();
     foreach(var table in data.Tables)
         tableOperations.AddRange(table.Operations);
@@ -166,69 +175,70 @@ if(!String.IsNullOrEmpty(data.ContextNamespace)){
             #line hidden
             this.Write("        partial void ");
             
-            #line 59 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 61 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operationType));
             
             #line default
             #line hidden
             
-            #line 59 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 61 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.BaseClass.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 59 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 61 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.BaseClass.QualifiedName));
             
             #line default
             #line hidden
             this.Write(" instance);\r\n");
             
-            #line 60 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 62 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write("        #endregion\r\n\r\n        #region Construction\r\n");
             
-            #line 64 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 66 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (data.ConnectSettingsObject != null) {
             
             #line default
             #line hidden
             this.Write("        public ");
             
-            #line 65 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 67 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
             #line hidden
             this.Write("() :\r\n            base(global::");
             
-            #line 66 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 68 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ConnectSettingsObject));
             
             #line default
             #line hidden
-            this.Write(".Default.");
+            this.Write("[\"");
             
-            #line 66 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 68 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ConnectSettingsProperty));
             
             #line default
             #line hidden
-            this.Write(", mappingSource)\r\n        {\r\n            OnCreated();\r\n        }\r\n");
+            this.Write("\"].ConnectionString, mappingSource)\r\n        {\r\n            OnCreated();\r\n       " +
+                    " }\r\n");
             
-            #line 70 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 72 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write("        public ");
             
-            #line 71 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 73 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
@@ -236,7 +246,7 @@ if (data.ConnectSettingsObject != null) {
             this.Write("(string connection) :\r\n            base(connection, mappingSource)\r\n        {\r\n  " +
                     "          OnCreated();\r\n        }\r\n\r\n        public ");
             
-            #line 77 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 79 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
@@ -244,7 +254,7 @@ if (data.ConnectSettingsObject != null) {
             this.Write("(System.Data.IDbConnection connection) :\r\n            base(connection, mappingSou" +
                     "rce)\r\n        {\r\n            OnCreated();\r\n        }\r\n\r\n        public ");
             
-            #line 83 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 85 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
@@ -253,7 +263,7 @@ if (data.ConnectSettingsObject != null) {
                     "mappingSource)\r\n        {\r\n            OnCreated();\r\n        }\r\n\r\n        public" +
                     " ");
             
-            #line 89 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 91 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.ContextName));
             
             #line default
@@ -262,58 +272,58 @@ if (data.ConnectSettingsObject != null) {
                     "  base(connection, mappingSource)\r\n        {\r\n            OnCreated();\r\n        " +
                     "}\r\n        #endregion\r\n");
             
-            #line 95 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 97 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if(data.Tables.Count > 0) {
             
             #line default
             #line hidden
             this.Write("\r\n        #region Tables\r\n");
             
-            #line 98 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 100 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	foreach(var table in data.Tables) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t");
+            this.Write("        ");
             
-            #line 99 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 101 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.GetAccess(table.TypeAttributes)));
             
             #line default
             #line hidden
             this.Write("Table<");
             
-            #line 99 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 101 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.BaseClass.QualifiedName));
             
             #line default
             #line hidden
             this.Write("> ");
             
-            #line 99 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 101 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Member));
             
             #line default
             #line hidden
             this.Write("\r\n        {\r\n            get { return GetTable<");
             
-            #line 101 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 103 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.BaseClass.QualifiedName));
             
             #line default
             #line hidden
             this.Write(">(); }\r\n        }\r\n\r\n");
             
-            #line 104 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 106 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	}
 
             
             #line default
             #line hidden
-            this.Write("\t\t#endregion\r\n");
+            this.Write("        #endregion\r\n");
             
-            #line 106 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 108 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
 if (data.Functions.Count > 0) {
             
@@ -321,7 +331,7 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write("\r\n        #region Functions\r\n");
             
-            #line 110 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 112 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	foreach(var function in data.Functions) {
 
             
@@ -329,14 +339,14 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write("        [Function(Name=@\"");
             
-            #line 112 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 114 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(function.Name));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 112 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 114 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
         if (function.IsComposable) {
             
@@ -344,7 +354,7 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write(", IsComposable=true");
             
-            #line 113 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 115 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
         
             
@@ -352,23 +362,23 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write(")]\r\n");
             
-            #line 115 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 117 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		if (function.Return != null && function.Return.DbType != null) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t[return: Parameter(DbType=@\"");
+            this.Write("        [return: Parameter(DbType=@\"");
             
-            #line 116 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 118 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(function.Return.DbType));
             
             #line default
             #line hidden
             this.Write("\")]\r\n");
             
-            #line 117 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
-		}
+            #line 119 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+      }
         if (function.HasMultipleResults) {
             foreach(var class1 in function.Classes) {
             
@@ -376,14 +386,14 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write("        [ResultType(typeof(");
             
-            #line 120 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 122 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.QualifiedName));
             
             #line default
             #line hidden
             this.Write("))]\r\n");
             
-            #line 121 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 123 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
         }
             
@@ -391,27 +401,27 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write("        ");
             
-            #line 123 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 125 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(function.MemberAttributes)));
             
             #line default
             #line hidden
             
-            #line 123 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 125 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(function.ReturnType)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 123 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 125 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(function.Method));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 123 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 125 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
         foreach(var parameter in function.Parameters) {
             
@@ -419,54 +429,54 @@ if (data.Functions.Count > 0) {
             #line hidden
             this.Write("\r\n                [Parameter(");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (parameter.DbName != parameter.Name) {
             
             #line default
             #line hidden
             this.Write("Name=@\"");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.DbName));
             
             #line default
             #line hidden
             this.Write("\", ");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write("DbType=@\"");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.DbType));
             
             #line default
             #line hidden
             this.Write("\")] ");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(parameter.Direction)));
             
             #line default
             #line hidden
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             
-            #line 126 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 128 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
             if (parameter != function.Parameters.Last()) {
             
@@ -474,7 +484,7 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write(",");
             
-            #line 127 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 129 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  }
         }
         
@@ -483,28 +493,28 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write(") {\r\n");
             
-            #line 130 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 132 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		foreach(var outParameter in function.Parameters.Where(p => p.Direction == ParameterDirection.Out)) {
             
             #line default
             #line hidden
             this.Write("            ");
             
-            #line 131 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 133 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(outParameter.Name));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 131 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 133 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(outParameter.Type)));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 132 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 134 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         if (function.IsComposableQuery) { 
             
@@ -512,27 +522,12 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("            return CreateMethodCallQuery<");
             
-            #line 134 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 136 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(function.ResultType)));
             
             #line default
             #line hidden
             this.Write(">(this, ((MethodInfo)(MethodInfo.GetCurrentMethod()))");
-            
-            #line 134 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(String.Join("", function.Parameters.Select(p => ", " + p.Name).ToArray())));
-            
-            #line default
-            #line hidden
-            this.Write(");\r\n");
-            
-            #line 135 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
-		} else { 
-            
-            #line default
-            #line hidden
-            this.Write("            IExecuteResult result = ExecuteMethodCall(this, (MethodInfo) MethodIn" +
-                    "fo.GetCurrentMethod()");
             
             #line 136 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join("", function.Parameters.Select(p => ", " + p.Name).ToArray())));
@@ -542,6 +537,21 @@ if (parameter.DbName != parameter.Name) {
             this.Write(");\r\n");
             
             #line 137 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+		} else { 
+            
+            #line default
+            #line hidden
+            this.Write("            IExecuteResult result = ExecuteMethodCall(this, (MethodInfo) MethodIn" +
+                    "fo.GetCurrentMethod()");
+            
+            #line 138 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(String.Join("", function.Parameters.Select(p => ", " + p.Name).ToArray())));
+            
+            #line default
+            #line hidden
+            this.Write(");\r\n");
+            
+            #line 139 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			int paramIdx = 0;
             foreach(var parameter in function.Parameters) {
                 if (parameter.Direction != ParameterDirection.In) {
@@ -550,28 +560,28 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("            ");
             
-            #line 140 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 142 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(parameter.Name));
             
             #line default
             #line hidden
             this.Write(" = (");
             
-            #line 140 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 142 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(parameter.Type)));
             
             #line default
             #line hidden
             this.Write(") result.GetParameterValue(");
             
-            #line 140 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 142 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(paramIdx));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 141 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 143 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
                 paramIdx++;
             }
@@ -579,79 +589,79 @@ if (parameter.DbName != parameter.Name) {
             
             #line default
             #line hidden
-            this.Write("\t\t\treturn (");
+            this.Write("            return (");
             
-            #line 144 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 146 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(function.ReturnType)));
             
             #line default
             #line hidden
             this.Write(") result.ReturnValue;\r\n");
             
-            #line 145 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 147 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
             
             #line default
             #line hidden
             this.Write("        }\r\n\r\n");
             
-            #line 148 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 150 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	}
             
             #line default
             #line hidden
             this.Write("        #endregion\r\n\r\n");
             
-            #line 151 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 153 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	if (tableOperations.Count > 0) { 
             
             #line default
             #line hidden
             this.Write("        #region Table Operations\r\n");
             
-            #line 153 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 155 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		foreach(var operation in tableOperations) { 
             
             #line default
             #line hidden
             this.Write("        private void ");
             
-            #line 154 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 156 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operation.Type));
             
             #line default
             #line hidden
             
-            #line 154 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 156 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operation.Table.BaseClass.Name));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 154 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 156 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operation.Table.BaseClass.QualifiedName));
             
             #line default
             #line hidden
             this.Write(" obj) {\r\n");
             
-            #line 155 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 157 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			if (operation.Arguments.Any(a => a.Version == ArgumentVersion.Original)) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t\tvar original = ");
+            this.Write("           var original = ");
             
-            #line 156 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 158 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operation.Table.Member));
             
             #line default
             #line hidden
             this.Write(".GetOriginalEntityState(obj);\r\n");
             
-            #line 157 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 159 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             int paramIdx = 1;
             foreach(var argument in operation.Arguments.Where(a => a.Parameter.Direction != ParameterDirection.In)) {
@@ -659,57 +669,57 @@ if (parameter.DbName != parameter.Name) {
             
             #line default
             #line hidden
-            this.Write("\t\t\t");
+            this.Write("            ");
             
-            #line 160 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(argument.Parameter.Type)));
             
             #line default
             #line hidden
             this.Write(" p");
             
-            #line 160 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(paramIdx++));
             
             #line default
             #line hidden
             this.Write(" = obj.");
             
-            #line 160 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argument.Member));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 161 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 163 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             
             #line default
             #line hidden
             this.Write("            ");
             
-            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 164 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  if (options.StoredProcedureConcurrency) {
             
             #line default
             #line hidden
             this.Write("var rowCount = ");
             
-            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 164 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             
-            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 164 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(operation.Function.Method));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 162 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 164 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
             paramIdx = 1;
             foreach(var argument in operation.Arguments) {
@@ -720,13 +730,13 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("ref p");
             
-            #line 166 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 168 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(paramIdx++));
             
             #line default
             #line hidden
             
-            #line 166 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 168 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  break;
                     case ParameterDirection.Out: 
             
@@ -734,33 +744,33 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("out p");
             
-            #line 167 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 169 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(paramIdx++));
             
             #line default
             #line hidden
             
-            #line 167 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 169 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  break;
                     default: 
             
             #line default
             #line hidden
             
-            #line 168 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 170 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture((argument.Version == ArgumentVersion.New) ? "obj" : "original"));
             
             #line default
             #line hidden
             this.Write(".");
             
-            #line 168 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 170 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argument.Member));
             
             #line default
             #line hidden
             
-            #line 168 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 170 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  break;
                 }
             if (argument != operation.Arguments.Last()) {
@@ -769,7 +779,7 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write(", ");
             
-            #line 170 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 172 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             }
             
@@ -778,7 +788,7 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write(");\r\n");
             
-            #line 173 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 175 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			if (options.StoredProcedureConcurrency) {
             
             #line default
@@ -786,7 +796,7 @@ if (parameter.DbName != parameter.Name) {
             this.Write("            if (rowCount != 1) {\r\n                throw new ChangeConflictExcepti" +
                     "on();\r\n            }\r\n");
             
-            #line 177 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 179 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             paramIdx = 1;
             foreach(var argument in operation.Arguments.Where(a => a.Parameter.Direction != ParameterDirection.In)) {
@@ -796,28 +806,28 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("\t\t\tobj.");
             
-            #line 180 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 182 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(argument.Member));
             
             #line default
             #line hidden
             this.Write(" = p");
             
-            #line 180 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 182 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(paramIdx++));
             
             #line default
             #line hidden
             this.Write(".GetValueOrDefault();\r\n");
             
-            #line 181 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 183 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             
             #line default
             #line hidden
             this.Write("        }\r\n\r\n");
             
-            #line 184 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 186 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
         }
 
@@ -826,7 +836,7 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("        #endregion\r\n");
             
-            #line 188 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 190 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 	}
 }
             
@@ -834,7 +844,7 @@ if (parameter.DbName != parameter.Name) {
             #line hidden
             this.Write("    }\r\n");
             
-            #line 191 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 193 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (!String.IsNullOrEmpty(data.ContextNamespace)) {
 
             
@@ -842,7 +852,7 @@ if (!String.IsNullOrEmpty(data.ContextNamespace)) {
             #line hidden
             this.Write("}\r\n");
             
-            #line 193 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 195 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
 foreach(var table in data.Tables) {
     foreach(var class1 in table.Classes) {
@@ -853,14 +863,14 @@ foreach(var table in data.Tables) {
             #line hidden
             this.Write("\r\nnamespace ");
             
-            #line 199 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 201 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.EntityNamespace));
             
             #line default
             #line hidden
             this.Write("\r\n{\r\n");
             
-            #line 201 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 203 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         if (data.Serialization && class1.IsSerializable) {
 
@@ -869,14 +879,14 @@ foreach(var table in data.Tables) {
             #line hidden
             this.Write("\t[DataContract(");
             
-            #line 203 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 205 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(dataContractAttributes));
             
             #line default
             #line hidden
             this.Write(")]\r\n");
             
-            #line 204 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 206 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         if (class1 == table.BaseClass) {
             
@@ -884,14 +894,14 @@ foreach(var table in data.Tables) {
             #line hidden
             this.Write("    [Table(Name=@\"");
             
-            #line 206 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 208 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(table.Name));
             
             #line default
             #line hidden
             this.Write("\")]\r\n");
             
-            #line 207 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 209 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			foreach(var subclass in data.TableClasses.Where(c => c.Table == table)) {
                 if (!String.IsNullOrEmpty(subclass.InheritanceCode)) {
             
@@ -899,35 +909,35 @@ foreach(var table in data.Tables) {
             #line hidden
             this.Write("    [InheritanceMapping(Code=@\"");
             
-            #line 209 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 211 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(subclass.InheritanceCode));
             
             #line default
             #line hidden
             this.Write("\", Type=typeof(");
             
-            #line 209 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 211 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(subclass.Name));
             
             #line default
             #line hidden
             this.Write(")");
             
-            #line 209 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 211 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  if (subclass.IsInheritanceDefault) {
             
             #line default
             #line hidden
             this.Write(", IsDefault=true");
             
-            #line 209 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 211 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write(")]\r\n");
             
-            #line 210 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 212 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
                 if (data.Serialization && subclass.IsSerializable) {
 
@@ -936,51 +946,51 @@ foreach(var table in data.Tables) {
             #line hidden
             this.Write("\t[KnownType(typeof(");
             
-            #line 212 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 214 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(subclass.Name));
             
             #line default
             #line hidden
             this.Write("))]\r\n");
             
-            #line 213 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             }
 
             
             #line default
             #line hidden
-            this.Write("\t");
+            this.Write("    ");
             
-            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 217 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(class1.TypeAttributes)));
             
             #line default
             #line hidden
             this.Write("partial class ");
             
-            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 217 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.Name));
             
             #line default
             #line hidden
             this.Write(" :");
             
-            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 217 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (!String.IsNullOrEmpty(data.EntityBase)) {
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 217 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.EntityBase));
             
             #line default
             #line hidden
             this.Write(", ");
             
-            #line 215 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 217 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
@@ -995,7 +1005,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
 
         ");
             
-            #line 223 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 225 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(class1.PropertyChangeAccess)));
             
             #line default
@@ -1004,7 +1014,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
                     " {\r\n                PropertyChanging(this, emptyChangingEventArgs);\r\n           " +
                     " }\r\n        }\r\n\r\n        ");
             
-            #line 230 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 232 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(class1.PropertyChangeAccess)));
             
             #line default
@@ -1013,7 +1023,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
                     "yChanged != null) {\r\n                PropertyChanged(this, new PropertyChangedEv" +
                     "entArgs(propertyName));\r\n            }\r\n        }\r\n        #endregion\r\n\r\n");
             
-            #line 238 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 240 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		} else {
 
             
@@ -1021,28 +1031,28 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("\t");
             
-            #line 239 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 241 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(class1.TypeAttributes)));
             
             #line default
             #line hidden
             this.Write("partial class ");
             
-            #line 239 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 241 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.Name));
             
             #line default
             #line hidden
             this.Write(" : ");
             
-            #line 239 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 241 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.SuperClass.Name));
             
             #line default
             #line hidden
             this.Write("\r\n    {\r\n");
             
-            #line 241 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 243 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
             
             #line default
@@ -1050,28 +1060,28 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             this.Write("        #region Extensibility Method Definitions\r\n        partial void OnLoaded()" +
                     ";\r\n        partial void OnValidate(ChangeAction action);\r\n");
             
-            #line 245 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 247 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		if (class1.HasPrimaryKey) {
             
             #line default
             #line hidden
             this.Write("        partial void OnCreated();\r\n");
             
-            #line 247 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 249 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
             
             #line default
             #line hidden
             this.Write("        #endregion\r\n\r\n        #region Construction\r\n        public ");
             
-            #line 251 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 253 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.Name));
             
             #line default
             #line hidden
             this.Write("()\r\n        {\r\n");
             
-            #line 253 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 255 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		if (data.Serialization) {
 
             
@@ -1079,23 +1089,23 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("\t\t\tInitialize();\r\n        }\r\n\r\n        private void Initialize()\r\n        {\r\n");
             
-            #line 259 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 261 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         foreach(var association in class1.Associations) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t\t");
+            this.Write("            ");
             
-            #line 261 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 263 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(" = ");
             
-            #line 261 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 263 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
             if (association.IsMany) {
                 
@@ -1104,28 +1114,28 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("new EntitySet<");
             
-            #line 263 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 265 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(">(attach_");
             
-            #line 263 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 265 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write(", detach_");
             
-            #line 263 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 265 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 264 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 266 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			} else {
                 
             
@@ -1133,14 +1143,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("default(EntityRef<");
             
-            #line 265 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 267 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(">);\r\n");
             
-            #line 266 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 268 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
         }
         if (class1.HasPrimaryKey) {
@@ -1149,92 +1159,92 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("            OnCreated();\r\n");
             
-            #line 270 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 272 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
             
             #line default
             #line hidden
             this.Write("        }\r\n        #endregion\r\n\r\n");
             
-            #line 274 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 276 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		int dataMemberIndex = 1;
         if (class1.Columns.Count > 0) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t#region Column Mappings\r\n");
+            this.Write("        #region Column Mappings\r\n");
             
-            #line 277 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 279 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			foreach(var column in class1.Columns) {
             
             #line default
             #line hidden
             this.Write("        partial void On");
             
-            #line 278 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write("Changing(");
             
-            #line 278 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.Type)));
             
             #line default
             #line hidden
             this.Write(" value);\r\n        partial void On");
             
-            #line 279 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 281 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write("Changed();\r\n        private ");
             
-            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.StorageType)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             
-            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
  if (column.IsReadOnly) {
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.StorageType)));
             
             #line default
             #line hidden
             this.Write(")");
             
-            #line 280 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write(";\r\n        [Column(Storage=@\"");
             
-            #line 281 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 283 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 281 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 283 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
                 if (column.Name != column.Member) {
             
@@ -1242,14 +1252,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", Name=@\"");
             
-            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 284 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 282 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 284 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.AutoSync != AutoSync.Default) {
             
@@ -1257,13 +1267,13 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", AutoSync=AutoSync.");
             
-            #line 283 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 285 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.AutoSync.ToString()));
             
             #line default
             #line hidden
             
-            #line 283 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 285 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (!String.IsNullOrEmpty(column.DbType)) {
             
@@ -1271,14 +1281,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", DbType=@\"");
             
-            #line 284 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 286 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.DbType));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 284 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 286 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.IsPrimaryKey) {
             
@@ -1286,7 +1296,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsPrimaryKey=true");
             
-            #line 285 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 287 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.IsDiscriminator) {
             
@@ -1294,7 +1304,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsDiscriminator=true");
             
-            #line 286 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 288 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.IsDbGenerated) {
             
@@ -1302,7 +1312,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsDbGenerated=true");
             
-            #line 287 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 289 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.IsVersion) {
             
@@ -1310,7 +1320,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsVersion=true");
             
-            #line 288 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 290 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (!column.CanBeNull && !column.IsPrimaryKey) {
             
@@ -1318,7 +1328,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", CanBeNull=false");
             
-            #line 289 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 291 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (column.UpdateCheck != UpdateCheck.Always) {
             
@@ -1326,13 +1336,13 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", UpdateCheck=UpdateCheck.");
             
-            #line 290 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 292 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.UpdateCheck.ToString()));
             
             #line default
             #line hidden
             
-            #line 290 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 292 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (!String.IsNullOrEmpty(column.Expression)) {
             
@@ -1340,14 +1350,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", Expression=@\"");
             
-            #line 291 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 293 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Expression));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 291 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 293 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
         
             
@@ -1355,7 +1365,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(")]\r\n");
             
-            #line 293 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 295 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
 
             
@@ -1363,70 +1373,70 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("\t\t[DataMember(Order=");
             
-            #line 294 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 296 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(dataMemberIndex++));
             
             #line default
             #line hidden
             this.Write(")]\r\n");
             
-            #line 295 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 297 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
 
             
             #line default
             #line hidden
-            this.Write("\t\t");
+            this.Write("        ");
             
-            #line 296 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 298 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.MemberAttributes)));
             
             #line default
             #line hidden
             
-            #line 296 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 298 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 296 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 298 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write("\r\n        {\r\n            get { return ");
             
-            #line 298 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 300 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.StorageValue));
             
             #line default
             #line hidden
             this.Write("; }\r\n");
             
-            #line 299 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 301 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				if (!column.IsReadOnly) { 
             
             #line default
             #line hidden
             this.Write("            set {\r\n                if (");
             
-            #line 301 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 303 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.StorageValue));
             
             #line default
             #line hidden
             this.Write(" != value) {\r\n");
             
-            #line 302 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 304 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					if (column.ForeignKeyAssociations.Count > 0) {
             
             #line default
             #line hidden
             this.Write("                    if (");
             
-            #line 303 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 305 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(" || ", column.ForeignKeyAssociations.Select(a => a.Storage + ".HasLoadedOrAssignedValue").ToArray())));
             
             #line default
@@ -1434,14 +1444,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             this.Write(") {\r\n                        throw new ForeignKeyReferenceAlreadyHasValueExceptio" +
                     "n();\r\n                    }\r\n");
             
-            #line 306 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 308 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					}
             
             #line default
             #line hidden
             this.Write("                    On");
             
-            #line 307 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 309 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
@@ -1449,42 +1459,42 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             this.Write("Changing(value);\r\n                    SendPropertyChanging();\r\n                  " +
                     "  ");
             
-            #line 309 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 311 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.StorageValue));
             
             #line default
             #line hidden
             this.Write(" = value;\r\n                    SendPropertyChanged(\"");
             
-            #line 310 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 312 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write("\");\r\n                    On");
             
-            #line 311 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 313 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write("Changed();\r\n                }\r\n            }\r\n");
             
-            #line 314 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 316 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
             
             #line default
             #line hidden
             this.Write("        }\r\n\r\n");
             
-            #line 317 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 319 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             
             #line default
             #line hidden
             this.Write("        #endregion\r\n");
             
-            #line 319 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 321 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         bool needsSerializationFlag = class1.IsSerializable && class1.Associations.Any(a => !a.ManagesKeys);
         if (class1.Associations.Count > 0) {
@@ -1494,42 +1504,42 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("        #region Associations\r\n");
             
-            #line 324 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 326 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			foreach(var association in class1.Associations) {
             
             #line default
             #line hidden
             this.Write("        private Entity");
             
-            #line 325 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 327 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture((association.IsMany) ? "Set" : "Ref"));
             
             #line default
             #line hidden
             this.Write("<");
             
-            #line 325 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 327 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write("> ");
             
-            #line 325 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 327 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(";\r\n        [Association(Name=@\"");
             
-            #line 326 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 328 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Name));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 326 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 328 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
             
             
@@ -1537,14 +1547,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", Storage=@\"");
             
-            #line 327 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 329 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 327 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 329 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
                 if (association.ThisKeyMembers != null) {
             
@@ -1552,14 +1562,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", ThisKey=@\"");
             
-            #line 328 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 330 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(",", association.ThisKeyMembers)));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 328 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 330 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (association.OtherKeyMembers != null) {
             
@@ -1567,14 +1577,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", OtherKey=@\"");
             
-            #line 329 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 331 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(String.Join(",", association.OtherKeyMembers)));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 329 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 331 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (association.IsForeignKey) {
             
@@ -1582,7 +1592,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsForeignKey=true");
             
-            #line 330 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 332 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (association.IsUnique) {
             
@@ -1590,7 +1600,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", IsUnique=true, IsForeignKey=false");
             
-            #line 331 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 333 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (association.DeleteOnNull) {
             
@@ -1598,7 +1608,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", DeleteOnNull=true");
             
-            #line 332 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 334 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (association.DeleteRule != null) {
             
@@ -1606,14 +1616,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(", DeleteRule=@\"");
             
-            #line 333 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 335 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.DeleteRule));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 333 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 335 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
         
             
@@ -1621,7 +1631,7 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write(")]\r\n");
             
-            #line 335 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 337 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				bool serialization = association.IsSerializable && data.Serialization &&
                     (options.SerializeDataContractSP1 || !association.ManagesKeys);
                 if (serialization) {
@@ -1631,14 +1641,14 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("\t\t[DataMember(Order=");
             
-            #line 338 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 340 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(dataMemberIndex++));
             
             #line default
             #line hidden
             this.Write(", EmitDefaultValue=false)]\r\n");
             
-            #line 339 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 341 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
                 if (!association.IsMany) {
             
@@ -1646,34 +1656,34 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             #line hidden
             this.Write("        ");
             
-            #line 341 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 343 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(association.MemberAttributes)));
             
             #line default
             #line hidden
             
-            #line 341 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 343 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 341 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 343 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write("\r\n        {\r\n            get {\r\n");
             
-            #line 344 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 346 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					if (needsSerializationFlag && serialization) {
             
             #line default
             #line hidden
             this.Write("                if (serializing && !");
             
-            #line 345 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 347 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
@@ -1681,153 +1691,153 @@ if (!String.IsNullOrEmpty(data.EntityBase)) {
             this.Write(".HasLoadedOrAssignedValue) {\r\n                    return null;\r\n                }" +
                     "\r\n");
             
-            #line 348 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 350 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					}
             
             #line default
             #line hidden
             this.Write("                return ");
             
-            #line 349 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 351 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".Entity;\r\n            }\r\n            set {\r\n                ");
             
-            #line 352 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 354 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(" previousValue = ");
             
-            #line 352 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 354 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".Entity;\r\n                if ((previousValue != value)");
             
-            #line 353 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 355 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (association.OtherSide != null) {
             
             #line default
             #line hidden
             this.Write(" || (!");
             
-            #line 353 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 355 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".HasLoadedOrAssignedValue)");
             
-            #line 353 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 355 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write(") {\r\n                    SendPropertyChanging();\r\n");
             
-            #line 355 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 357 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					if (association.OtherSide != null) {
             
             #line default
             #line hidden
             this.Write("                    if (previousValue != null) {\r\n                        ");
             
-            #line 357 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 359 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".Entity = null;\r\n                        previousValue.");
             
-            #line 358 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 360 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.OtherSide.Member));
             
             #line default
             #line hidden
             
-            #line 358 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 360 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (!association.OtherSide.IsMany) {
             
             #line default
             #line hidden
             this.Write(" = null");
             
-            #line 358 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 360 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 } else {
             
             #line default
             #line hidden
             this.Write(".Remove(this)");
             
-            #line 358 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 360 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write(";\r\n                    }\r\n");
             
-            #line 360 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 362 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					}
 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t");
+            this.Write("                    ");
             
-            #line 361 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 363 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".Entity = value;\r\n");
             
-            #line 362 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 364 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					if (association.OtherSide != null || association.ManagesKeys) {
             
             #line default
             #line hidden
             this.Write("                    if (value != null) {\r\n");
             
-            #line 364 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 366 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 						if (association.OtherSide != null) {
             
             #line default
             #line hidden
             this.Write("                        value.");
             
-            #line 365 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 367 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.OtherSide.Member));
             
             #line default
             #line hidden
             
-            #line 365 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 367 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (!association.OtherSide.IsMany) {
             
             #line default
             #line hidden
             this.Write(" = this");
             
-            #line 365 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 367 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 } else {
             
             #line default
             #line hidden
             this.Write(".Add(this)");
             
-            #line 365 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 367 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 366 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 368 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 						}
                         if (association.ManagesKeys) {
                             for(int keyIdx=0;keyIdx<association.ThisKey.Count();keyIdx++) {
@@ -1836,108 +1846,108 @@ if (!association.OtherSide.IsMany) {
             #line hidden
             this.Write("                        ");
             
-            #line 369 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 371 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.ThisKey[keyIdx].Storage));
             
             #line default
             #line hidden
             this.Write(" = value.");
             
-            #line 369 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 371 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.OtherKey[keyIdx].Member));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 370 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 372 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 							}
             
             #line default
             #line hidden
             this.Write("                    }\r\n                    else {\r\n");
             
-            #line 373 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 375 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 							for(int keyIdx=0;keyIdx<association.ThisKey.Count();keyIdx++) {
 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t\t");
+            this.Write("                             ");
             
-            #line 374 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 376 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.ThisKey[keyIdx].Storage));
             
             #line default
             #line hidden
             this.Write(" = default(");
             
-            #line 374 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 376 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(association.ThisKey[keyIdx].Type)));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 375 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 377 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 							}
                         }
 
             
             #line default
             #line hidden
-            this.Write("\t\t\t\t\t}\r\n");
+            this.Write("                    }\r\n");
             
-            #line 378 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
-					}
+            #line 380 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+                         }
             
             #line default
             #line hidden
             this.Write("                    SendPropertyChanged(\"");
             
-            #line 379 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 381 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write("\");\r\n                }\r\n            }\r\n        }\r\n\r\n");
             
-            #line 384 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 386 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				} else {
             
             #line default
             #line hidden
             this.Write("        ");
             
-            #line 385 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 387 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(association.MemberAttributes)));
             
             #line default
             #line hidden
             this.Write("EntitySet<");
             
-            #line 385 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 387 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write("> ");
             
-            #line 385 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 387 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write("\r\n        {\r\n            get {\r\n");
             
-            #line 388 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 390 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					if (needsSerializationFlag && serialization) {
             
             #line default
             #line hidden
             this.Write("                if (serializing && !");
             
-            #line 389 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 391 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
@@ -1945,70 +1955,70 @@ if (!association.OtherSide.IsMany) {
             this.Write(".HasLoadedOrAssignedValues) {\r\n                    return null;\r\n                " +
                     "}\r\n");
             
-            #line 392 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 394 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 					} 
             
             #line default
             #line hidden
             this.Write("                return ");
             
-            #line 393 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 395 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(";\r\n            }\r\n            set {\r\n                ");
             
-            #line 396 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 398 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Storage));
             
             #line default
             #line hidden
             this.Write(".Assign(value);\r\n            }\r\n        }\r\n\r\n        private void attach_");
             
-            #line 400 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 402 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 400 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 402 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(" entity)\r\n        {\r\n            SendPropertyChanging();\r\n            entity.");
             
-            #line 403 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 405 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.OtherSide.Member));
             
             #line default
             #line hidden
             this.Write(" = this;\r\n        }\r\n\r\n        private void detach_");
             
-            #line 406 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 408 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Member));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 406 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 408 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.Type.Name));
             
             #line default
             #line hidden
             this.Write(" entity)\r\n        {\r\n            SendPropertyChanging();\r\n            entity.");
             
-            #line 409 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 411 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(association.OtherSide.Member));
             
             #line default
             #line hidden
             this.Write(" = null;\r\n        }\r\n\r\n");
             
-            #line 412 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 414 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 				}
             }
             
@@ -2016,7 +2026,7 @@ if (!association.OtherSide.IsMany) {
             #line hidden
             this.Write("        #endregion\r\n");
             
-            #line 415 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 417 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         if (data.Serialization) {
             
@@ -2024,7 +2034,7 @@ if (!association.OtherSide.IsMany) {
             #line hidden
             this.Write("\r\n        #region Serialization\r\n");
             
-            #line 419 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 421 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			if (needsSerializationFlag) {
             
             #line default
@@ -2047,7 +2057,7 @@ if (!association.OtherSide.IsMany) {
 
 ");
             
-            #line 436 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 438 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
             
             #line default
@@ -2055,14 +2065,14 @@ if (!association.OtherSide.IsMany) {
             this.Write("        [OnDeserializing()]\r\n        [EditorBrowsableAttribute(EditorBrowsableSta" +
                     "te.Never)]\r\n        public ");
             
-            #line 439 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 441 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 if (class1 != table.BaseClass) {
             
             #line default
             #line hidden
             this.Write("new");
             
-            #line 439 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 441 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
             
             #line default
@@ -2070,7 +2080,7 @@ if (class1 != table.BaseClass) {
             this.Write(" void OnDeserializing(StreamingContext context)\r\n        {\r\n            Initializ" +
                     "e();\r\n        }\r\n        #endregion\r\n");
             
-            #line 444 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 446 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
 
             
@@ -2078,14 +2088,14 @@ if (class1 != table.BaseClass) {
             #line hidden
             this.Write("\t}\r\n");
             
-            #line 446 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 448 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		if (!String.IsNullOrEmpty(data.EntityNamespace)) {
             
             #line default
             #line hidden
             this.Write("}\r\n");
             
-            #line 448 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 450 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         manager.EndBlock();
     }
@@ -2099,14 +2109,14 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write("\r\nnamespace ");
             
-            #line 457 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 459 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(data.EntityNamespace));
             
             #line default
             #line hidden
             this.Write("\r\n{\r\n");
             
-            #line 459 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 461 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         if (data.Serialization) {
 
@@ -2115,35 +2125,35 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write("\t[DataContract(");
             
-            #line 461 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 463 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(dataContractAttributes));
             
             #line default
             #line hidden
             this.Write(")]\r\n");
             
-            #line 462 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 464 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		} 
             
             #line default
             #line hidden
             this.Write("    ");
             
-            #line 463 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 465 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(class1.TypeAttributes)));
             
             #line default
             #line hidden
             this.Write("partial class ");
             
-            #line 463 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 465 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(class1.Name));
             
             #line default
             #line hidden
             this.Write("\r\n    {\r\n");
             
-            #line 465 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 467 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		int dataMemberIndex = 1;
         foreach(var column in class1.Columns) {
             
@@ -2151,28 +2161,28 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write("\r\n        private ");
             
-            #line 468 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 470 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 468 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 470 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write(";\r\n        [Column(Storage=@\"");
             
-            #line 469 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 471 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 469 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 471 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
                 if (column.Name != column.Member) {
             
@@ -2180,14 +2190,14 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write(", Name=@\"");
             
-            #line 470 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 472 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Name));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 470 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 472 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (!String.IsNullOrEmpty(column.DbType)) {
             
@@ -2195,14 +2205,14 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write(", DbType=@\"");
             
-            #line 471 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 473 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.DbType));
             
             #line default
             #line hidden
             this.Write("\"");
             
-            #line 471 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 473 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
                 if (!column.CanBeNull && !column.IsPrimaryKey) {
             
@@ -2210,7 +2220,7 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write(", CanBeNull=false");
             
-            #line 472 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 474 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 }
         
             
@@ -2218,7 +2228,7 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write(")]\r\n");
             
-            #line 474 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 476 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			if (data.Serialization && ((column.MemberAttributes & MemberAttributes.AccessMask) == MemberAttributes.Public)) {
 
             
@@ -2226,14 +2236,14 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write("\t\t[DataMember(Order=");
             
-            #line 475 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 477 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(dataMemberIndex++));
             
             #line default
             #line hidden
             this.Write(")]\r\n");
             
-            #line 476 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 478 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 			}
 
             
@@ -2241,62 +2251,62 @@ if (data.FunctionClasses.Count > 0) {
             #line hidden
             this.Write("\t\t");
             
-            #line 477 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 479 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.MemberAttributes)));
             
             #line default
             #line hidden
             
-            #line 477 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 479 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(code.Format(column.Type)));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 477 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 479 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Member));
             
             #line default
             #line hidden
             this.Write(" {\r\n            get { return ");
             
-            #line 478 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 480 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write("; }\r\n            set {\r\n                if (");
             
-            #line 480 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 482 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write(" != value) {\r\n                    ");
             
-            #line 481 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 483 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(column.Storage));
             
             #line default
             #line hidden
             this.Write(" = value;\r\n                }\r\n            }\r\n        }\r\n");
             
-            #line 485 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 487 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		} 
             
             #line default
             #line hidden
             this.Write("    }\r\n");
             
-            #line 487 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 489 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		if (!String.IsNullOrEmpty(data.EntityNamespace)) {
             
             #line default
             #line hidden
             this.Write("}\r\n");
             
-            #line 489 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 491 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 		}
         manager.EndBlock();
     }
@@ -2307,7 +2317,7 @@ manager.StartFooter();
             #line hidden
             this.Write("#pragma warning restore 1591");
             
-            #line 494 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
+            #line 496 "C:\Projects\Repos\QP.Quantumart\Assembling\T4\LinqToSqlGenerator.tt"
 
 manager.EndBlock();
 manager.Process(options.FilePerEntity);
