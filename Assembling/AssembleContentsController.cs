@@ -377,6 +377,14 @@ namespace Quantumart.QP8.Assembling
             {
                 typeElem.SetAttributeValue("Name", $"{info.NamespaceName}.{typeElem.Attribute("Name")?.Value}");
             }
+
+            var parameters = MapFile.Descendants(xn + "Parameter").ToArray();
+            foreach (var paramElem in parameters)
+            {
+                paramElem.SetAttributeValue("Parameter", paramElem.Attribute("Name")?.Value);
+            }
+
+
         }
 
         private void GenerateMain()
