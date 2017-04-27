@@ -17,6 +17,7 @@ using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
+using Quantumart.QP8.Assembling;
 
 namespace Quantumart.QPublishing.Database
 {
@@ -741,10 +742,43 @@ namespace Quantumart.QPublishing.Database
             return GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
         }
 
-        public string GetDefaultMapFileContents(int siteId, bool isLive)
+        public string GetDefaultMapFileContents(int siteId, bool isLive, string contextName)
         {
-            var site = GetSite(siteId);
-            return GetMapFileContents(siteId, isLive, $"{site.ContextClassName}.map");
+            var key = $"Quantumart.QP8.OnlineMapping.{siteId}.{isLive}.{contextName}";
+            return GetCachedEntity(key, GetRealDefaultMapFileContents);
+        }
+
+        private string GetRealDefaultMapFileContents(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                throw new ArgumentException(nameof(key));
+            }
+
+            var arr = key.Split('.');
+            if (key.Length < 6)
+            {
+                throw new ArgumentException(nameof(key));
+            }
+
+            var siteId = int.Parse(arr[3]);
+            var isLive = bool.Parse(arr[4]);
+            var contextName = arr[5];
+
+
+            if (string.IsNullOrEmpty(contextName))
+            {
+                contextName = GetSite(siteId).ContextClassName;
+            }
+
+            var mapping = new AssembleContentsController(siteId, InstanceConnectionString) { IsLive = isLive }.GetMapping(contextName);
+
+            if (string.IsNullOrEmpty(mapping))
+            {
+                throw new ApplicationException($"Cannot receive mapping for context '{contextName}' from site (ID={siteId})");
+            }
+
+            return mapping;
         }
 
         public string GetMapFileContents(int siteId, bool isLive, string fileName)
@@ -752,9 +786,9 @@ namespace Quantumart.QPublishing.Database
             return GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
         }
 
-        public string GetDefaultMapFileContents(int siteId)
+        public string GetDefaultMapFileContents(int siteId, string contextName = null)
         {
-            return GetDefaultMapFileContents(siteId, !IsStage);
+            return GetDefaultMapFileContents(siteId, !IsStage, contextName);
         }
 
         public string GetMapFileContents(int siteId, string fileName)

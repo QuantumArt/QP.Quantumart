@@ -423,8 +423,16 @@ namespace Quantumart.QP8.Assembling
             if (UseT4)
             {
                 var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
-                var result = generator.TransformText();
-                File.WriteAllText(FileNameHelper.MainCodeFilePath, result);
+                try
+                {
+                    var result = generator.TransformText();
+                    File.WriteAllText(FileNameHelper.MainCodeFilePath, result);
+                }
+                catch (Exception e)
+                {
+                    throw new ApplicationException($"Error while proceeding T4 template for file {FileNameHelper.DbmlFilePath}: {e.Message}", e);
+                }
+
             }
             else
             {
