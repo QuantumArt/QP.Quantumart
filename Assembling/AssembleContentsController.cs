@@ -7,6 +7,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Xsl;
 using Quantumart.QP8.Assembling.Info;
+using System.Reflection;
+using System.Xml;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using Quantumart.QP8.Assembling.T4;
 
 namespace Quantumart.QP8.Assembling
 {
@@ -109,6 +114,11 @@ namespace Quantumart.QP8.Assembling
 
         public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca)"));
 
+        public AssembleContentsController(int siteId, string connectionParameter) : base(connectionParameter)
+        {
+            FillController(siteId, null);
+        }
+
         public AssembleContentsController(int siteId, string sqlMetalPath, string connectionParameter) : base(connectionParameter)
         {
             FillController(siteId, sqlMetalPath);
@@ -124,11 +134,8 @@ namespace Quantumart.QP8.Assembling
         {
             CurrentAssembleMode = AssembleMode.Contents;
             SiteId = siteId;
-            if (string.IsNullOrEmpty(sqlMetalPath))
-            {
-                throw new ArgumentException("Path to SqlMetal utility cannot be null or empty");
-            }
             SqlMetalPath = sqlMetalPath;
+            UseT4 = String.IsNullOrEmpty(sqlMetalPath);
         }
 
         private string _siteRoot;
@@ -154,6 +161,8 @@ namespace Quantumart.QP8.Assembling
 
         public bool DisableClassGeneration { get; set; }
 
+        private bool UseT4 { get; set; }
+
         public bool ProceedMappingWithDb => GetFlag("proceed_mapping_with_db", false);
 
         public bool ImportMappingToDb => GetFlag("import_mapping_to_db", false);
@@ -176,76 +185,164 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
+        private FileNameHelper _fileNameHelper;
+
+        public FileNameHelper FileNameHelper => _fileNameHelper ?? (_fileNameHelper = new FileNameHelper {SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb});
+
+        public XmlPreprocessor XmlPreprocessor { get; private set;  }
+
+        public XmlDocument DbmlFile { get; private set;  }
+
+        public XDocument MapFile { get; private set; }
+
+
+        public string GetMapping(string name)
+        {
+            XmlPreprocessor = new XmlPreprocessor(this, true);
+            string result = null;
+            var schemaInfo = XmlPreprocessor.GenerateMainMapping(FileNameHelper);
+            if (string.Equals(schemaInfo.ClassName, name, StringComparison.InvariantCultureIgnoreCase))
+            {
+                GenerateDbmlFile();
+                GenerateMapFile(schemaInfo);
+                result = MapFile.ToString();
+            }
+
+            foreach (DataRow row in AdditionalContextClassNameTable.Rows)
+            {
+                var info = ContextClassInfo.Parse(Convert.ToString(row["add_context_class_name"]));
+                if (string.Equals(info.ClassName, name, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    FileNameHelper.DataContextClass = info.ClassName;
+                    schemaInfo = XmlPreprocessor.GeneratePartialMapping(FileNameHelper, info);
+                    GenerateDbmlFile();
+                    GenerateMapFile(schemaInfo);
+                    result = MapFile.ToString();
+                }
+            }
+
+            return result;
+        }
+
         public override void Assemble()
         {
-            var helper = new FileNameHelper { SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb };
-            var xmlProcessor = new XmlPreprocessor(this);
+
+            XmlPreprocessor = new XmlPreprocessor(this, false);
             if (ImportMappingToDb)
             {
-                xmlProcessor.ImportMapping(helper);
+                XmlPreprocessor.ImportMapping(FileNameHelper);
                 ClearTables();
             }
-            xmlProcessor.GenerateMainMapping(helper);
-            GenerateClasses(helper);
+            var schemaInfo = XmlPreprocessor.GenerateMainMapping(FileNameHelper);
+            GenerateClasses(schemaInfo);
             if (ProceedDbIndependentGeneration)
             {
                 foreach (DataRow row in AdditionalContextClassNameTable.Rows)
                 {
                     var info = ContextClassInfo.Parse(Convert.ToString(row["add_context_class_name"]));
-                    helper.DataContextClass = info.ClassName;
-                    xmlProcessor.GeneratePartialMapping(helper, info);
-                    GenerateClasses(helper);
+                    FileNameHelper.DataContextClass = info.ClassName;
+                    schemaInfo = XmlPreprocessor.GeneratePartialMapping(FileNameHelper, info);
+                    GenerateClasses(schemaInfo);
                 }
 
             }
         }
 
-        private void GenerateClasses(FileNameHelper helper)
+        private void GenerateClasses(SchemaInfo info)
         {
-            if (!DisableClassGeneration)
+            if (DisableClassGeneration)
+                return;
+ 
+            GenerateDbmlFile();
+
+            if (!GenerateMapFileOnly)
             {
-                GenerateDbmlFile(helper);
-                ProcessDbmlFile(helper);
-                if (!GenerateMapFileOnly)
+                DbmlFile.Save(FileNameHelper.DbmlFilePath);
+            }
+
+            GenerateMapFile(info);
+
+            MapFile.Save(FileNameHelper.MapFilePath);
+
+
+            if (!GenerateMapFileOnly)
+            {
+                GenerateMain();
+                GenerateManyToMany();
+                GenerateModifications();
+                GenerateExtensions();
+            }
+        }
+
+        private static Stream GetResourceStream(string folder, string resourceName)
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            var fullResourceName = $"Quantumart.QP8.Assembling.{folder}.{resourceName}";
+            return assembly.GetManifestResourceStream(fullResourceName);
+        }
+
+        private static XmlWriter GetXmlWriter(XmlDocument doc)
+        {
+            return doc.CreateNavigator().AppendChild();
+        }
+
+        private IXPathNavigable GetMappingResultNavigator()
+        {
+            return XmlPreprocessor.MappingResultXml.CreateNavigator();
+        }
+
+        private void GenerateDbmlFile()
+        {
+            DbmlFile = new XmlDocument();
+            using (var stream = GetResourceStream("xslt", FileNameHelper.MappingXsltFileName))
+            {
+                using (var xmlReader = XmlReader.Create(stream))
                 {
-                    GenerateManyToMany(helper);
-                    GenerateModifications(helper);
-                    GenerateExtensions(helper);
+                    using (var xmlWriter = GetXmlWriter(DbmlFile))
+                    {
+                        var xslTran = new XslCompiledTransform();
+                        xslTran.Load(xmlReader);
+                        xslTran.Transform(GetMappingResultNavigator(), xmlWriter);
+                    }
                 }
-
             }
+
         }
 
-        private static void GenerateDbmlFile(FileNameHelper helper)
+        private void GenerateManyToMany()
         {
-            var xslTran = new XslCompiledTransform();
-            xslTran.Load(helper.MappingXsltFileName);
-            xslTran.Transform(helper.MappingResultXmlFileName, helper.DbmlFileName);
+            ProceedXsltToText(FileNameHelper.ManyXsltFileName, FileNameHelper.ManyCodeFilePath);
         }
 
-        private static void GenerateManyToMany(FileNameHelper helper)
+        private void ProceedXsltToText(string xsltFileName, string outFilePath)
         {
-            var xslTran = new XslCompiledTransform();
-            xslTran.Load(helper.ManyXsltFileName);
-            xslTran.Transform(helper.MappingResultXmlFileName, helper.ExtendCodeFileName);
-        }
-
-        private static void GenerateModifications(FileNameHelper helper)
-        {
-            var xslTran = new XslCompiledTransform();
-            xslTran.Load(helper.ModificationXsltFileName);
-            xslTran.Transform(helper.MappingResultXmlFileName, helper.ModificationCodeFileName);
-        }
-
-        private static void GenerateExtensions(FileNameHelper helper)
-        {
-            if (File.Exists(helper.OldExtensionsCodeFileName))
+            using (var stream = GetResourceStream("xslt", xsltFileName))
             {
-                File.Delete(helper.OldExtensionsCodeFileName);
+                using (var xmlReader = XmlReader.Create(stream))
+                {
+                    using (var writer = new StreamWriter(outFilePath))
+                    {
+                        var xslTran = new XslCompiledTransform();
+                        xslTran.Load(xmlReader);
+                        xslTran.Transform(GetMappingResultNavigator(), null, writer);
+                    }
+                }
             }
-            var xslTran = new XslCompiledTransform();
-            xslTran.Load(helper.ExtensionsXsltFileName);
-            xslTran.Transform(helper.MappingResultXmlFileName, helper.ExtensionsCodeFileName);
+        }
+
+        private void GenerateModifications()
+        {
+            ProceedXsltToText(FileNameHelper.ModificationXsltFileName, FileNameHelper.ModificationCodeFilePath);
+        }
+
+        private void GenerateExtensions()
+        {
+            if (File.Exists(FileNameHelper.OldExtensionsCodeFilePath))
+            {
+                File.Delete(FileNameHelper.OldExtensionsCodeFilePath);
+            }
+
+            ProceedXsltToText(FileNameHelper.ExtensionsXsltFileName, FileNameHelper.ExtensionsCodeFilePath);
         }
 
         private readonly StringBuilder _output = new StringBuilder();
@@ -262,14 +359,97 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        private void ProcessDbmlFile(FileNameHelper helper)
+        private void GenerateMapFile(SchemaInfo info)
+        {
+            MapFile = XDocument.Parse(DbmlFile.OuterXml.Replace("dbml/2007", "mapping/2007"));
+            XNamespace xn = "http://schemas.microsoft.com/linqtosql/mapping/2007";
+            MapFile.Descendants(xn + "Database").Select(n => n.Attribute("Class")).Remove();
+            MapFile.Descendants(xn + "Connection").Remove();
+            MapFile.Descendants().Select(n => n.Attribute("Type")).Where(m => m != null).Remove();
+            MapFile.Descendants().Select(n => n.Attribute("CanBeNull")).Where(m => m != null).Remove();
+            var ids = MapFile.Descendants(xn + "Column").Where(n => n.Attribute("Name")?.Value == "CONTENT_ITEM_ID").ToArray();
+            foreach (var idElem in ids)
+            {
+                idElem.SetAttributeValue("AutoSync", "OnInsert");
+            }
+
+            var types = MapFile.Descendants(xn + "Type").ToArray();
+            foreach (var typeElem in types)
+            {
+                typeElem.SetAttributeValue("Name", $"{info.NamespaceName}.{typeElem.Attribute("Name")?.Value}");
+            }
+
+            var parameters = MapFile.Descendants(xn + "Parameter").ToArray();
+            foreach (var paramElem in parameters)
+            {
+                paramElem.SetAttributeValue("Parameter", paramElem.Attribute("Name")?.Value);
+            }
+
+            var columns = MapFile.Descendants(xn + "Column").Union(MapFile.Descendants(xn + "Association")).ToArray();
+            foreach (var c in columns)
+            {
+                var member = c.Attribute("Member")?.Value;
+                var name = c.Attribute("Name")?.Value;
+                var value = "_" + member;
+                if (c.Attribute("OtherKey")?.Value == "Id")
+                {
+                    var thisKey = c.Attribute("ThisKey")?.Value;
+                    if (thisKey?.EndsWith("_ID2") ?? false)
+                    {
+                        value = "_" + thisKey.Replace("_ID2", "12");
+                    }
+                    else if (thisKey != "StatusTypeId")
+                    {
+                        value = value + "1";
+                    }
+                }
+                else if (c.Name == xn + "Column" && (member?.EndsWith("_ID") ?? false) && name != "LINKED_ITEM_ID" && name != "ITEM_ID")
+                {
+                    value = value.Substring(0, value.Length - 3);
+                }
+                else if (name == "LINKED_ITEM_ID" || name == "ITEM_ID")
+                {
+                    value = "_" + name;
+                }
+
+                c.SetAttributeValue("Storage", value);
+            }
+
+
+        }
+
+        private void GenerateMain()
+        {
+            if (UseT4)
+            {
+                var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
+                try
+                {
+                    var result = generator.TransformText();
+                    File.WriteAllText(FileNameHelper.MainCodeFilePath, result);
+                }
+                catch (Exception e)
+                {
+                    throw new ApplicationException($"Error while proceeding T4 template for file {FileNameHelper.DbmlFilePath}: {e.Message}", e);
+                }
+
+            }
+            else
+            {
+                RunSqlMetal();
+            }
+
+        }
+
+
+        private void RunSqlMetal()
         {
             var process = new Process
             {
                 StartInfo =
                 {
                     FileName = SqlMetalPath,
-                    Arguments = GenerateCommandLineParams(helper),
+                    Arguments = GenerateCommandLineParams(FileNameHelper),
                     UseShellExecute = false,
                     RedirectStandardOutput = true
                 }
@@ -281,7 +461,7 @@ namespace Quantumart.QP8.Assembling
             {
                 process.BeginOutputReadLine();
                 process.WaitForExit();
-                File.WriteAllText(helper.SqlMetalLogFileName, Output);
+                File.WriteAllText(FileNameHelper.SqlMetalLogFilePath, Output);
                 if (process.ExitCode != 0)
                 {
                     var message = string.Join("\r\n",
@@ -297,24 +477,20 @@ namespace Quantumart.QP8.Assembling
                         .ToArray()
                     );
                     throw new ApplicationException(
-                        $"Some errors has been found while processing the file {helper.DbmlFileName}:\r\n{message}");
+                        $"Some errors has been found while processing the file {FileNameHelper.DbmlFilePath}:\r\n{message}");
                 }
             }
-
-            if (GenerateMapFileOnly && File.Exists(helper.FakeCodeFileName))
-            {
-                File.Delete(helper.FakeCodeFileName);
-            }
+  
         }
 
         private string GenerateCommandLineParams(FileNameHelper helper)
         {
             var cmdBuilder = new StringBuilder();
-            cmdBuilder.AppendFormat("{0} ", helper.DbmlFileName);
-            cmdBuilder.AppendFormat("/code:{0} ", GenerateMapFileOnly ? helper.FakeCodeFileName : helper.MainCodeFileName);
+            cmdBuilder.AppendFormat("{0} ", helper.DbmlFilePath);
+            cmdBuilder.AppendFormat("/code:{0} ", helper.MainCodeFilePath);
             if (ProceedDbIndependentGeneration)
             {
-                cmdBuilder.AppendFormat("/map:{0} ", helper.MapFileName);
+                cmdBuilder.AppendFormat("/map:{0} ", helper.MapFilePath);
             }
             if (!string.IsNullOrEmpty(NameSpace))
             {
