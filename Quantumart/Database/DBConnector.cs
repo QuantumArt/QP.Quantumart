@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Configuration;
@@ -30,6 +30,8 @@ namespace Quantumart.QPublishing.Database
         public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
 
         internal static readonly int LegacyNotFound = -1;
+
+        internal static readonly string RegistryPath = @"Software\Quantum Art\Q-Publishing";
 
         public DbCacheManager CacheManager { get; internal set; }
 
@@ -225,7 +227,9 @@ namespace Quantumart.QPublishing.Database
 
         public static XmlDocument GetQpConfig()
         {
-            var qKey = Registry.LocalMachine.OpenSubKey("Software\\Quantum Art\\Q-Publishing");
+            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
+                      RegistryView.Registry32);
+            var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey != null)
             {
                 var regValue = qKey.GetValue("Configuration File");
