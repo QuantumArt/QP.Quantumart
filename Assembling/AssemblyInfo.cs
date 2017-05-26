@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -12,4 +12,4 @@ using System.Runtime.InteropServices;
 [assembly: Guid("fa18d138-3fb6-4645-a6c7-18f44cd900af")]
 
 [assembly: AssemblyVersion("2.0.0.0")]
-[assembly: AssemblyInformationalVersion("2.1.0")]
+[assembly: AssemblyInformationalVersion("2.1.1")]
