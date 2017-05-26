@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -10,6 +10,8 @@ namespace Quantumart.QP8.Assembling
 {
     public class DbConnector
     {
+        internal static readonly string RegistryPath = @"Software\Quantum Art\Q-Publishing";
+
         public DbConnector(string connectionParameter, bool isCustomerCode)
         {
             if (isCustomerCode)
@@ -45,7 +47,9 @@ namespace Quantumart.QP8.Assembling
 
         private string GetConnectionString()
         {
-            var qKey = Registry.LocalMachine.OpenSubKey(@"Software\Quantum Art\Q-Publishing") ?? Registry.LocalMachine.OpenSubKey(@"Software\Wow6432Node\Quantum Art\Q-Publishing");
+            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
+                               RegistryView.Registry32);
+            var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey == null)
             {
                 throw new InvalidOperationException("QP7 is not installed");
