@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Configuration;
@@ -26,6 +26,8 @@ namespace Quantumart.QPublishing.Database
     {
         #region fields and properties
         private const string IdentityParamString = "@itemId";
+
+        private bool _throwLoadFileExceptions = true;
 
         public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
 
@@ -361,7 +363,18 @@ namespace Quantumart.QPublishing.Database
         private string LoadFileContents(string key)
         {
             var path = key.Replace(CacheManager.FileContentsCacheKeyPrefix, string.Empty);
-            return File.ReadAllText(path);
+            var result = String.Empty;
+            try
+            {
+                result = File.ReadAllText(path);
+            }
+            catch (Exception e)
+            {
+                if (_throwLoadFileExceptions)
+                    throw;
+            }
+
+            return result;
         }
 
         private SqlConnection GetActualSqlConnection(string internalConnectionString)
@@ -744,8 +757,16 @@ namespace Quantumart.QPublishing.Database
 
         public string GetDefaultMapFileContents(int siteId, bool isLive, string contextName)
         {
-            var key = $"Quantumart.QP8.OnlineMapping.{siteId}.{isLive}.{contextName}";
-            return GetCachedEntity(key, GetRealDefaultMapFileContents);
+            var saved = _throwLoadFileExceptions;
+            _throwLoadFileExceptions = false;
+            var result = GetMapFileContents(siteId, isLive, contextName);
+            _throwLoadFileExceptions = saved;
+            if (string.IsNullOrEmpty(result))
+            {
+                var key = $"Quantumart.QP8.OnlineMapping.{siteId}.{isLive}.{contextName}";
+                result = GetCachedEntity(key, GetRealDefaultMapFileContents);
+            }
+            return result;
         }
 
         private string GetRealDefaultMapFileContents(string key)
