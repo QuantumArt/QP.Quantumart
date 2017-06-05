@@ -33,6 +33,8 @@ namespace Quantumart.QPublishing.Database
 
         internal static readonly int LegacyNotFound = -1;
 
+        internal static readonly string RegistryPath = @"Software\Quantum Art\Q-Publishing";
+
         public DbCacheManager CacheManager { get; internal set; }
 
         public bool ForceLocalCache { get; set; }
@@ -227,7 +229,9 @@ namespace Quantumart.QPublishing.Database
 
         public static XmlDocument GetQpConfig()
         {
-            var qKey = Registry.LocalMachine.OpenSubKey("Software\\Quantum Art\\Q-Publishing");
+            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
+                      RegistryView.Registry32);
+            var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey != null)
             {
                 var regValue = qKey.GetValue("Configuration File");
@@ -759,7 +763,7 @@ namespace Quantumart.QPublishing.Database
         {
             var saved = _throwLoadFileExceptions;
             _throwLoadFileExceptions = false;
-            var result = GetMapFileContents(siteId, isLive, contextName);
+            var result = GetMapFileContents(siteId, isLive, contextName + ".map");
             _throwLoadFileExceptions = saved;
             if (string.IsNullOrEmpty(result))
             {
