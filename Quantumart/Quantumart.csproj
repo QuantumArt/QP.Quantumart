@@ -213,6 +213,7 @@
     <Compile Include="Info\Site.cs" />
     <Compile Include="Info\SiteInfo.cs" />
     <Compile Include="Info\StatusType.cs" />
+    <Compile Include="Info\SystemColumnMemberNames.cs" />
     <Compile Include="Info\Template.cs" />
     <Compile Include="Pages\OnFlyPage.cs">
       <SubType>ASPXCodeBehind</SubType>
@@ -278,8 +279,8 @@
     <Compile Include="Resizer\Resizer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)Assembling\Assembling.csproj">
-      <Project>{aba32eeb-7b9a-4bd8-973b-cd483f076237}</Project>
+     <ProjectReference Include="$(SolutionDir)Assembling\Assembling.csproj">
+	   <Project>{aba32eeb-7b9a-4bd8-973b-cd483f076237}</Project>
       <Name>Assembling</Name>
     </ProjectReference>
   </ItemGroup>
