@@ -14,7 +14,7 @@ namespace Quantumart.QPublishing.Database
             }
 
             var sb = new StringBuilder();
-            sb.Append(first.Replace(@":/", @"://").TrimEnd('/'));
+            sb.Append(first.Replace(@":/", @"://").Replace(@":///", @"://").TrimEnd('/'));
             sb.Append("/");
             sb.Append(second.Replace("//", "/").TrimStart('/'));
 
