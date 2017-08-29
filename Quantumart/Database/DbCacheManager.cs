@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -479,7 +479,7 @@ namespace Quantumart.QPublishing.Database
             {
                 var itemKey = ((int)item).ToString();
                 var content = (Content)dualHash.Items[itemKey];
-                if (content.LinqName != null)
+                if (content != null && content.LinqName != null)
                 {
                     var linqKey = content.LinqName.ToLowerInvariant();
                     resultHash[linqKey] = content.Id;
