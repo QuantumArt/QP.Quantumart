@@ -128,7 +128,7 @@ namespace Quantumart.QPublishing.Database
                     var dep = GetCacheDependency(cacheKey);
                     if (dep == null)
                     {
-                        HttpRuntime.Cache.Insert(cacheKey, obj, null, DateTime.Now.AddMinutes(cacheInterval), Cache.NoSlidingExpiration);
+                        HttpRuntime.Cache.Insert(cacheKey, obj, null, DateTime.UtcNow.AddMinutes(cacheInterval), Cache.NoSlidingExpiration);
                     }
                     else
                     {
