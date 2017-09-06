@@ -13,6 +13,6 @@
     <tags>QP</tags>
   </metadata>
   <files>
-    <file src="$OutputPath$*.dll" target="lib\net45" />
+    <file src="$OutputPath$*.dll" target="lib\net47" />
   </files>
 </package>
