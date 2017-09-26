@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Diagnostics;
@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Web.Caching;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
@@ -71,10 +72,7 @@ namespace Quantumart.QPublishing.Database
             return GetRealData(cmd);
         }
 
-        public DataTable GetRealData(SqlCommand cmd)
-        {
-            return GetRealData(cmd, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection);
-        }
+        public DataTable GetRealData(SqlCommand cmd) => GetRealData(cmd, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection);
 
         public DataTable GetRealData(SqlCommand cmd, SqlConnection cnn, SqlTransaction tr, bool disposeConnection)
         {
@@ -155,39 +153,21 @@ namespace Quantumart.QPublishing.Database
 
         #region GetData
 
-        public DataTable GetData(string queryString)
-        {
-            return GetData(queryString, 0, true);
-        }
+        public DataTable GetData(string queryString) => GetData(queryString, 0, true);
 
-        public DataTable GetData(string queryString, double cacheInterval)
-        {
-            return GetData(queryString, cacheInterval, false);
-        }
+        public DataTable GetData(string queryString, double cacheInterval) => GetData(queryString, cacheInterval, false);
 
-        private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval)
-        {
-            return AppSettings["CacheGetData"] == "1" ? GetCachedData(queryString, cacheInterval, useDefaultInterval, false) : GetRealData(queryString);
-        }
+        private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => AppSettings["CacheGetData"] == "1" ? GetCachedData(queryString, cacheInterval, useDefaultInterval, false) : GetRealData(queryString);
 
         #endregion
 
         #region GetCachedData
 
-        public DataTable GetCachedData(string queryString, double cacheInterval)
-        {
-            return GetCachedData(queryString, cacheInterval, false, false);
-        }
+        public DataTable GetCachedData(string queryString, double cacheInterval) => GetCachedData(queryString, cacheInterval, false, false);
 
-        public DataTable GetCachedData(string queryString)
-        {
-            return GetCachedData(queryString, 0, true, false);
-        }
+        public DataTable GetCachedData(string queryString) => GetCachedData(queryString, 0, true, false);
 
-        public DataTable GetCachedData(string queryString, bool useDependency)
-        {
-            return GetCachedData(queryString, 0, false, true);
-        }
+        public DataTable GetCachedData(string queryString, bool useDependency) => GetCachedData(queryString, 0, false, true);
 
         private DataTable GetCachedData(string queryString, double cacheInterval, bool useDefaultInterval, bool useDependency)
         {
@@ -249,9 +229,8 @@ namespace Quantumart.QPublishing.Database
 
         // ReSharper disable once RedundantAssignment
         public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords)
+            byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords)
         {
-
             var obj = new ContentDataQueryObject(this, siteName, contentName, string.Empty, whereExpression,
                 orderExpression, startRow, pageSize, useSchedule, statusName, showSplittedArticle, includeArchive, false,
                 0, false, false)
@@ -302,7 +281,6 @@ namespace Quantumart.QPublishing.Database
                             countCmd.Parameters.AddRange(sqlParams);
                             totalRecords = (long)GetRealScalarData(countCmd);
                         }
-
                     }
                     else
                     {
@@ -322,7 +300,6 @@ namespace Quantumart.QPublishing.Database
                     cnn.Dispose();
                 }
             }
-
         }
 
         internal DataTable GetFilledDataTable(SqlDataAdapter adapter)
@@ -341,7 +318,7 @@ namespace Quantumart.QPublishing.Database
         #region GetContentData
 
         public DataTable GetContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
+            byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
         {
             var obj = new ContentDataQueryObject(this, siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, useSchedule, statusName, showSplittedArticle, includeArchive, cacheResult, cacheInterval, useClientSelection, withReset);
             return GetContentData(obj, ref totalRecords);
@@ -360,6 +337,7 @@ namespace Quantumart.QPublishing.Database
             {
                 throw new ApplicationException("ExternalConnection for DbConnector instance has not been defined");
             }
+
             {
                 obj.GetCount = false;
                 obj.UseClientSelection = false;
@@ -442,6 +420,7 @@ namespace Quantumart.QPublishing.Database
                                 }
                                 j = j + 1;
                             }
+
                             dv.RowFilter = string.Join(" or ", ids);
                         }
                         else
@@ -456,95 +435,58 @@ namespace Quantumart.QPublishing.Database
         }
 
         public DataTable GetContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, cacheResult, cacheInterval, false, false);
-        }
 
         //' All fields
         public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive)
-        {
-            return GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte includeArchive) => GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive);
-        }
 
         //' Specific fields
         public DataTable GetContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, false, 0);
-        }
 
         #endregion
 
         #region GetCachedContentData
 
         public DataTable GetCachedContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive)
-        {
-            return GetCachedContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte includeArchive) => GetCachedContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive, bool useClientSelection)
-        {
-            return GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte includeArchive, bool useClientSelection) => GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, DbCacheManager.DefaultExpirationTime, useClientSelection, false);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive, double cacheInterval)
-        {
-            return GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte includeArchive, double cacheInterval) => GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, cacheInterval);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle,
-        byte includeArchive, double cacheInterval, bool useClientSelection)
-        {
-            return GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte includeArchive, double cacheInterval, bool useClientSelection) => GetContentData(siteName, contentName, "", whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, cacheInterval, useClientSelection, false);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, DbCacheManager.DefaultExpirationTime);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, bool useClientSelection)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive, bool useClientSelection) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, DbCacheManager.DefaultExpirationTime, useClientSelection, false);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, double cacheInterval)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive, double cacheInterval) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, cacheInterval);
-        }
 
         public DataTable GetCachedContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, double cacheInterval, bool useClientSelection)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive, double cacheInterval, bool useClientSelection) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, cacheInterval, useClientSelection, false);
-        }
-
 
         public DataTable GetCachedContentData(string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName,
-        byte showSplittedArticle, byte includeArchive, bool useClientSelection, bool withReset)
-        {
-            return GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
+            byte showSplittedArticle, byte includeArchive, bool useClientSelection, bool withReset) => GetContentData(siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName,
             showSplittedArticle, includeArchive, true, DbCacheManager.DefaultExpirationTime, useClientSelection, withReset);
-        }
 
         #endregion
 
@@ -666,6 +608,7 @@ namespace Quantumart.QPublishing.Database
                 }
             }
         }
+
         #endregion
     }
 }

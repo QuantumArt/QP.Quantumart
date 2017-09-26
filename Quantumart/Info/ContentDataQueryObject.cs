@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class ContentDataQueryObject : IQueryObject
@@ -100,7 +101,6 @@ namespace Quantumart.QPublishing.Info
         public ContentDataQueryObject(DBConnector cnn, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize)
             : this(cnn, siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, 1, DefaultStatusName, 0, 0, false, 0, false, false)
         {
-
         }
 
         public ContentDataQueryObject(DBConnector cnn, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
@@ -228,10 +228,7 @@ namespace Quantumart.QPublishing.Info
             return cmd;
         }
 
-        private string GetSqlCommandOrderBy()
-        {
-            return !string.IsNullOrEmpty(OrderByExpression) ? OrderByExpression : DefaultOrderBy;
-        }
+        private string GetSqlCommandOrderBy() => !string.IsNullOrEmpty(OrderByExpression) ? OrderByExpression : DefaultOrderBy;
 
         private string GetSqlCommandFrom(int contentId)
         {
@@ -284,16 +281,12 @@ namespace Quantumart.QPublishing.Info
             {
                 var statusName = !string.IsNullOrEmpty(StatusName) ? StatusName : DefaultStatusName;
                 var filterStatuses = siteId != 0 && statusName.ToLowerInvariant() != DefaultStatusName.ToLowerInvariant();
+                var statuses = !filterStatuses
+                    ? null
+                    : new HashSet<string>(Cnn.GetStatuses("").OfType<DataRowView>().Select(rowView => Convert.ToString(rowView.Row["STATUS_TYPE_NAME"]).ToLowerInvariant()));
 
-                var statuses = !filterStatuses ? null : new HashSet<string>(Cnn.GetStatuses("")
-                        .OfType<DataRowView>()
-                        .Select(n => n.Row.Field<string>("STATUS_TYPE_NAME").ToLowerInvariant())
-                    );
-
-                Func<string, bool> lambda = n => statuses == null || statuses.Contains(n.ToLowerInvariant());
-
-                var resultStatuses = statusName.Split(',').Select(n => n.Trim()).Where(lambda).ToArray();
-
+                bool Lambda(string n) => statuses == null || statuses.Contains(n.ToLowerInvariant());
+                var resultStatuses = statusName.Split(',').Select(n => n.Trim()).Where(Lambda).ToArray();
                 if (!resultStatuses.Any())
                 {
                     throw new ApplicationException($"None of the given statuses ({statusName}) has been found");
@@ -309,6 +302,7 @@ namespace Quantumart.QPublishing.Info
 
                 statusString = "select status_type_id from status_type where status_type_name in (" + string.Join(", ", statusParams) + ")";
             }
+
             return statusString;
         }
 
@@ -319,12 +313,14 @@ namespace Quantumart.QPublishing.Info
             if (!string.IsNullOrEmpty(Fields))
             {
                 var orderBy = GetSqlCommandOrderBy();
-                var orderByAttrs = string.IsNullOrEmpty(orderBy) ? new string[] { } : orderBy
-                    .Split(',')
-                    .Select(n => n.Trim())
-                    .Select(n => CRegex.Replace(AscRegex.Replace(DescRegex.Replace(n, ""), ""), ""))
-                    .Select(n => n.Trim().Replace("[", "").Replace("]", ""))
-                    .ToArray();
+                var orderByAttrs = string.IsNullOrEmpty(orderBy)
+                    ? new string[] { }
+                    : orderBy
+                        .Split(',')
+                        .Select(n => n.Trim())
+                        .Select(n => CRegex.Replace(AscRegex.Replace(DescRegex.Replace(n, ""), ""), ""))
+                        .Select(n => n.Trim().Replace("[", "").Replace("]", ""))
+                        .ToArray();
 
                 var attrs = new HashSet<string>(
                     Cnn.GetContentAttributeObjects(contentId)
@@ -355,10 +351,7 @@ namespace Quantumart.QPublishing.Info
             return select;
         }
 
-        public string GetKey(string prefix)
-        {
-            return $"{prefix}GetContentData.::{SiteName}::{ContentName}::{Fields}::{WhereExpression}::{OrderByExpression}::{StartRowExpression}::{PageSizeExpression}::{UseSchedule}::{StatusName}::{ShowSplittedArticle}::{IncludeArchive}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}::{FilterRecords}";
-        }
+        public string GetKey(string prefix) => $"{prefix}GetContentData.::{SiteName}::{ContentName}::{Fields}::{WhereExpression}::{OrderByExpression}::{StartRowExpression}::{PageSizeExpression}::{UseSchedule}::{StatusName}::{ShowSplittedArticle}::{IncludeArchive}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}::{FilterRecords}";
 
         public string OutputParamName => "@total_records";
     }

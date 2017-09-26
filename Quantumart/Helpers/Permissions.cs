@@ -1,14 +1,16 @@
-using Microsoft.VisualBasic;
-using Quantumart.QPublishing.Database;
 using System;
 using System.Data;
 using System.Diagnostics;
+using Microsoft.VisualBasic;
+using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class Permissions
     {
         #region "Users management"
+
         public static DataTable GetUserInfo(int userId)
         {
             var conn = new DBConnector();
@@ -67,11 +69,14 @@ namespace Quantumart.QPublishing.Helpers
                 EventLog.WriteEntry("Application", errorMessage);
                 return 0;
             }
+
             return dt.Rows.Count > 0 ? DBConnector.GetNumInt(dt.Rows[0]["user_id"]) : 0;
         }
+
         #endregion
 
         #region "User group management"
+
         public static DataTable GetGroupInfo(int groupId)
         {
             var conn = new DBConnector();
@@ -88,10 +93,7 @@ namespace Quantumart.QPublishing.Helpers
             return dt;
         }
 
-        public static int AddGroup(string name)
-        {
-            return AddGroup(name, false);
-        }
+        public static int AddGroup(string name) => AddGroup(name, false);
 
         public static int AddGroup(string name, bool allowSharedOwnershipOfItems)
         {
@@ -257,7 +259,6 @@ namespace Quantumart.QPublishing.Helpers
             conn.ProcessData(insertClause);
         }
 
-
         public static void AddGroupToItemPermission(int groupId, int itemId, int permissionId)
         {
             var conn = new DBConnector();
@@ -292,7 +293,6 @@ namespace Quantumart.QPublishing.Helpers
             var updateClause = " update content_item_access set permission_level_id = " + permissionId + " where content_item_id = " + itemId + " and group_id = " + groupId;
             conn.ProcessData(updateClause);
         }
-
 
         #endregion
 
@@ -356,7 +356,6 @@ namespace Quantumart.QPublishing.Helpers
         {
             AddGroupToContentPermission(groupId, contentId, permissionId, false);
         }
-
 
         public static void AddGroupToContentPermission(int groupId, int contentId, int permissionId, bool propagateToItems)
         {

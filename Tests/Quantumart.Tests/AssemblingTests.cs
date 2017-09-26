@@ -1,7 +1,5 @@
-﻿using System;
-using System.Web;
+using System;
 using NUnit.Framework;
-using NUnit.Framework.Constraints;
 using Quantumart.QP8.Assembling;
 using Quantumart.QPublishing.Database;
 
@@ -10,7 +8,6 @@ namespace Quantumart.Tests
     [TestFixture]
     public class AssemblingTests
     {
-
         [Test]
         public void TestGetMappingFromAssembling()
         {
@@ -29,6 +26,7 @@ namespace Quantumart.Tests
             var dbc = new DBConnector(Global.ConnectionString);
             var map1 = dbc.GetDefaultMapFileContents(Global.SiteId, "qpcontext");
             dbc.IsStage = true;
+
             var map2 = dbc.GetDefaultMapFileContents(Global.SiteId, "qpcontext");
             Assert.That(map1, Is.Not.Null);
             Assert.That(map2, Is.Not.Null);
@@ -59,8 +57,7 @@ namespace Quantumart.Tests
         public void TestGetNonExstingMapping()
         {
             var dbc = new DBConnector(Global.ConnectionString);
-            Assert.That( () => { var map2 = dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"), "abc");}, Throws.Exception.TypeOf<ApplicationException>());
+            Assert.That(() => { dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"), "abc"); }, Throws.Exception.TypeOf<ApplicationException>());
         }
-
     }
 }

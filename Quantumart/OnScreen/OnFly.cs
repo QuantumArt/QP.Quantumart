@@ -7,17 +7,15 @@ using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.OnScreen
 {
     public class OnFly
     {
-        private static int _defaultLanguageId = 1;
-
         private static long GetUid()
         {
             var obj = HttpContext.Current.Session["UID"];
-            long result;
-            if (obj != null && long.TryParse(obj.ToString(), out result))
+            if (obj != null && long.TryParse(obj.ToString(), out var result))
             {
                 return result;
             }
@@ -25,31 +23,22 @@ namespace Quantumart.QPublishing.OnScreen
             return 0;
         }
 
-        private static string UnauthorizedMessage()
-        {
-            return TranslateManager.Translate("You are not authorized as QP7 user");
-        }
+        private static string UnauthorizedMessage() => TranslateManager.Translate("You are not authorized as QP7 user");
 
         public static string DecreaseStatus(int itemId)
         {
-
             string functionReturnValue;
-            int contentId;
-            int currentStatusId;
-            var ownWorkflow = false;
             var decreaseToStatusId = 0;
             var decreaseToStatusWeight = 0;
-
             var uid = (int)GetUid();
             if (uid == 0)
             {
                 return UnauthorizedMessage();
             }
 
-            string sql = $" SELECT c.site_id, i.content_id, i.status_type_id, st.weight FROM content_item AS i LEFT OUTER JOIN content AS c ON c.content_id = i.content_id LEFT OUTER JOIN status_type AS st ON st.status_type_id= i.status_type_id WHERE i.content_item_id = {itemId}";
+            var sql = $" SELECT c.site_id, i.content_id, i.status_type_id, st.weight FROM content_item AS i LEFT OUTER JOIN content AS c ON c.content_id = i.content_id LEFT OUTER JOIN status_type AS st ON st.status_type_id= i.status_type_id WHERE i.content_item_id = {itemId}";
             var conn = new DBConnector();
             var dt = conn.GetRealData(sql);
-
             if (dt.Rows.Count > 0)
             {
                 var siteId = DBConnector.GetNumInt(dt.Rows[0]["site_id"]);
@@ -61,6 +50,7 @@ namespace Quantumart.QPublishing.OnScreen
             {
                 functionReturnValue = "0";
             }
+
             return functionReturnValue;
         }
 
@@ -83,7 +73,7 @@ namespace Quantumart.QPublishing.OnScreen
                 return string.Format(TranslateManager.Translate("Cannot update article because it is locked by {0}"), GetUserName(lockUid));
             }
 
-            string sql = $" SELECT a.attribute_id, t.type_name, t.database_type, a.required, c.site_id, i.content_id,  i.status_type_id, st.weight FROM content_item AS i LEFT OUTER JOIN content_attribute AS a ON a.content_id = i.content_id AND a.attribute_name = N'{attrName.Replace("'", "''")}' LEFT OUTER JOIN attribute_type AS t ON t.attribute_type_id = a.attribute_type_id LEFT OUTER JOIN content AS c ON c.content_id = i.content_id LEFT OUTER JOIN status_type AS st ON st.status_type_id= i.status_type_id WHERE i.content_item_id = {itemId}";
+            var sql = $" SELECT a.attribute_id, t.type_name, t.database_type, a.required, c.site_id, i.content_id,  i.status_type_id, st.weight FROM content_item AS i LEFT OUTER JOIN content_attribute AS a ON a.content_id = i.content_id AND a.attribute_name = N'{attrName.Replace("'", "''")}' LEFT OUTER JOIN attribute_type AS t ON t.attribute_type_id = a.attribute_type_id LEFT OUTER JOIN content AS c ON c.content_id = i.content_id LEFT OUTER JOIN status_type AS st ON st.status_type_id= i.status_type_id WHERE i.content_item_id = {itemId}";
             var conn = new DBConnector();
             var dt = conn.GetRealData(sql);
 
@@ -117,13 +107,12 @@ namespace Quantumart.QPublishing.OnScreen
                 // *************************************
                 // *** Create Backup Copy of the Article
                 // *************************************
-                string backupSql = $" IF EXISTS(SELECT * FROM system_info WHERE field_name LIKE 'Version Control Add-on%') BEGIN EXEC create_content_item_version {uid}, {itemId} END";
+                var backupSql = $" IF EXISTS(SELECT * FROM system_info WHERE field_name LIKE 'Version Control Add-on%') BEGIN EXEC create_content_item_version {uid}, {itemId} END";
                 conn.ProcessData(backupSql);
 
                 // ************
                 // *** Workflow
                 // ************
-                var ownWorkflow = false;
                 int decreaseToStatusId = 0, decreaseToStatusWeight = 0;
                 var decreaseStatus = Workflow.DbWillContentItemStatusBeDecreased(siteId, itemId, uid, currentStatusWeight, ref decreaseToStatusId, ref decreaseToStatusWeight);
                 var newStatus = decreaseStatus ? decreaseToStatusId : currentStatusId;
@@ -136,8 +125,8 @@ namespace Quantumart.QPublishing.OnScreen
                     // *** UploadURL = GetImagesUploadUrl(SiteID)
                     uploadUrl = HttpContext.Current.Server.UrlDecode(uploadUrl);
                     siteUrl = HttpContext.Current.Server.UrlDecode(siteUrl);
-                    attrValue = attrValue.Replace(uploadUrl, "<" + "%=upload_url%" + ">");
-                    attrValue = attrValue.Replace(siteUrl, "<" + "%=site_url%" + ">");
+                    attrValue = attrValue.Replace(uploadUrl ?? throw new ArgumentNullException(nameof(uploadUrl)), "<" + "%=upload_url%" + ">");
+                    attrValue = attrValue.Replace(siteUrl ?? throw new ArgumentNullException(nameof(siteUrl)), "<" + "%=site_url%" + ">");
                     dataField = "BLOB_DATA";
                 }
                 else
@@ -156,7 +145,7 @@ namespace Quantumart.QPublishing.OnScreen
                     dt = conn.GetRealData(sql);
                     foreach (DataRow curRow in dt.Rows)
                     {
-                        var dataType = curRow["database_type"] == "NTEXT" ? "BLOB_DATA" : "DATA";
+                        var dataType = (string)curRow["database_type"] == "NTEXT" ? "BLOB_DATA" : "DATA";
                         var dataObj = curRow[dataType];
                         var dataValue = ReferenceEquals(dataObj, DBNull.Value) ? "NULL" : $"'{dataObj}'";
                         conn.ProcessData(string.Format(updateSql, dataType, dataValue, curRow["attribute_id"], itemId));
@@ -202,7 +191,7 @@ namespace Quantumart.QPublishing.OnScreen
         {
             string functionReturnValue = null;
 
-            string strSql = $"SELECT CONTENT_ID, STATUS_TYPE_ID, VISIBLE, ARCHIVE FROM CONTENT_ITEM WHERE CONTENT_ITEM_ID = {id}";
+            var strSql = $"SELECT CONTENT_ID, STATUS_TYPE_ID, VISIBLE, ARCHIVE FROM CONTENT_ITEM WHERE CONTENT_ITEM_ID = {id}";
             var conn = new DBConnector();
             var dt = conn.GetRealData(strSql);
 
@@ -236,6 +225,7 @@ namespace Quantumart.QPublishing.OnScreen
                 {
                     return TranslateManager.Translate("Error while cloning article");
                 }
+
                 HttpContext.Current.Session["newCloneArticleID"] = newId;
 
                 //inserting other fields'
@@ -245,12 +235,12 @@ namespace Quantumart.QPublishing.OnScreen
 
                 if (dt.Rows.Count > 0)
                 {
-
                     foreach (DataRow curRow in dt.Rows)
                     {
                         var typeName = curRow["TYPE_NAME"].ToString();
                         var attributeId = DBConnector.GetNumInt(curRow["ATTRIBUTE_ID"]);
                         var linkId = curRow["link_id"] == DBNull.Value ? 0 : DBConnector.GetNumInt(curRow["link_id"]);
+
                         //Return "OK"
                         strSql = "UPDATE cd SET cd.data = {0}, cd.blob_data = cd2.blob_data FROM content_data cd INNER JOIN content_data cd2 ON cd2.attribute_id = {1} AND cd2.content_item_id = {2} WHERE cd.attribute_id= {1} AND cd.content_item_id = {3}";
 
@@ -260,14 +250,13 @@ namespace Quantumart.QPublishing.OnScreen
                         }
                         else if (linkId == 0)
                         {
-                            string s2 = $"CASE cd2.data WHEN '{id}' THEN '{newId}' ELSE cd2.data END";
+                            var s2 = $"CASE cd2.data WHEN '{id}' THEN '{newId}' ELSE cd2.data END";
                             conn.ProcessData(string.Format(strSql, s2, attributeId, id, newId));
                         }
                         else
                         {
                             CloneManyToMany(conn, id, newId, linkId, linkId);
                         }
-
                     }
                 }
 
@@ -277,6 +266,7 @@ namespace Quantumart.QPublishing.OnScreen
 
                 functionReturnValue = "1";
             }
+
             return functionReturnValue;
         }
 
@@ -286,7 +276,6 @@ namespace Quantumart.QPublishing.OnScreen
             cnn.ProcessData(sql);
 
             sql = "INSERT INTO item_to_item SELECT " + newLinkId + ", l_item_id, " + newId + " FROM item_to_item WHERE link_id = " + linkId + " AND r_item_id = " + id + " AND l_item_id <> " + newId + " AND l_item_id <> " + id;
-
             cnn.ProcessData(sql);
         }
 
@@ -305,7 +294,6 @@ namespace Quantumart.QPublishing.OnScreen
             var strSql = "SELECT locked_by FROM content_item WHERE content_item_id=" + itemId;
             var conn = new DBConnector();
             var dt = conn.GetRealData(strSql);
-
             if (dt.Rows.Count > 0)
             {
                 if (!ReferenceEquals(dt.Rows[0]["locked_by"], DBNull.Value))
@@ -313,6 +301,7 @@ namespace Quantumart.QPublishing.OnScreen
                     res = DBConnector.GetNumInt(dt.Rows[0]["locked_by"]);
                 }
             }
+
             return res;
         }
 

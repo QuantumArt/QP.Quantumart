@@ -5,6 +5,7 @@ using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public class QUserControl : QUserControlBase, IQUserControl
@@ -18,32 +19,32 @@ namespace Quantumart.QPublishing.Controls
 
         public bool DisableDataBind
         {
-            get { return QUserControlEssential.DisableDataBind; }
-            set { QUserControlEssential.DisableDataBind = value; }
+            get => QUserControlEssential.DisableDataBind;
+            set => QUserControlEssential.DisableDataBind = value;
         }
 
         public bool UseSimpleInitOrder
         {
-            get { return QUserControlEssential.UseSimpleInitOrder; }
-            set { QUserControlEssential.UseSimpleInitOrder = value; }
+            get => QUserControlEssential.UseSimpleInitOrder;
+            set => QUserControlEssential.UseSimpleInitOrder = value;
         }
 
         public DateTime TraceStartTime
         {
-            get { return QUserControlEssential.TraceStartTime; }
-            set { QUserControlEssential.TraceStartTime = value; }
+            get => QUserControlEssential.TraceStartTime;
+            set => QUserControlEssential.TraceStartTime = value;
         }
 
         public string TraceObjectString
         {
-            get { return QUserControlEssential.TraceObjectString; }
-            set { QUserControlEssential.TraceObjectString = value; }
+            get => QUserControlEssential.TraceObjectString;
+            set => QUserControlEssential.TraceObjectString = value;
         }
 
         public Hashtable QpDefValues
         {
-            get { return QUserControlEssential.QpDefValues; }
-            set { QUserControlEssential.QpDefValues = value; }
+            get => QUserControlEssential.QpDefValues;
+            set => QUserControlEssential.QpDefValues = value;
         }
 
         public void AddQpDefValue(string key, object value)
@@ -51,27 +52,24 @@ namespace Quantumart.QPublishing.Controls
             QUserControlEssential.AddQpDefValue(key, value);
         }
 
-        public string QpDefValue(string key)
-        {
-            return QUserControlEssential.QpDefValue(key);
-        }
+        public string QpDefValue(string key) => QUserControlEssential.QpDefValue(key);
 
         public int FormatId
         {
-            get { return QUserControlEssential.FormatId; }
-            set { QUserControlEssential.FormatId = value; }
+            get => QUserControlEssential.FormatId;
+            set => QUserControlEssential.FormatId = value;
         }
 
         public bool OnInitFired
         {
-            get { return QUserControlEssential.OnInitFired; }
-            set { QUserControlEssential.OnInitFired = value; }
+            get => QUserControlEssential.OnInitFired;
+            set => QUserControlEssential.OnInitFired = value;
         }
 
         public QpTrace QPTrace
         {
-            get { return QPage.QPTrace; }
-            set { QPage.QPTrace = value; }
+            get => QPage.QPTrace;
+            set => QPage.QPTrace = value;
         }
 
         public virtual void OnLoadControl(object sender, ref string objectCallName)
@@ -90,8 +88,7 @@ namespace Quantumart.QPublishing.Controls
         {
             get
             {
-                var page = Page as QPage;
-                if (page != null)
+                if (Page is QPage page)
                 {
                     return page;
                 }
@@ -101,15 +98,13 @@ namespace Quantumart.QPublishing.Controls
             }
             set
             {
-                var page = value as QPage;
-                if (page != null)
+                if (value is QPage page)
                 {
                     Page = page;
                 }
                 else
                 {
-                    var mobilePage = value as QMobilePage;
-                    if (mobilePage != null)
+                    if (value is QMobilePage mobilePage)
                     {
                         Page = mobilePage;
                     }
@@ -192,20 +187,11 @@ namespace Quantumart.QPublishing.Controls
             ShowControl(name, sender, parameters);
         }
 
-        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive)
-        {
-
-            return QPage.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
-
-            includeArchive);
-        }
+        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) => QPage.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive);
 
         public DBConnector Cnn => QPage.Cnn;
 
-        public DataTable GetData(string queryString)
-        {
-            return QPage.Cnn.GetData(queryString);
-        }
+        public DataTable GetData(string queryString) => QPage.Cnn.GetData(queryString);
 
         public int site_id => QPage.site_id;
 
@@ -231,37 +217,19 @@ namespace Quantumart.QPublishing.Controls
             QPage.AddObjectValue(key, value);
         }
 
-        public string Value(string key)
-        {
-            return QPage.Value(key);
-        }
+        public string Value(string key) => QPage.Value(key);
 
-        public string Value(string key, string defaultValue)
-        {
-            return QPage.Value(key, defaultValue);
-        }
+        public string Value(string key, string defaultValue) => QPage.Value(key, defaultValue);
 
-        public long NumValue(string key)
-        {
-            return QPage.NumValue(key);
-        }
+        public long NumValue(string key) => QPage.NumValue(key);
 
-        public string StrValue(string key)
-        {
-            return QPage.StrValue(key);
-        }
+        public string StrValue(string key) => QPage.StrValue(key);
 
-        public string InternalStrValue(string valueName)
-        {
-            return QPage.InternalStrValue(valueName);
-        }
+        public string InternalStrValue(string valueName) => QPage.InternalStrValue(valueName);
 
         public Hashtable Values => QPage.Values;
 
-        public string DirtyValue(string key)
-        {
-            return QPage.DirtyValue(key);
-        }
+        public string DirtyValue(string key) => QPage.DirtyValue(key);
 
         public void RemoveContentItem(int contentItemId)
         {
@@ -273,100 +241,46 @@ namespace Quantumart.QPublishing.Controls
             QPage.DeleteContentItem();
         }
 
-        public int GetContentID(string contentName)
-        {
-            return QPage.GetContentID(contentName);
-        }
+        public int GetContentID(string contentName) => QPage.GetContentID(contentName);
 
-        public string FieldName(string contentName, string fieldName)
-        {
-            return QPage.FieldName(contentName, fieldName);
-        }
+        public string FieldName(string contentName, string fieldName) => QPage.FieldName(contentName, fieldName);
 
-        public int FieldID(string contentName, string fieldName)
-        {
-            return QPage.FieldID(contentName, fieldName);
-        }
+        public int FieldID(string contentName, string fieldName) => QPage.FieldID(contentName, fieldName);
 
-        public bool CheckMaxLength(string str, int maxlength)
-        {
-            return QPage.CheckMaxLength(str, maxlength);
-        }
+        public bool CheckMaxLength(string str, int maxlength) => QPage.CheckMaxLength(str, maxlength);
 
-        public string ReplaceHTML(string str)
-        {
-            return QPage.ReplaceHTML(str);
-        }
+        public string ReplaceHTML(string str) => QPage.ReplaceHTML(str);
 
         public void SendNotification(string notificationOn, int contentItemId, string notificationEmail)
         {
             QPage.SendNotification(notificationOn, contentItemId, notificationEmail);
         }
 
-        public string GetSiteUrl()
-        {
-            return QPage.GetSiteUrl();
-        }
+        public string GetSiteUrl() => QPage.GetSiteUrl();
 
-        public string GetActualSiteUrl()
-        {
-            return QPage.GetActualSiteUrl();
-        }
+        public string GetActualSiteUrl() => QPage.GetActualSiteUrl();
 
-        public string GetContentItemLinkIDs(string linkFieldName, long itemId)
-        {
-            return QPage.GetContentItemLinkIDs(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkIDs(string linkFieldName, long itemId) => QPage.GetContentItemLinkIDs(linkFieldName, itemId);
 
-        public string GetContentItemLinkQuery(string linkFieldName, long itemId)
-        {
-            return QPage.GetContentItemLinkQuery(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkQuery(string linkFieldName, long itemId) => QPage.GetContentItemLinkQuery(linkFieldName, itemId);
 
-        public string GetContentItemLinkIDs(string linkFieldName, string itemId)
-        {
-            return QPage.GetContentItemLinkIDs(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkIDs(string linkFieldName, string itemId) => QPage.GetContentItemLinkIDs(linkFieldName, itemId);
 
-        public string GetContentItemLinkQuery(string linkFieldName, string itemId)
-        {
-            return QPage.GetContentItemLinkQuery(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkQuery(string linkFieldName, string itemId) => QPage.GetContentItemLinkQuery(linkFieldName, itemId);
 
-        public string GetLinkIDs(string linkFieldName)
-        {
-            return QPage.GetLinkIDs(linkFieldName);
-        }
+        public string GetLinkIDs(string linkFieldName) => QPage.GetLinkIDs(linkFieldName);
 
-        public int GetLinkIDForItem(string linkFieldName, int itemId)
-        {
-            return QPage.GetLinkIDForItem(linkFieldName, itemId);
-        }
+        public int GetLinkIDForItem(string linkFieldName, int itemId) => QPage.GetLinkIDForItem(linkFieldName, itemId);
 
-        public string GetContentFieldValue(int itemId, string fieldName)
-        {
-            return QPage.GetContentFieldValue(itemId, fieldName);
-        }
+        public string GetContentFieldValue(int itemId, string fieldName) => QPage.GetContentFieldValue(itemId, fieldName);
 
-        public int AddFormToContentWithoutNotification(string contentName, string statusName, int contentItemId)
-        {
-            return QPage.AddFormToContentWithoutNotification(contentName, statusName, contentItemId);
-        }
+        public int AddFormToContentWithoutNotification(string contentName, string statusName, int contentItemId) => QPage.AddFormToContentWithoutNotification(contentName, statusName, contentItemId);
 
-        public int AddFormToContentWithoutNotification(string contentName, string statusName)
-        {
-            return AddFormToContentWithoutNotification(contentName, statusName, 0);
-        }
+        public int AddFormToContentWithoutNotification(string contentName, string statusName) => AddFormToContentWithoutNotification(contentName, statusName, 0);
 
-        public int AddFormToContent(string contentName, string statusName, int contentItemId)
-        {
-            return QPage.AddFormToContent(contentName, statusName, contentItemId);
-        }
+        public int AddFormToContent(string contentName, string statusName, int contentItemId) => QPage.AddFormToContent(contentName, statusName, contentItemId);
 
-        public int AddFormToContent(string contentName, string statusName)
-        {
-            return AddFormToContent(contentName, statusName, 0);
-        }
+        public int AddFormToContent(string contentName, string statusName) => AddFormToContent(contentName, statusName, 0);
 
         public void UpdateContentItemField(string contentName, string fieldName, int contentItemId)
         {
@@ -398,31 +312,22 @@ namespace Quantumart.QPublishing.Controls
             QPage.UpdateContentItemWithoutNotification(updateEmpty, statusName);
         }
 
-        public string GetContentUploadUrl(string contentName)
-        {
-            return QPage.GetContentUploadUrl(contentName);
-        }
+        public string GetContentUploadUrl(string contentName) => QPage.GetContentUploadUrl(contentName);
 
-        public string GetContentUploadUrlByID(int contentId)
-        {
-            return QPage.GetContentUploadUrlByID(contentId);
-        }
+        public string GetContentUploadUrlByID(int contentId) => QPage.GetContentUploadUrlByID(contentId);
 
-        public string GetContentName(int contentId)
-        {
-            return QPage.GetContentName(contentId);
-        }
+        public string GetContentName(int contentId) => QPage.GetContentName(contentId);
 
         public Hashtable FieldValuesDictionary
         {
-            get { return QPage.FieldValuesDictionary; }
-            set { QPage.FieldValuesDictionary = value; }
+            get => QPage.FieldValuesDictionary;
+            set => QPage.FieldValuesDictionary = value;
         }
 
         public Hashtable FieldNamesDictionary
         {
-            get { return QPage.FieldNamesDictionary; }
-            set { QPage.FieldNamesDictionary = value; }
+            get => QPage.FieldNamesDictionary;
+            set => QPage.FieldNamesDictionary = value;
         }
 
         public int published_status_type_id => QPage.published_status_type_id;
@@ -449,7 +354,6 @@ namespace Quantumart.QPublishing.Controls
             }
             else
             {
-
                 if (!OnInitFired)
                 {
                     base.OnInit(e);
@@ -497,175 +401,82 @@ namespace Quantumart.QPublishing.Controls
             OnInit(e);
         }
 
-        public string GetObjectFullName(string templateNetName, string objectNetName, string formatNetName)
-        {
-            return QUserControlEssential.GetObjectFullName(templateNetName, objectNetName, formatNetName);
-        }
+        public string GetObjectFullName(string templateNetName, string objectNetName, string formatNetName) => QUserControlEssential.GetObjectFullName(templateNetName, objectNetName, formatNetName);
 
         public string TraceString
         {
-            get { return QPage.QPTrace.TraceString; }
-            set { QPage.QPTrace.TraceString = value; }
+            get => QPage.QPTrace.TraceString;
+            set => QPage.QPTrace.TraceString = value;
         }
 
         public string UndefTraceString
         {
-            get { return QUserControlEssential.UndefTraceString; }
-            set { QUserControlEssential.UndefTraceString = value; }
+            get => QUserControlEssential.UndefTraceString;
+            set => QUserControlEssential.UndefTraceString = value;
         }
 
         public string TraceStartText
         {
-            get { return QPage.QPTrace.TraceStartText; }
-            set { QPage.QPTrace.TraceStartText = value; }
+            get => QPage.QPTrace.TraceStartText;
+            set => QPage.QPTrace.TraceStartText = value;
         }
 
-        public virtual string Field(string key)
-        {
-            return QPage.Field(key);
-        }
+        public virtual string Field(string key) => QPage.Field(key);
 
-        public virtual string Field(DataRowView pDataItem, string key)
-        {
-            return QUserControlEssential.Field(QPage.IsStage, pDataItem.Row, key, "");
-        }
+        public virtual string Field(DataRowView pDataItem, string key) => QUserControlEssential.Field(QPage.IsStage, pDataItem.Row, key, "");
 
-        public virtual string Field(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.Field(QPage.IsStage, pDataItem.Row, key, defaultValue);
-        }
+        public virtual string Field(DataRowView pDataItem, string key, string defaultValue) => QUserControlEssential.Field(QPage.IsStage, pDataItem.Row, key, defaultValue);
 
-        public virtual string Field(DataRow pDataItem, string key)
-        {
-            return QUserControlEssential.Field(QPage.IsStage, pDataItem, key, "");
-        }
+        public virtual string Field(DataRow pDataItem, string key) => QUserControlEssential.Field(QPage.IsStage, pDataItem, key, "");
 
-        public virtual string Field(DataRow pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.Field(QPage.IsStage, pDataItem, key, defaultValue);
-        }
+        public virtual string Field(DataRow pDataItem, string key, string defaultValue) => QUserControlEssential.Field(QPage.IsStage, pDataItem, key, defaultValue);
 
-        public string FormatField(string field)
-        {
-            return QUserControlEssential.FormatField(field);
-        }
+        public string FormatField(string field) => QUserControlEssential.FormatField(field);
 
-        public virtual string FieldNS(string key)
-        {
-            return QPage.Field(key);
-        }
+        public virtual string FieldNS(string key) => QPage.Field(key);
 
-        public virtual string FieldNS(DataRowView pDataItem, string key)
-        {
-            return QUserControlEssential.FieldNs(pDataItem.Row, key, "");
-        }
+        public virtual string FieldNS(DataRowView pDataItem, string key) => QUserControlEssential.FieldNs(pDataItem.Row, key, "");
 
-        public virtual string FieldNS(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.FieldNs(pDataItem.Row, key, defaultValue);
-        }
+        public virtual string FieldNS(DataRowView pDataItem, string key, string defaultValue) => QUserControlEssential.FieldNs(pDataItem.Row, key, defaultValue);
 
-        public virtual string FieldNS(DataRow pDataItem, string key)
-        {
-            return QUserControlEssential.FieldNs(pDataItem, key, "");
-        }
+        public virtual string FieldNS(DataRow pDataItem, string key) => QUserControlEssential.FieldNs(pDataItem, key, "");
 
-        public virtual string FieldNS(DataRow pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.FieldNs(pDataItem, key, defaultValue);
-        }
+        public virtual string FieldNS(DataRow pDataItem, string key, string defaultValue) => QUserControlEssential.FieldNs(pDataItem, key, defaultValue);
 
-        public string OnFly(DataRowView pDataItem, string key)
-        {
-            return QUserControlEssential.OnFly(pDataItem.Row, key, "");
-        }
+        public string OnFly(DataRowView pDataItem, string key) => QUserControlEssential.OnFly(pDataItem.Row, key, "");
 
-        public string OnFly(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.OnFly(pDataItem.Row, key, defaultValue);
-        }
+        public string OnFly(DataRowView pDataItem, string key, string defaultValue) => QUserControlEssential.OnFly(pDataItem.Row, key, defaultValue);
 
-        public string OnFly(DataRow pDataItem, string key)
-        {
-            return QUserControlEssential.OnFly(pDataItem, key, "");
-        }
+        public string OnFly(DataRow pDataItem, string key) => QUserControlEssential.OnFly(pDataItem, key, "");
 
-        public string OnFly(DataRow pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.OnFly(pDataItem, key, defaultValue);
-        }
+        public string OnFly(DataRow pDataItem, string key, string defaultValue) => QUserControlEssential.OnFly(pDataItem, key, defaultValue);
 
-        public string OnFlyExec(DataRow pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.OnFly(pDataItem, key, defaultValue);
-        }
+        public string OnFlyExec(DataRow pDataItem, string key, string defaultValue) => QUserControlEssential.OnFly(pDataItem, key, defaultValue);
 
-        public string OnFlyExec(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return QUserControlEssential.OnFly(pDataItem.Row, key, defaultValue);
-        }
-        public string OnStage(string value, string itemId)
-        {
-            return QUserControlEssential.OnStage(value, itemId);
-        }
+        public string OnFlyExec(DataRowView pDataItem, string key, string defaultValue) => QUserControlEssential.OnFly(pDataItem.Row, key, defaultValue);
 
-        public string OnStage(string value, int itemId)
-        {
-            return QUserControlEssential.OnStage(value, itemId);
-        }
+        public string OnStage(string value, string itemId) => QUserControlEssential.OnStage(value, itemId);
 
-        public string OnScreen(string value, int itemId)
-        {
-            return QUserControlEssential.OnScreen(value, itemId);
-        }
+        public string OnStage(string value, int itemId) => QUserControlEssential.OnStage(value, itemId);
 
-        public string OnScreen(string value, string itemId)
-        {
-            return QUserControlEssential.OnScreen(value, itemId);
-        }
+        public string OnScreen(string value, int itemId) => QUserControlEssential.OnScreen(value, itemId);
 
-        public string OnScreenFlyEdit(string value, int itemId, string fieldName)
-        {
-            return QUserControlEssential.OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnScreen(string value, string itemId) => QUserControlEssential.OnScreen(value, itemId);
 
-        public string OnScreenFlyEdit(string value, string itemId, string fieldName)
-        {
-            return QUserControlEssential.OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnScreenFlyEdit(string value, int itemId, string fieldName) => QUserControlEssential.OnScreenFlyEdit(value, itemId, fieldName);
 
-        public string OnStageFlyEdit(string value, string itemId, string fieldName)
-        {
-            return QUserControlEssential.OnStageFlyEdit(value, itemId, fieldName);
-        }
+        public string OnScreenFlyEdit(string value, string itemId, string fieldName) => QUserControlEssential.OnScreenFlyEdit(value, itemId, fieldName);
 
-        public string OnStageFlyEdit(string value, int itemId, string fieldName)
-        {
-            return QUserControlEssential.OnStageFlyEdit(value, itemId, fieldName);
-        }
+        public string OnStageFlyEdit(string value, string itemId, string fieldName) => QUserControlEssential.OnStageFlyEdit(value, itemId, fieldName);
 
-        public string OnStageDiv(string value, string fieldName, int itemId, int contentId, string isBorderStatic, bool editable, string attrType, int attrRequired)
-        {
-            return QUserControlEssential.OnStageDiv(value, fieldName, itemId, contentId, isBorderStatic, editable, attrType, attrRequired);
-        }
+        public string OnStageFlyEdit(string value, int itemId, string fieldName) => QUserControlEssential.OnStageFlyEdit(value, itemId, fieldName);
 
-        public string GetReturnStageURL()
-        {
-            return QUserControlEssential.GetReturnStageUrl();
-        }
+        public string OnStageDiv(string value, string fieldName, int itemId, int contentId, string isBorderStatic, bool editable, string attrType, int attrRequired) => QUserControlEssential.OnStageDiv(value, fieldName, itemId, contentId, isBorderStatic, editable, attrType, attrRequired);
 
-        public string GetFieldUploadUrl(string contentName, string fieldName)
-        {
-            return QPage.GetFieldUploadUrl(fieldName, GetContentID(contentName));
-        }
+        public string GetReturnStageURL() => QUserControlEssential.GetReturnStageUrl();
 
-        public T GetFieldValue<T>(DataRow dr, string fieldName, T defaultValue)
-        {
-            if (Convert.IsDBNull(dr[fieldName]))
-            {
-                return defaultValue;
-            }
-            return (T)dr[fieldName];
-        }
+        public string GetFieldUploadUrl(string contentName, string fieldName) => QPage.GetFieldUploadUrl(fieldName, GetContentID(contentName));
+
+        public T GetFieldValue<T>(DataRow dr, string fieldName, T defaultValue) => Convert.IsDBNull(dr[fieldName]) ? defaultValue : (T)dr[fieldName];
     }
 }

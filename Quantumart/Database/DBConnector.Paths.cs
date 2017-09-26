@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
@@ -23,25 +24,13 @@ namespace Quantumart.QPublishing.Database
 
         #region GetImagesUploadUrl
 
-        public string GetImagesUploadUrlRel(int siteId)
-        {
-            return GetUploadUrlRel(siteId) + "images";
-        }
+        public string GetImagesUploadUrlRel(int siteId) => GetUploadUrlRel(siteId) + "images";
 
-        public string GetImagesUploadUrl(int siteId)
-        {
-            return GetUploadUrl(siteId) + "images";
-        }
+        public string GetImagesUploadUrl(int siteId) => GetUploadUrl(siteId) + "images";
 
-        public string GetImagesUploadUrl(int siteId, bool asShortAsPossible)
-        {
-            return GetUploadUrl(siteId, asShortAsPossible, false) + "images";
-        }
+        public string GetImagesUploadUrl(int siteId, bool asShortAsPossible) => GetUploadUrl(siteId, asShortAsPossible, false) + "images";
 
-        public string GetImagesUploadUrl(int siteId, bool asShortAsPossible, bool removeSchema)
-        {
-            return GetUploadUrl(siteId, asShortAsPossible, removeSchema) + "images";
-        }
+        public string GetImagesUploadUrl(int siteId, bool asShortAsPossible, bool removeSchema) => GetUploadUrl(siteId, asShortAsPossible, removeSchema) + "images";
 
         #endregion
 
@@ -57,10 +46,7 @@ namespace Quantumart.QPublishing.Database
 
         #region GetUploadUrl
 
-        public string GetUploadUrl(int siteId)
-        {
-            return GetUploadUrl(siteId, false);
-        }
+        public string GetUploadUrl(int siteId) => GetUploadUrl(siteId, false);
 
         public string GetUploadUrlRel(int siteId)
         {
@@ -68,10 +54,7 @@ namespace Quantumart.QPublishing.Database
             return site == null ? string.Empty : site.UploadUrl;
         }
 
-        public string GetUploadUrl(int siteId, bool asShortAsPossible)
-        {
-            return GetUploadUrl(siteId, asShortAsPossible, false);
-        }
+        public string GetUploadUrl(int siteId, bool asShortAsPossible) => GetUploadUrl(siteId, asShortAsPossible, false);
 
         public string GetUploadUrl(int siteId, bool asShortAsPossible, bool removeSchema)
         {
@@ -122,10 +105,7 @@ namespace Quantumart.QPublishing.Database
 
         #region GetSiteUrl
 
-        public string GetActualSiteUrl(int siteId)
-        {
-            return GetSiteUrl(siteId, IsLive(siteId));
-        }
+        public string GetActualSiteUrl(int siteId) => GetSiteUrl(siteId, IsLive(siteId));
 
         public string GetSiteUrl(int siteId, bool isLive)
         {
@@ -150,10 +130,7 @@ namespace Quantumart.QPublishing.Database
 
         #region GetDns
 
-        public string GetActualDns(int siteId)
-        {
-            return GetDns(siteId, IsLive(siteId));
-        }
+        public string GetActualDns(int siteId) => GetDns(siteId, IsLive(siteId));
 
         public string GetDns(int siteId, bool isLive)
         {
@@ -165,19 +142,13 @@ namespace Quantumart.QPublishing.Database
 
         #region GetSiteLibraryDirectory
 
-        public string GetSiteLibraryDirectory(int siteId)
-        {
-            return GetUploadDir(siteId) + "\\images";
-        }
+        public string GetSiteLibraryDirectory(int siteId) => GetUploadDir(siteId) + "\\images";
 
         #endregion
 
         #region GetSiteDirectory
 
-        public string GetSiteDirectory(int siteId, bool isLive)
-        {
-            return GetSiteDirectory(siteId, isLive, false);
-        }
+        public string GetSiteDirectory(int siteId, bool isLive) => GetSiteDirectory(siteId, isLive, false);
 
         public string GetSiteDirectory(int siteId, bool isLive, bool isTest)
         {
@@ -200,24 +171,15 @@ namespace Quantumart.QPublishing.Database
             return site.StageDirectory;
         }
 
-        public string GetSiteLiveDirectory(int siteId)
-        {
-            return GetSiteDirectory(siteId, true);
-        }
+        public string GetSiteLiveDirectory(int siteId) => GetSiteDirectory(siteId, true);
 
         #endregion
 
         #region Content Library
 
-        public string GetContentLibraryDirectory(int siteId, int contentId)
-        {
-            return GetUploadDir(siteId) + "\\contents\\" + contentId;
-        }
+        public string GetContentLibraryDirectory(int siteId, int contentId) => GetUploadDir(siteId) + "\\contents\\" + contentId;
 
-        public string GetContentLibraryDirectory(int contentId)
-        {
-            return GetContentLibraryDirectory(GetSiteIdByContentId(contentId), contentId);
-        }
+        public string GetContentLibraryDirectory(int contentId) => GetContentLibraryDirectory(GetSiteIdByContentId(contentId), contentId);
 
         #endregion
 
@@ -235,16 +197,10 @@ namespace Quantumart.QPublishing.Database
         }
 
         // ReSharper disable once InconsistentNaming
-        public string GetContentUploadUrlByID(int siteId, long contentId)
-        {
-            return GetContentUploadUrlByID(siteId, contentId, true);
-        }
+        public string GetContentUploadUrlByID(int siteId, long contentId) => GetContentUploadUrlByID(siteId, contentId, true);
 
         // ReSharper disable once InconsistentNaming
-        public string GetContentUploadUrlByID(int siteId, long contentId, bool asShortAsPossible)
-        {
-            return GetContentUploadUrlByID(siteId, contentId, asShortAsPossible, false);
-        }
+        public string GetContentUploadUrlByID(int siteId, long contentId, bool asShortAsPossible) => GetContentUploadUrlByID(siteId, contentId, asShortAsPossible, false);
 
         // ReSharper disable once InconsistentNaming
         public string GetContentUploadUrlByID(int siteId, long contentId, bool asShortAsPossible, bool removeSchema)
@@ -282,10 +238,7 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        public string GetFieldSubFolder(int attrId)
-        {
-            return GetFieldSubFolder(attrId, false);
-        }
+        public string GetFieldSubFolder(int attrId) => GetFieldSubFolder(attrId, false);
 
         public string GetDirectoryForFileAttribute(int attrId)
         {
@@ -303,32 +256,19 @@ namespace Quantumart.QPublishing.Database
 
         #region Field URL
 
-        public string GetFieldSubUrl(int attrId)
-        {
-            return GetFieldSubFolder(attrId, true);
-        }
+        public string GetFieldSubUrl(int attrId) => GetFieldSubFolder(attrId, true);
 
-        public string GetFieldUploadUrl(string fieldName, int contentId)
-        {
-            return GetFieldUploadUrl(0, fieldName, contentId);
-        }
+        public string GetFieldUploadUrl(string fieldName, int contentId) => GetFieldUploadUrl(0, fieldName, contentId);
 
         public string GetFieldUploadUrl(int siteId, string fieldName, int contentId)
         {
             var fieldId = FieldId(contentId, fieldName);
             return GetUrlForFileAttribute(fieldId);
-
         }
 
-        public string GetUrlForFileAttribute(int fieldId)
-        {
-            return GetUrlForFileAttribute(fieldId, true);
-        }
+        public string GetUrlForFileAttribute(int fieldId) => GetUrlForFileAttribute(fieldId, true);
 
-        public string GetUrlForFileAttribute(int fieldId, bool asShortAsPossible)
-        {
-            return GetUrlForFileAttribute(fieldId, asShortAsPossible, false);
-        }
+        public string GetUrlForFileAttribute(int fieldId, bool asShortAsPossible) => GetUrlForFileAttribute(fieldId, asShortAsPossible, false);
 
         public string GetUrlForFileAttribute(int fieldId, bool asShortAsPossible, bool removeSchema)
         {

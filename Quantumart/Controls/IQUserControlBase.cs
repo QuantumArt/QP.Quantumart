@@ -1,3 +1,4 @@
+// ReSharper disable once CheckNamespace
 // ReSharper disable InconsistentNaming
 namespace Quantumart.QPublishing.Controls
 {

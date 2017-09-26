@@ -8,6 +8,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public class QUserControlEssential
@@ -121,10 +122,7 @@ namespace Quantumart.QPublishing.Controls
             return str + ".ascx";
         }
 
-        public virtual string FieldNs(DataRow pDataItem, string key, string defaultValue)
-        {
-            return Field(pDataItem, key, defaultValue);
-        }
+        public virtual string FieldNs(DataRow pDataItem, string key, string defaultValue) => Field(pDataItem, key, defaultValue);
 
         public virtual string Field(bool isStage, DataRow pDataItem, string key, string defaultValue)
         {
@@ -136,20 +134,11 @@ namespace Quantumart.QPublishing.Controls
             return Field(pDataItem, key, defaultValue);
         }
 
-        public string OnFly(DataRow pDataItem, string key)
-        {
-            return OnFly(pDataItem, key, "");
-        }
+        public string OnFly(DataRow pDataItem, string key) => OnFly(pDataItem, key, "");
 
-        public string OnFly(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return OnFly(pDataItem.Row, key, defaultValue);
-        }
+        public string OnFly(DataRowView pDataItem, string key, string defaultValue) => OnFly(pDataItem.Row, key, defaultValue);
 
-        public string OnFly(DataRowView pDataItem, string key)
-        {
-            return OnFly(pDataItem.Row, key);
-        }
+        public string OnFly(DataRowView pDataItem, string key) => OnFly(pDataItem.Row, key);
 
         public string OnFly(DataRow pDataItem, string key, string defaultValue)
         {
@@ -181,38 +170,24 @@ namespace Quantumart.QPublishing.Controls
             return result;
         }
 
-        protected bool CheckAllowOnScreen()
-        {
-            return
-                _currentControl.IsStage
-                && QScreen.UserAuthenticated()
-                && !QScreen.IsBrowseServerMode()
-                && _currentControl.QPage.Cnn.GetEnableOnScreen(_currentControl.QPage.site_id)
-                && _currentControl.QPage.QScreen.FieldBorderMode != 0
-                && HttpContext.Current.Session["allow_stage_edit_field"].ToString() != "0";
-        }
+        protected bool CheckAllowOnScreen() => _currentControl.IsStage
+            && QScreen.UserAuthenticated()
+            && !QScreen.IsBrowseServerMode()
+            && _currentControl.QPage.Cnn.GetEnableOnScreen(_currentControl.QPage.site_id)
+            && _currentControl.QPage.QScreen.FieldBorderMode != 0
+            && HttpContext.Current.Session["allow_stage_edit_field"].ToString() != "0";
 
         public string OnScreenFlyEdit(string value, string itemId, string fieldName)
         {
-            int id;
-            var functionReturnValue = int.TryParse(itemId, out id) ? OnScreenFlyEdit(value, id, fieldName) : FormatField(value);
+            var functionReturnValue = int.TryParse(itemId, out var id) ? OnScreenFlyEdit(value, id, fieldName) : FormatField(value);
             return functionReturnValue;
         }
 
-        public string OnStageFlyEdit(string value, string itemId, string fieldName)
-        {
-            return OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnStageFlyEdit(string value, string itemId, string fieldName) => OnScreenFlyEdit(value, itemId, fieldName);
 
-        public string OnScreenFlyEdit(string value, int itemId, string fieldName)
-        {
-            return OnScreenFlyEditCommon(FormatField(value), itemId, fieldName);
-        }
+        public string OnScreenFlyEdit(string value, int itemId, string fieldName) => OnScreenFlyEditCommon(FormatField(value), itemId, fieldName);
 
-        public string OnStageFlyEdit(string value, int itemId, string fieldName)
-        {
-            return OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnStageFlyEdit(string value, int itemId, string fieldName) => OnScreenFlyEdit(value, itemId, fieldName);
 
         protected string OnScreenFlyEditCommon(string value, int itemId, string fieldName)
         {
@@ -263,20 +238,13 @@ namespace Quantumart.QPublishing.Controls
             return OnStageDiv(value, fieldName, itemId, contentId, isBorderStatic, editable, attrType, attrRequired);
         }
 
-        public string OnStage(string value, string itemId)
-        {
-            return OnScreen(value, itemId);
-        }
+        public string OnStage(string value, string itemId) => OnScreen(value, itemId);
 
-        public string OnStage(string value, int itemId)
-        {
-            return OnScreen(value, itemId);
-        }
+        public string OnStage(string value, int itemId) => OnScreen(value, itemId);
 
         public string OnScreen(string value, string itemId)
         {
-            int id;
-            var functionReturnValue = int.TryParse(itemId, out id) ? OnScreen(value, id) : FormatField(value);
+            var functionReturnValue = int.TryParse(itemId, out var id) ? OnScreen(value, id) : FormatField(value);
             return functionReturnValue;
         }
 
@@ -293,7 +261,6 @@ namespace Quantumart.QPublishing.Controls
             _currentControl.QPage.QScreen.OnFlyObjCount = _currentControl.QPage.QScreen.OnFlyObjCount + 1;
             return OnStageDiv(value, "", itemId, contentId, "", false, "", 0);
         }
-
 
         public string OnStageDiv(string value, string fieldName, int itemId, int contentId, string isBorderStatic, bool editable, string attrType, int attrRequired)
         {
@@ -361,9 +328,6 @@ namespace Quantumart.QPublishing.Controls
             return sb.ToString();
         }
 
-        public string GetReturnStageUrl()
-        {
-            return QScreenInst != null ? QScreenInst.GetReturnStageUrl() : "";
-        }
+        public string GetReturnStageUrl() => QScreenInst != null ? QScreenInst.GetReturnStageUrl() : "";
     }
 }

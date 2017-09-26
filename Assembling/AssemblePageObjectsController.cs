@@ -1,6 +1,7 @@
-﻿using System.Data;
+using System.Data;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssemblePageObjectsController : AssembleControllerBase
@@ -50,10 +51,7 @@ namespace Quantumart.QP8.Assembling
             FillController(pageId, string.Empty, data);
         }
 
-        internal override string GetFilter()
-        {
-            return " and obj.page_id = " + PageId;
-        }
+        internal override string GetFilter() => " and obj.page_id = " + PageId;
 
         public override void Assemble()
         {

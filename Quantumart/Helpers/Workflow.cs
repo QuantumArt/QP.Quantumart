@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class Workflow
@@ -14,10 +15,7 @@ namespace Quantumart.QPublishing.Helpers
             return dt.Rows.Count > 0;
         }
 
-        public static bool ContentItemHasOwnWorkflow(int itemId)
-        {
-            return DbContentItemHasOwnWorkflow(itemId);
-        }
+        public static bool ContentItemHasOwnWorkflow(int itemId) => DbContentItemHasOwnWorkflow(itemId);
 
         [SuppressMessage("ReSharper", "RedundantAssignment")]
         public static bool DbWillContentItemStatusBeDecreased(int siteId, int itemId, int userId, int currentStatusWeight, ref int toStatusId, ref int toStatusWeight)
@@ -92,10 +90,7 @@ namespace Quantumart.QPublishing.Helpers
             return dt.Rows.Count > 0 ? DBConnector.GetNumInt(dt.Rows[0]["status_type_id"]) : 0;
         }
 
-        public static int GetContentWorkflowId(int contentId)
-        {
-            return DbGetContentWorkflowId(contentId);
-        }
+        public static int GetContentWorkflowId(int contentId) => DbGetContentWorkflowId(contentId);
 
         public static int DbGetContentWorkflowId(int contentId)
         {
@@ -110,15 +105,9 @@ namespace Quantumart.QPublishing.Helpers
             return 0;
         }
 
-        public static int GetNoneId(int siteId)
-        {
-            return GetIdByWeight(GetNoneWeight(siteId), siteId);
-        }
+        public static int GetNoneId(int siteId) => GetIdByWeight(GetNoneWeight(siteId), siteId);
 
-        public static int GetIdByWeight(int weight, int siteId)
-        {
-            return DbGetIdByWeight(weight, siteId);
-        }
+        public static int GetIdByWeight(int weight, int siteId) => DbGetIdByWeight(weight, siteId);
 
         public static int GetNoneWeight(int siteId)
         {
@@ -136,18 +125,14 @@ namespace Quantumart.QPublishing.Helpers
         public static int GetWorkflowMaxWeight(decimal workflowId)
         {
             var strSql = " select max(st.weight) as max_weight from workflow_rules wr WITH(NOLOCK) " +
-                         " inner join status_type st on wr.successor_status_id = st.status_type_id " +
-                         $" where wr.workflow_id = {workflowId}";
+                " inner join status_type st on wr.successor_status_id = st.status_type_id " +
+                $" where wr.workflow_id = {workflowId}";
             var conn = new DBConnector();
             var dt = conn.GetCachedData(strSql);
             return dt.Rows.Count != 0 ? DBConnector.GetNumInt(dt.Rows[0]["max_weight"]) : 0;
-
         }
 
-        public static decimal GetPublishedId(decimal siteId)
-        {
-            return GetIdByWeight((int)GetPublishedWeight(siteId), (int)siteId);
-        }
+        public static decimal GetPublishedId(decimal siteId) => GetIdByWeight((int)GetPublishedWeight(siteId), (int)siteId);
 
         public static decimal GetPublishedWeight(decimal siteId)
         {

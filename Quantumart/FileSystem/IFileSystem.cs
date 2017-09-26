@@ -1,4 +1,5 @@
-﻿namespace Quantumart.QPublishing.FileSystem
+// ReSharper disable once CheckNamespace
+namespace Quantumart.QPublishing.FileSystem
 {
     public interface IFileSystem
     {

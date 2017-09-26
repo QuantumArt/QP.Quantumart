@@ -8,6 +8,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
 
 // ReSharper disable InconsistentNaming
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Pages
 {
     public interface IQPage

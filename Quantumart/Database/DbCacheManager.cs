@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -12,11 +12,13 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     public class DbCacheManager
     {
         #region fields and properties
+
         private static readonly object NullObject = new object();
 
         private readonly Dictionary<string, string> _queries = new Dictionary<string, string>();
@@ -47,7 +49,7 @@ namespace Quantumart.QPublishing.Database
 
         public bool StoreInDictionary
         {
-            get { return _storeInDictionary; }
+            get => _storeInDictionary;
             set
             {
                 _storeInDictionary = value;
@@ -58,6 +60,7 @@ namespace Quantumart.QPublishing.Database
         public DBConnector Cnn { get; set; }
 
         public QPageEssential Page { get; set; }
+
         #endregion
 
         public DbCacheManager(DBConnector newCnn)
@@ -72,6 +75,7 @@ namespace Quantumart.QPublishing.Database
         }
 
         #region General operations
+
         public void ResetCacheItem(string key)
         {
             if (_dataTables.ContainsKey(key))
@@ -90,22 +94,14 @@ namespace Quantumart.QPublishing.Database
             _localCache.Clear();
         }
 
-        private static bool IsPageSpecificKey(string key)
-        {
-            return string.IsNullOrEmpty(key);
-        }
+        private static bool IsPageSpecificKey(string key) => string.IsNullOrEmpty(key);
 
-        private T GetDataFromCache<T>(string key)
-        {
-            return (T)GetDataFromCache(key);
-        }
+        private T GetDataFromCache<T>(string key) => (T)GetDataFromCache(key);
 
-        private object GetDataFromCache(string key)
-        {
-            return Cnn.UseLocalCache ? _localCache[key] : HttpRuntime.Cache[key];
-        }
+        private object GetDataFromCache(string key) => Cnn.UseLocalCache ? _localCache[key] : HttpRuntime.Cache[key];
 
-        private void AddEntityToCache<T>(string cacheKey, T ht, double cacheInterval, SqlCacheDependency extDep) where T : class
+        private void AddEntityToCache<T>(string cacheKey, T ht, double cacheInterval, SqlCacheDependency extDep)
+            where T : class
         {
             object obj = ht;
             if (ht == null)
@@ -179,17 +175,16 @@ namespace Quantumart.QPublishing.Database
 
             return null;
         }
+
         #endregion
 
         #region Caching objects
+
         #region DataTables
 
         #region Tables
 
-        internal DataTable GetCachedTable(string key)
-        {
-            return GetCachedTable(key, GetInternalExpirationTime(key), false);
-        }
+        internal DataTable GetCachedTable(string key) => GetCachedTable(key, GetInternalExpirationTime(key), false);
 
         internal DataTable GetCachedTable(string key, double cacheInterval, bool useDependency)
         {
@@ -201,10 +196,7 @@ namespace Quantumart.QPublishing.Database
             return GetCachedEntity(key, cacheInterval, GetRealData);
         }
 
-        private DataTable GetRealData(string key)
-        {
-            return Cnn.GetRealData(GetQuery(key));
-        }
+        private DataTable GetRealData(string key) => Cnn.GetRealData(GetQuery(key));
 
         public DataTable GetCachedTableWithDependency(string key)
         {
@@ -221,6 +213,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     return null;
                 }
+
                 ht = (DataTable)obj;
                 if (ht == null)
                 {
@@ -236,6 +229,7 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
             }
+
             return ht;
         }
 
@@ -308,25 +302,14 @@ namespace Quantumart.QPublishing.Database
         #endregion
 
         #region Queries
-        private static string GetBaseObjectsQuery()
-        {
-            return "SELECT PT.TEMPLATE_NAME, PT.NET_TEMPLATE_NAME, PT.SITE_ID, PT.PAGE_TEMPLATE_ID, P.PAGE_ID, OBJ.[OBJECT_NAME], OBJ.[OBJECT_ID], OBJ.NET_OBJECT_NAME, OBJF.FORMAT_NAME, OBJF.NET_FORMAT_NAME, OBJ.OBJECT_FORMAT_ID AS DEFAULT_FORMAT_ID, P.PAGE_FOLDER, OBJF.OBJECT_FORMAT_ID AS CURRENT_FORMAT_ID FROM OBJECT AS OBJ INNER JOIN OBJECT_FORMAT AS OBJF ON OBJ.OBJECT_ID = OBJF.OBJECT_ID INNER JOIN PAGE_TEMPLATE PT ON OBJ.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID LEFT JOIN PAGE AS P ON P.PAGE_ID = OBJ.PAGE_ID";
-        }
 
-        private static string GetPageQuery()
-        {
-            return "SELECT P.PAGE_ID, P.PAGE_TEMPLATE_ID, P.PAGE_NAME, PAGE_FILENAME, P.PROXY_CACHE, P.CACHE_HOURS, P.CHARSET, P.GENERATE_TRACE, P.PAGE_FOLDER, P.DISABLE_BROWSE_SERVER, P.SET_LAST_MODIFIED_HEADER, P.SEND_NOCACHE_HEADERS FROM PAGE P INNER JOIN PAGE_TEMPLATE PT ON P.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID";
-        }
+        private static string GetBaseObjectsQuery() => "SELECT PT.TEMPLATE_NAME, PT.NET_TEMPLATE_NAME, PT.SITE_ID, PT.PAGE_TEMPLATE_ID, P.PAGE_ID, OBJ.[OBJECT_NAME], OBJ.[OBJECT_ID], OBJ.NET_OBJECT_NAME, OBJF.FORMAT_NAME, OBJF.NET_FORMAT_NAME, OBJ.OBJECT_FORMAT_ID AS DEFAULT_FORMAT_ID, P.PAGE_FOLDER, OBJF.OBJECT_FORMAT_ID AS CURRENT_FORMAT_ID FROM OBJECT AS OBJ INNER JOIN OBJECT_FORMAT AS OBJF ON OBJ.OBJECT_ID = OBJF.OBJECT_ID INNER JOIN PAGE_TEMPLATE PT ON OBJ.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID LEFT JOIN PAGE AS P ON P.PAGE_ID = OBJ.PAGE_ID";
 
-        private static string GetPageTemplateQuery()
-        {
-            return "SELECT PT.SITE_ID, PT.PAGE_TEMPLATE_ID, PT.TEMPLATE_FOLDER, PT.NET_TEMPLATE_NAME, PT.TEMPLATE_NAME, PT.CHARSET, PT.SEND_NOCACHE_HEADERS FROM PAGE_TEMPLATE PT";
-        }
+        private static string GetPageQuery() => "SELECT P.PAGE_ID, P.PAGE_TEMPLATE_ID, P.PAGE_NAME, PAGE_FILENAME, P.PROXY_CACHE, P.CACHE_HOURS, P.CHARSET, P.GENERATE_TRACE, P.PAGE_FOLDER, P.DISABLE_BROWSE_SERVER, P.SET_LAST_MODIFIED_HEADER, P.SEND_NOCACHE_HEADERS FROM PAGE P INNER JOIN PAGE_TEMPLATE PT ON P.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID";
 
-        private static string GetContentQuery()
-        {
-            return "SELECT C.CONTENT_ID, C.CONTENT_NAME, C.NET_CONTENT_NAME, C.VIRTUAL_TYPE, C.SITE_ID, C.MAX_NUM_OF_STORED_VERSIONS, S.SITE_NAME, CWB.WORKFLOW_ID FROM CONTENT AS C WITH(NOLOCK) INNER JOIN SITE AS S  WITH(NOLOCK) ON C.SITE_ID = S.SITE_ID LEFT JOIN CONTENT_WORKFLOW_BIND CWB on CWB.CONTENT_ID = C.CONTENT_ID";
-        }
+        private static string GetPageTemplateQuery() => "SELECT PT.SITE_ID, PT.PAGE_TEMPLATE_ID, PT.TEMPLATE_FOLDER, PT.NET_TEMPLATE_NAME, PT.TEMPLATE_NAME, PT.CHARSET, PT.SEND_NOCACHE_HEADERS FROM PAGE_TEMPLATE PT";
+
+        private static string GetContentQuery() => "SELECT C.CONTENT_ID, C.CONTENT_NAME, C.NET_CONTENT_NAME, C.VIRTUAL_TYPE, C.SITE_ID, C.MAX_NUM_OF_STORED_VERSIONS, S.SITE_NAME, CWB.WORKFLOW_ID FROM CONTENT AS C WITH(NOLOCK) INNER JOIN SITE AS S  WITH(NOLOCK) ON C.SITE_ID = S.SITE_ID LEFT JOIN CONTENT_WORKFLOW_BIND CWB on CWB.CONTENT_ID = C.CONTENT_ID";
 
         private static string GetAttributeQuery()
         {
@@ -363,14 +346,14 @@ namespace Quantumart.QPublishing.Database
 
             return newKey;
         }
+
         #endregion
+
         #endregion
 
         #region Hashtables
-        internal Hashtable GetCachedHashTable(string key)
-        {
-            return GetCachedHashTable(key, GetInternalExpirationTime(key));
-        }
+
+        internal Hashtable GetCachedHashTable(string key) => GetCachedHashTable(key, GetInternalExpirationTime(key));
 
         internal Hashtable GetCachedHashTable(string key, double cacheInterval)
         {
@@ -382,10 +365,7 @@ namespace Quantumart.QPublishing.Database
             return GetCachedEntity(key, cacheInterval, FillHashTable);
         }
 
-        internal DualHashTable GetCachedDualHashTable(string key)
-        {
-            return GetCachedDualHashTable(key, GetInternalExpirationTime(key));
-        }
+        internal DualHashTable GetCachedDualHashTable(string key) => GetCachedDualHashTable(key, GetInternalExpirationTime(key));
 
         internal DualHashTable GetCachedDualHashTable(string key, double cacheInterval)
         {
@@ -429,7 +409,6 @@ namespace Quantumart.QPublishing.Database
                 {
                     Dump.DumpStr($"{DateTime.Now}: Item in arraylist for key '{key}' is null");
                 }
-
             }
 
             attributeIdForLinqHash[key] = resultHash;
@@ -458,6 +437,7 @@ namespace Quantumart.QPublishing.Database
                     localHash[itemKey] = linkId;
                 }
             }
+
             linkForLinqHash[key] = localHash;
             return localHash;
         }
@@ -485,11 +465,13 @@ namespace Quantumart.QPublishing.Database
                     resultHash[linqKey] = content.Id;
                 }
             }
+
             contentIdForLinqHash[key] = resultHash;
             return resultHash;
         }
 
         #region Add hash entries
+
         internal ContentAttribute AddAttributeHashEntry(string itemKey)
         {
             var dt = Cnn.GetRealData("EXEC sp_executesql N'SELECT CONTENT_ID FROM CONTENT_ATTRIBUTE WITH(NOLOCK) WHERE ATTRIBUTE_ID = @attrId', N'@attrId NUMERIC', @attrId = " + itemKey);
@@ -603,8 +585,10 @@ namespace Quantumart.QPublishing.Database
 
                     localHash[nameKey] = current.Id;
                 }
+
                 dualHash.Ids[siteKey] = localHash;
             }
+
             return localHash;
         }
 
@@ -616,7 +600,6 @@ namespace Quantumart.QPublishing.Database
 
         internal ArrayList AddAttributeIdHashEntry(string contentKey, string itemKey, ref ContentAttribute result)
         {
-
             lock (GetLockObject(AttributeHashKey))
             {
                 var dualHash = GetCachedDualHashTable(AttributeHashKey);
@@ -626,7 +609,6 @@ namespace Quantumart.QPublishing.Database
                 var attrs = new ArrayList(dt2.Rows.Count);
                 foreach (DataRow row in dt2.Rows)
                 {
-
                     var id = (int)(decimal)row["attribute_id"];
                     attrs.Add(id);
                     var key = id.ToString();
@@ -720,6 +702,7 @@ namespace Quantumart.QPublishing.Database
         #endregion
 
         #region Fill
+
         internal Hashtable FillTemplateObjectsHashTable()
         {
             var dv = Page.UseMultiSiteLogic ? Cnn.GetAllTemplateObjects("") : Cnn.GetTemplateObjects("");
@@ -731,9 +714,9 @@ namespace Quantumart.QPublishing.Database
                 var tKey = drv["TEMPLATE_NAME"].ToString().ToLowerInvariant();
                 var fKey = drv["FORMAT_NAME"].ToString().ToLowerInvariant();
                 var oKey = drv["OBJECT_NAME"].ToString().ToLowerInvariant();
-                string ofKey = $"{oKey}.{fKey}";
-                string tofKey = $"{tKey}.{oKey}.{fKey}";
-                string toKey = $"{tKey}.{oKey}";
+                var ofKey = $"{oKey}.{fKey}";
+                var tofKey = $"{tKey}.{oKey}.{fKey}";
+                var toKey = $"{tKey}.{oKey}";
                 var isCurrentTemplate = Page.page_template_id.ToString() == drv["PAGE_TEMPLATE_ID"].ToString();
                 var isDefaultFormat = drv["CURRENT_FORMAT_ID"].ToString() == drv["DEFAULT_FORMAT_ID"].ToString();
                 if (Page.UseMultiSiteLogic)
@@ -779,7 +762,7 @@ namespace Quantumart.QPublishing.Database
                 var siteId = drv["SITE_ID"].ToString();
                 var url = Page.UseMultiSiteLogic ? Page.GetControlUrl(drv, int.Parse(siteId)) : Page.GetControlUrl(drv);
                 var oKey = drv["OBJECT_NAME"].ToString().ToLowerInvariant();
-                string ofKey = $"{oKey}.{drv["FORMAT_NAME"].ToString().ToLowerInvariant()}";
+                var ofKey = $"{oKey}.{drv["FORMAT_NAME"].ToString().ToLowerInvariant()}";
                 if (Page.UseMultiSiteLogic)
                 {
                     var id = drv["PAGE_ID"].ToString();
@@ -861,7 +844,7 @@ namespace Quantumart.QPublishing.Database
             var templateMapping = new Hashtable(dv.Count);
             foreach (DataRowView drv in dv)
             {
-                string key = $"{drv["PAGE_TEMPLATE_ID1"]},{drv["SITE_ID2"]}";
+                var key = $"{drv["PAGE_TEMPLATE_ID1"]},{drv["SITE_ID2"]}";
                 if (!templateMapping.Contains(key))
                 {
                     templateMapping.Add(key, DBConnector.GetNumInt(drv["PAGE_TEMPLATE_ID2"]));
@@ -874,7 +857,7 @@ namespace Quantumart.QPublishing.Database
         private Hashtable FillStatusHashTable()
         {
             const string weightSql = "SELECT MAX(WEIGHT) AS MAX_WEIGHT, SITE_ID FROM STATUS_TYPE WITH(NOLOCK) GROUP BY SITE_ID";
-            string sql = $"WITH WEIGHTS AS({weightSql}) SELECT ST.SITE_ID, STATUS_TYPE_ID AS ID, STATUS_TYPE_NAME AS NAME FROM STATUS_TYPE ST WITH(NOLOCK) INNER JOIN WEIGHTS W ON ST.SITE_ID = W.SITE_ID AND ST.WEIGHT = W.MAX_WEIGHT";
+            var sql = $"WITH WEIGHTS AS({weightSql}) SELECT ST.SITE_ID, STATUS_TYPE_ID AS ID, STATUS_TYPE_NAME AS NAME FROM STATUS_TYPE ST WITH(NOLOCK) INNER JOIN WEIGHTS W ON ST.SITE_ID = W.SITE_ID AND ST.WEIGHT = W.MAX_WEIGHT";
             var dt = Cnn.GetRealData(sql);
             var statuses = new Hashtable(dt.Rows.Count);
             foreach (DataRow row in dt.Rows)
@@ -933,6 +916,7 @@ namespace Quantumart.QPublishing.Database
                     EnableOnScreen = (bool)row["ENABLE_ONSCREEN"]
                 };
             }
+
             return sites;
         }
 
@@ -1016,10 +1000,7 @@ namespace Quantumart.QPublishing.Database
             throw new Exception("Incorrect key for saved hashtable: " + key);
         }
 
-        private static DualHashTable FillDualHashTable(string key)
-        {
-            return new DualHashTable();
-        }
+        private static DualHashTable FillDualHashTable(string key) => new DualHashTable();
 
         #endregion
 
@@ -1027,17 +1008,14 @@ namespace Quantumart.QPublishing.Database
 
         #region Generics
 
-        public T GetCachedEntity<T>(string key, Func<T> fillAction) where T : class
-        {
-            return GetCachedEntity(key, GetInternalExpirationTime(key), fillAction);
-        }
+        public T GetCachedEntity<T>(string key, Func<T> fillAction)
+            where T : class => GetCachedEntity(key, GetInternalExpirationTime(key), fillAction);
 
-        public T GetCachedEntity<T>(string key, Func<string, T> fillAction) where T : class
-        {
-            return GetCachedEntity(key, GetInternalExpirationTime(key), fillAction);
-        }
+        public T GetCachedEntity<T>(string key, Func<string, T> fillAction)
+            where T : class => GetCachedEntity(key, GetInternalExpirationTime(key), fillAction);
 
-        public T GetCachedEntity<T>(string key, double cacheInterval, Func<string, T> fillAction) where T : class
+        public T GetCachedEntity<T>(string key, double cacheInterval, Func<string, T> fillAction)
+            where T : class
         {
             T ht;
             if (!Cnn.CacheData)
@@ -1051,6 +1029,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     return null;
                 }
+
                 ht = (T)obj;
                 if (ht == null)
                 {
@@ -1065,10 +1044,12 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
             }
+
             return ht;
         }
 
-        public T GetCachedEntity<T>(string key, double cacheInterval, Func<T> fillAction) where T : class
+        public T GetCachedEntity<T>(string key, double cacheInterval, Func<T> fillAction)
+            where T : class
         {
             T ht;
             if (!Cnn.CacheData)
@@ -1082,6 +1063,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     return null;
                 }
+
                 ht = (T)obj;
                 if (ht == null)
                 {
@@ -1096,6 +1078,7 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
             }
+
             return ht;
         }
 
@@ -1147,21 +1130,14 @@ namespace Quantumart.QPublishing.Database
             return cacheKey == ItemHashKey ? GetLongExpirationTime() : GetExpirationTime();
         }
 
-        private static double GetShortExpirationTime()
-        {
-            return GetExpirationTime("InternalShortExpirationTime", DefaultShortExpirationTime);
-        }
+        private static double GetShortExpirationTime() => GetExpirationTime("InternalShortExpirationTime", DefaultShortExpirationTime);
 
-        private static double GetLongExpirationTime()
-        {
-            return GetExpirationTime("InternalLongExpirationTime", DefaultLongExpirationTime);
-        }
+        private static double GetLongExpirationTime() => GetExpirationTime("InternalLongExpirationTime", DefaultLongExpirationTime);
 
         private static double GetExpirationTime(string key = "InternalExpirationTime", double defaultValue = DefaultExpirationTime)
         {
             var expireInMinutes = DBConnector.AppSettings[key];
-            double result;
-            if (double.TryParse(expireInMinutes, out result))
+            if (double.TryParse(expireInMinutes, out var result))
             {
                 if (result < MinExpirationTime)
                 {
@@ -1176,9 +1152,8 @@ namespace Quantumart.QPublishing.Database
 
         private static int GetPrefetchLimit()
         {
-            int result;
             var prefetchLimitString = DBConnector.AppSettings["PrefetchLimit"];
-            if (int.TryParse(prefetchLimitString, out result))
+            if (int.TryParse(prefetchLimitString, out var result))
             {
                 if (result < 1)
                 {
@@ -1199,7 +1174,6 @@ namespace Quantumart.QPublishing.Database
 
         public string CacheKeyPrefix => "QA.dll." + Cnn.InstanceCachePrefix;
 
-
         public string GetDataKeyPrefix => $"{CacheKeyPrefix}GetData.";
 
         public string FileContentsCacheKeyPrefix => CacheKeyPrefix + ".FileContents.";
@@ -1210,17 +1184,11 @@ namespace Quantumart.QPublishing.Database
 
         public string StatusKey => $"{CacheKeyPrefix}statusList";
 
-        private string GetPageObjectKey(int pageId)
-        {
-            return $"{CacheKeyPrefix}pageObjects{pageId}";
-        }
+        private string GetPageObjectKey(int pageId) => $"{CacheKeyPrefix}pageObjects{pageId}";
 
         public string PageObjectKey => GetPageObjectKey(Page?.page_id ?? 0);
 
-        private string GetPageObjectHashKey(int pageId)
-        {
-            return $"{CacheKeyPrefix}pageObjectsHash{pageId}";
-        }
+        private string GetPageObjectHashKey(int pageId) => $"{CacheKeyPrefix}pageObjectsHash{pageId}";
 
         public string PageObjectHashKey => GetPageObjectHashKey(Page?.page_id ?? 0);
 
@@ -1236,10 +1204,7 @@ namespace Quantumart.QPublishing.Database
 
         public string TemplateObjectHashKey => GetTemplateObjectHashKey(Page?.page_template_id ?? 0);
 
-        private string GetTemplateObjectHashKey(int pageTemplateId)
-        {
-            return $"{CacheKeyPrefix}templateObjectsHash{pageTemplateId}";
-        }
+        private string GetTemplateObjectHashKey(int pageTemplateId) => $"{CacheKeyPrefix}templateObjectsHash{pageTemplateId}";
 
         public string TemplateKey => $"{CacheKeyPrefix}templates";
 
@@ -1265,10 +1230,7 @@ namespace Quantumart.QPublishing.Database
 
         public string PageMappingHashKey => GetPageMappingHashKey(Page?.PageId ?? 0);
 
-        private string GetPageMappingHashKey(int pageId)
-        {
-            return $"{CacheKeyPrefix}pageMappingHash{pageId}";
-        }
+        private string GetPageMappingHashKey(int pageId) => $"{CacheKeyPrefix}pageMappingHash{pageId}";
 
         public string ContentHashKey => $"{CacheKeyPrefix}contentHash";
 
@@ -1301,6 +1263,7 @@ namespace Quantumart.QPublishing.Database
         #endregion
 
         #region Cache files
+
         private string GetCacheFilePath(string cacheKey)
         {
             if (cacheKey == PageObjectKey || cacheKey == PageObjectHashKey)
@@ -1356,9 +1319,11 @@ namespace Quantumart.QPublishing.Database
         public string StructureCacheFile => $"{CacheFilePath}\\\\structure.dep";
 
         public string AllStructureCacheFile => $"{CacheFilePath}\\\\all_structure.dep";
+
         #endregion
 
         #region SetWebSpecificInformation
+
         public void SetWebSpecificInformation(QPageEssential page)
         {
             Page = page;
@@ -1398,6 +1363,7 @@ namespace Quantumart.QPublishing.Database
                 _fieldsToValidate.Add(AllPagesKey, new[] { "page_name" });
             }
         }
+
         #endregion
     }
 }

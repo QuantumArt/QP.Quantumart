@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using Quantumart.QPublishing.Database;
@@ -115,19 +115,10 @@ namespace Quantumart.QPublishing.Info
             return cmd;
         }
 
-        public string GetKey(string prefix)
-        {
-            return $"{prefix}GetContainer.::{Select}::{From}::{Where}::{OrderBy}::{StartRow}::{PageSize}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}";
-        }
+        public string GetKey(string prefix) => $"{prefix}GetContainer.::{Select}::{From}::{Where}::{OrderBy}::{StartRow}::{PageSize}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}";
 
         public string OutputParamName => "@TotalRecords";
 
-        public string CountSql
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public string CountSql => throw new NotImplementedException();
     }
 }

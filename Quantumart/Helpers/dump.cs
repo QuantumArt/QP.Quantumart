@@ -5,6 +5,7 @@ using System.IO;
 using System.Xml;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class Dump
@@ -30,13 +31,14 @@ namespace Quantumart.QPublishing.Helpers
                         _tempDirectory = @"c:\temp";
                     }
                 }
+
                 return _tempDirectory;
             }
         }
 
         public static void DumpHashTable(Hashtable ht, string inKey)
         {
-            string fileName = $@"{TempDirectory}\ht{DateTime.Now.Ticks}.txt";
+            var fileName = $@"{TempDirectory}\ht{DateTime.Now.Ticks}.txt";
             if (Directory.Exists(TempDirectory))
             {
                 lock (HashLocker)
@@ -52,12 +54,11 @@ namespace Quantumart.QPublishing.Helpers
                     sw.Close();
                 }
             }
-
         }
 
         public static void DumpDataTable(DataTable dt, string name)
         {
-            string fileName = $@"{TempDirectory}\db{DateTime.Now.Ticks}.txt";
+            var fileName = $@"{TempDirectory}\db{DateTime.Now.Ticks}.txt";
             if (Directory.Exists(TempDirectory) && !File.Exists(fileName))
             {
                 lock (DataLocker)
@@ -79,7 +80,6 @@ namespace Quantumart.QPublishing.Helpers
                     }
                 }
             }
-
         }
 
         public static void DumpDataTable(DataTable dt)

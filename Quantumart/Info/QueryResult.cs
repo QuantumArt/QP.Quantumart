@@ -1,5 +1,6 @@
-﻿using System.Data;
+using System.Data;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class QueryResult

@@ -6,6 +6,7 @@ using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public class QPublishControlEssential
@@ -81,15 +82,16 @@ namespace Quantumart.QPublishing.Controls
                 {
                     _contentName = Page.Cnn.GetContentName(Convert.ToInt32(ContentId));
                 }
+
                 return _contentName;
             }
-            set { _contentName = value; }
+            set => _contentName = value;
         }
 
-        public new Hashtable FieldInfoDictionary
+        public Hashtable FieldInfoDictionary
         {
-            get { return _fieldInfoDictionary ?? (_fieldInfoDictionary = new Hashtable()); }
-            set { _fieldInfoDictionary = value; }
+            get => _fieldInfoDictionary ?? (_fieldInfoDictionary = new Hashtable());
+            set => _fieldInfoDictionary = value;
         }
 
         public string ContentUploadUrl
@@ -102,7 +104,7 @@ namespace Quantumart.QPublishing.Controls
                 }
                 return _contentUploadUrl;
             }
-            set { _contentUploadUrl = value; }
+            set => _contentUploadUrl = value;
         }
 
         public string CacheKey { get; set; }
@@ -112,9 +114,7 @@ namespace Quantumart.QPublishing.Controls
             get
             {
                 var select = "c.*";
-                select = UseSecurity && !UseLevelFiltration ?
-                    $"{select}, IsNull(pi.permission_level,0) as current_permission_level "
-                    : select;
+                select = UseSecurity && !UseLevelFiltration ? $"{select}, IsNull(pi.permission_level,0) as current_permission_level " : select;
                 return select;
             }
         }
@@ -123,14 +123,12 @@ namespace Quantumart.QPublishing.Controls
         {
             get
             {
-                string from =
-                    $" content_{ContentId}{(Page.IsStage || ForceUnited ? "_UNITED" : string.Empty)} AS c WITH (NOLOCK)";
+                var from = $" content_{ContentId}{(Page.IsStage || ForceUnited ? "_UNITED" : string.Empty)} AS c WITH (NOLOCK)";
                 if (UseSecurity)
                 {
-                    from = UseLevelFiltration ?
-                        $"{from} inner join ({MagicString}) as pi on c.content_item_id = pi.content_item_id"
-                        : $"{from} left outer join ({MagicString}) as pi on c.content_item_id = pi.content_item_id";
+                    from = UseLevelFiltration ? $"{from} inner join ({MagicString}) as pi on c.content_item_id = pi.content_item_id" : $"{from} left outer join ({MagicString}) as pi on c.content_item_id = pi.content_item_id";
                 }
+
                 return from;
             }
         }
@@ -141,16 +139,13 @@ namespace Quantumart.QPublishing.Controls
             {
                 var visibleFilter = UseSchedule ? "c.visible = 1" : "1 = 1";
                 var archiveFilter = ShowArchive ? string.Empty : "and c.archive = 0";
-                var statusFilter = Page.IsStage ? string.Empty :
-                    $"AND c.status_type_id in (select status_type_id from status_type where status_type_name in ({Statuses}))";
+                var statusFilter = Page.IsStage ? string.Empty : $"AND c.status_type_id in (select status_type_id from status_type where status_type_name in ({Statuses}))";
                 if (IsRoot)
                 {
-                    return !string.IsNullOrEmpty(CustomFilter) ? CustomFilter :
-                        $"c.content_item_id = {Page.NumValue("id")}";
+                    return !string.IsNullOrEmpty(CustomFilter) ? CustomFilter : $"c.content_item_id = {Page.NumValue("id")}";
                 }
 
-                return
-                    $" {visibleFilter} {archiveFilter} {statusFilter} {QPageEssential.GetSimpleContainerFilterExpression(CustomFilter)} ";
+                return $" {visibleFilter} {archiveFilter} {statusFilter} {QPageEssential.GetSimpleContainerFilterExpression(CustomFilter)} ";
             }
         }
 
@@ -163,6 +158,7 @@ namespace Quantumart.QPublishing.Controls
             {
                 ContentId = Page.Cnn.GetDynamicContentId(Page.InternalStrValue(DynamicVariable), ContentId, Page.site_id, ref extSiteId);
             }
+
             ExtSiteId = extSiteId;
         }
 
@@ -172,10 +168,7 @@ namespace Quantumart.QPublishing.Controls
             return backendUrl;
         }
 
-        public string GetFieldUploadUrl(string fieldName)
-        {
-            return _currentControl.QPage.GetFieldUploadUrl(fieldName, ContentId);
-        }
+        public string GetFieldUploadUrl(string fieldName) => _currentControl.QPage.GetFieldUploadUrl(fieldName, ContentId);
 
         // ReSharper disable once RedundantAssignment
         protected long[] GetRandomIds(string from, string where, int count, ref long totalCount)
@@ -186,11 +179,11 @@ namespace Quantumart.QPublishing.Controls
             {
                 count = ids.Length;
             }
+
             totalCount = ids.Length;
 
             var rnd = new Random(DateTime.Now.Millisecond);
             var result = new long[count];
-
             for (var i = 0; i <= count - 1; i++)
             {
                 var j = rnd.Next(i, ids.Length);
@@ -239,6 +232,7 @@ namespace Quantumart.QPublishing.Controls
                     return obj.ToString();
                 }
             }
+
             return result;
         }
 
@@ -249,6 +243,7 @@ namespace Quantumart.QPublishing.Controls
             {
                 select = " c.* ";
             }
+
             var uid = int.Parse(GetSessionVariable("@qp_UID", "0"));
             var gid = int.Parse(GetSessionVariable("@qp_GID", "0"));
             var queryObj = new ContainerQueryObject(Page.Cnn, select, from, where, orderBy, StartRow, PageSize, !RotateContent && PageSize != "0", UseSecurity, Duration, StartLevel, EndLevel, ContentId, uid, gid);
@@ -283,6 +278,7 @@ namespace Quantumart.QPublishing.Controls
                     }
                 }
             }
+
             TotalRecords = Data.Rows.Count;
             RecordsPerPage = int.Parse(PageSize);
         }

@@ -6,6 +6,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Pages;
 
 // ReSharper disable InconsistentNaming
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public interface IQUserControl

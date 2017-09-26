@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -6,20 +7,15 @@ using System.Linq;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        public DataTable GetArticleVersions(int id)
-        {
-            return GetRealData("exec qp_get_versions " + id);
-        }
+        public DataTable GetArticleVersions(int id) => GetRealData("exec qp_get_versions " + id);
 
-        private static string GetVersionFolderFormat()
-        {
-            return @"{0}\_qp7_article_files_versions\{1}";
-        }
+        private static string GetVersionFolderFormat() => @"{0}\_qp7_article_files_versions\{1}";
 
         public string GetContentLibraryFolder(int articleId)
         {
@@ -28,25 +24,13 @@ namespace Quantumart.QPublishing.Database
             return GetContentLibraryDirectory(siteId, contentId);
         }
 
-        public string GetVersionFolder(int articleId, int versionId)
-        {
-            return versionId == 0 ? string.Empty : string.Format(GetVersionFolderFormat(), GetContentLibraryFolder(articleId), versionId);
-        }
+        public string GetVersionFolder(int articleId, int versionId) => versionId == 0 ? string.Empty : string.Format(GetVersionFolderFormat(), GetContentLibraryFolder(articleId), versionId);
 
-        public string GetVersionFolderForContent(int contentId, int versionId)
-        {
-            return versionId == 0 ? string.Empty : string.Format(GetVersionFolderFormat(), GetContentLibraryDirectory(contentId), versionId);
-        }
+        public string GetVersionFolderForContent(int contentId, int versionId) => versionId == 0 ? string.Empty : string.Format(GetVersionFolderFormat(), GetContentLibraryDirectory(contentId), versionId);
 
-        public string GetCurrentVersionFolder(int articleId)
-        {
-            return string.Format(GetVersionFolderFormat(), GetContentLibraryFolder(articleId), "current");
-        }
+        public string GetCurrentVersionFolder(int articleId) => string.Format(GetVersionFolderFormat(), GetContentLibraryFolder(articleId), "current");
 
-        public string GetCurrentVersionFolderForContent(int contentId)
-        {
-            return string.Format(GetVersionFolderFormat(), GetContentLibraryDirectory(contentId), "current");
-        }
+        public string GetCurrentVersionFolderForContent(int contentId) => string.Format(GetVersionFolderFormat(), GetContentLibraryDirectory(contentId), "current");
 
         private IEnumerable<ContentAttribute> GetFilesAttributesForVersionControl(int contentId)
         {
@@ -103,7 +87,6 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.AddWithValue("@fieldId", field.Id);
             var result = GetRealScalarData(cmd);
             return result?.ToString() ?? string.Empty;
-
         }
 
         private DataTable GetVersionDataValues(IEnumerable<int> versionIds, IEnumerable<int> attrIds)
@@ -145,25 +128,13 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private int GetEarliestVersionId(int articleId)
-        {
-            return GetAggregateVersionFunction("MIN", articleId);
-        }
+        private int GetEarliestVersionId(int articleId) => GetAggregateVersionFunction("MIN", articleId);
 
-        private int GetLatestVersionId(int articleId)
-        {
-            return GetAggregateVersionFunction("MAX", articleId);
-        }
+        private int GetLatestVersionId(int articleId) => GetAggregateVersionFunction("MAX", articleId);
 
-        private int[] GetLatestVersionIds(int[] ids)
-        {
-            return GetAggregateVersionFunction("MAX", ids);
-        }
+        private int[] GetLatestVersionIds(int[] ids) => GetAggregateVersionFunction("MAX", ids);
 
-        private int GetVersionsCount(int articleId)
-        {
-            return GetAggregateVersionFunction("COUNT", articleId);
-        }
+        private int GetVersionsCount(int articleId) => GetAggregateVersionFunction("COUNT", articleId);
 
         private int GetAggregateVersionFunction(string function, int articleId)
         {
@@ -194,11 +165,11 @@ namespace Quantumart.QPublishing.Database
                 CommandText = $"select cast({function}(content_item_version_id) as int) as data from content_item_version where content_item_id in (select id from @ids) group by content_item_id",
                 Parameters =
                 {
-                    new SqlParameter("@ids", SqlDbType.Structured) {TypeName = "Ids", Value = IdsToDataTable(ids)}
+                    new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(ids) }
                 }
             };
 
-            return GetRealData(cmd).AsEnumerable().Select(n => n.Field<int>("data")).ToArray();
+            return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["data"])).ToArray();
         }
     }
 }

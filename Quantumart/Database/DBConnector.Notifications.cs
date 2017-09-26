@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -13,6 +13,7 @@ using Microsoft.VisualBasic;
 using Quantumart.QP8.Assembling;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
@@ -35,7 +36,6 @@ namespace Quantumart.QPublishing.Database
                     {
                         EnqueueNotification(id, eventName, externalUrl, item);
                     }
-
                 }
                 else
                 {
@@ -60,7 +60,6 @@ namespace Quantumart.QPublishing.Database
                     ExternalExceptionHandler?.Invoke(ex);
                     oldDoc = newDoc;
                 }
-
             }
             else if (eventName == NotificationEvent.Remove)
             {
@@ -90,14 +89,14 @@ namespace Quantumart.QPublishing.Database
         {
             var queryParams = new Dictionary<string, object>
             {
-                {"eventName", eventName},
-                {"id", id},
-                {"contentId", item.ContentId},
-                {"siteId", GetSiteIdByContentId(item.ContentId)},
-                {"visible", item.Visible},
-                {"archive", item.Archive},
-                {"splitted", item.Splitted},
-                {"statusName", item.StatusName}
+                { "eventName", eventName },
+                { "id", id },
+                { "contentId", item.ContentId },
+                { "siteId", GetSiteIdByContentId(item.ContentId) },
+                { "visible", item.Visible },
+                { "archive", item.Archive },
+                { "splitted", item.Splitted },
+                { "statusName", item.StatusName }
             };
 
             if (eventName == NotificationEvent.Modify || eventName == NotificationEvent.StatusChanged || eventName == NotificationEvent.StatusPartiallyChanged)
@@ -111,12 +110,7 @@ namespace Quantumart.QPublishing.Database
                 }
             }
 
-            var arr =
-                queryParams
-                .AsEnumerable()
-                .Select(n => $"{n.Key}={n.Value.ToString().ToLowerInvariant()}")
-                .ToArray();
-
+            var arr = queryParams.AsEnumerable().Select(n => $"{n.Key}={n.Value.ToString().ToLowerInvariant()}").ToArray();
             var queryString = string.Join("&", arr);
             var delimiter = externalUrl.Contains("?") ? "&" : "?";
             var fullUrl = string.Concat(externalUrl, delimiter, queryString);
@@ -169,7 +163,6 @@ namespace Quantumart.QPublishing.Database
                         var url = GetString(row["EXTERNAL_URL"], string.Empty);
                         ProceedExternalNotification(contentItemId, notificationOn, url, item, useService);
                     }
-
                 }
 
                 if (!DisableInternalNotifications)
@@ -191,7 +184,6 @@ namespace Quantumart.QPublishing.Database
                         {
                             if (!ReferenceEquals(notifyRow["OBJECT_ID"], DBNull.Value))
                             {
-
                                 var objectId = GetNumInt(notifyRow["OBJECT_ID"]);
                                 var contentId = GetNumInt(notifyRow["CONTENT_ID"]);
                                 var objectFormatId = GetNumInt(notifyRow["FORMAT_ID"]);
@@ -226,7 +218,6 @@ namespace Quantumart.QPublishing.Database
                                         From = GetFromAddress(notifyRow)
                                     };
 
-
                                     //set To
                                     SetToMail(notifyRow, contentItemId, notificationOn, notificationEmail, mailMess, ref strSqlRegisterNotifForUsers);
 
@@ -241,10 +232,8 @@ namespace Quantumart.QPublishing.Database
                                     }
                                     catch (Exception ex)
                                     {
-                                        body =
-                                            $"An error has occurred while getting url data: {targetUrl}. Error message: {ex.Message}";
-                                        var errorMessage =
-                                            $"DbConnector.cs, SendNotification, MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
+                                        body = $"An error has occurred while getting url data: {targetUrl}. Error message: {ex.Message}";
+                                        var errorMessage = $"DbConnector.cs, SendNotification, MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
                                         EventLog.WriteEntry("Application", errorMessage);
                                         doAttachFiles = false;
                                     }
@@ -265,7 +254,6 @@ namespace Quantumart.QPublishing.Database
                                     }
                                 }
                             }
-
                         }
                     }
                 }
@@ -297,12 +285,7 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        #region Loading Url
-
-        public string GetUrlContent(string url)
-        {
-            return GetUrlContent(url, true);
-        }
+        public string GetUrlContent(string url) => GetUrlContent(url, true);
 
         public string GetUrlContent(string url, bool throwException)
         {
@@ -345,18 +328,9 @@ namespace Quantumart.QPublishing.Database
             return functionReturnValue;
         }
 
-        private string GetObjectFolderUrl(int siteId, bool isLive)
-        {
-            return $"{GetSiteUrl(siteId, isLive)}/qp_notifications/";
-        }
+        private string GetObjectFolderUrl(int siteId, bool isLive) => $"{GetSiteUrl(siteId, isLive)}/qp_notifications/";
 
-        private string GetNotificationBodyUrl(int siteId, int objectId, int contentItemId, bool isLive, string notificationOn)
-        {
-            return $"{GetObjectFolderUrl(siteId, isLive || ForceLive(siteId))}{objectId}.{GetSiteFileExtension(siteId)}?id={contentItemId}&on={notificationOn}";
-        }
-        #endregion
-
-        #region Assembling
+        private string GetNotificationBodyUrl(int siteId, int objectId, int contentItemId, bool isLive, string notificationOn) => $"{GetObjectFolderUrl(siteId, isLive || ForceLive(siteId))}{objectId}.{GetSiteFileExtension(siteId)}?id={contentItemId}&on={notificationOn}";
 
         public void AssembleFormatToFile(int siteId, int objectFormatId)
         {
@@ -394,14 +368,10 @@ namespace Quantumart.QPublishing.Database
             return "aspx";
         }
 
-        private string GetSiteFileExtension(int siteId)
-        {
-            return GetFileExtension(GetSitePlatform(siteId));
-        }
+        private string GetSiteFileExtension(int siteId) => GetFileExtension(GetSitePlatform(siteId));
 
         private string GetFormatCharset(int objectFormatId)
         {
-
             string functionReturnValue;
             var sb = new StringBuilder();
             sb.Append("EXEC sp_executesql N'select p.charset as page_charset, pt.charset as template_charset from object_format objf ");
@@ -418,34 +388,23 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-                functionReturnValue = "";
+                functionReturnValue = string.Empty;
             }
+
             return functionReturnValue;
         }
 
         private string GetAspWrapperUrl(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive)
         {
             var liveString = isLive ? "1" : "0";
-
-            return
-                $"{GetSiteUrl(siteId, isLive)}{AppSettings["RelNotifyUrl"]}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
+            return $"{GetSiteUrl(siteId, isLive)}{AppSettings["RelNotifyUrl"]}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
         }
-
-        #endregion
-
-        #region Get notification data
 
         private DataTable GetNotificationsTable(string notificationOn, int contentItemId)
         {
-            var testcmd =
-                new SqlCommand(
-                    "select count(*) From information_schema.columns where column_name = 'USE_SERVICE' and table_name = 'NOTIFICATIONS'")
-                {
-                    CommandType = CommandType.Text
-                };
+            var testcmd = new SqlCommand("select count(*) From information_schema.columns where column_name = 'USE_SERVICE' and table_name = 'NOTIFICATIONS'") { CommandType = CommandType.Text };
             var colCount = (int)GetRealScalarData(testcmd);
             var serviceString = colCount == 0 ? "" : ", n.USE_SERVICE";
-
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
             sb.Append("EXEC sp_executesql N'");
@@ -463,6 +422,7 @@ namespace Quantumart.QPublishing.Database
                 var status = dt.Rows[0]["status_type_id"].ToString();
                 sb.AppendFormat(" AND (n.notify_on_status_type_id IS NULL OR n.notify_on_status_type_id = {0})", status);
             }
+
             sb.AppendFormat("', N'@contentId NUMERIC', @contentId = {0}", contentId);
             return GetCachedData(sb.ToString());
         }
@@ -474,7 +434,6 @@ namespace Quantumart.QPublishing.Database
             var eMailAttrId = notifyRow["EMAIL_ATTRIBUTE_ID"];
 
             string strSql;
-
             if (!ReferenceEquals(userId, DBNull.Value))
             {
                 // Notify User
@@ -496,9 +455,7 @@ namespace Quantumart.QPublishing.Database
                 strSql = "EXEC sp_executesql N'SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.contentItemId=@itemId'";
             }
 
-
-            return GetCachedData(
-                $"{strSql}, N'@itemId NUMERIC, @userId NUMERIC, @groupId NUMERIC, @fieldId NUMERIC', @itemId = {contentItemId}, @userId = {ConvertToNullString(userId)}, @groupId = {ConvertToNullString(groupId)}, @fieldId = {ConvertToNullString(eMailAttrId)}");
+            return GetCachedData($"{strSql}, N'@itemId NUMERIC, @userId NUMERIC, @groupId NUMERIC, @fieldId NUMERIC', @itemId = {contentItemId}, @userId = {ConvertToNullString(userId)}, @groupId = {ConvertToNullString(groupId)}, @fieldId = {ConvertToNullString(eMailAttrId)}");
         }
 
         private static string GetSqlRegisterNotificationsForUsers(DataTable toTable, int contentItemId, int notificationId, string notificationOn)
@@ -515,23 +472,13 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
             }
+
             return sb.ToString();
         }
 
+        private static string ConvertToString(object obj) => obj == DBNull.Value ? "" : obj.ToString();
 
-        private static string ConvertToString(object obj)
-        {
-            return obj == DBNull.Value ? "" : obj.ToString();
-        }
-
-        private static string ConvertToNullString(object obj)
-        {
-            return ReferenceEquals(obj, DBNull.Value) ? "NULL" : obj.ToString();
-        }
-
-        #endregion
-
-        #region Working with mail message
+        private static string ConvertToNullString(object obj) => ReferenceEquals(obj, DBNull.Value) ? "NULL" : obj.ToString();
 
         private MailAddress GetFromAddress(DataRow notifyRow)
         {
@@ -573,11 +520,9 @@ namespace Quantumart.QPublishing.Database
 
         public void AttachFiles(MailMessage mailMess, int siteId, int contentId, int contentItemId)
         {
-            var strDataSql =
-                $"EXEC sp_executesql N'select cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = @contentId and ca.attribute_type_id in (7,8) and cd.content_item_id = @itemId', N'@contentId NUMERIC, @itemId NUMERIC' , @contentId = {contentId}, @itemId = {contentItemId}";
+            var strDataSql = $"EXEC sp_executesql N'select cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = @contentId and ca.attribute_type_id in (7,8) and cd.content_item_id = @itemId', N'@contentId NUMERIC, @itemId NUMERIC' , @contentId = {contentId}, @itemId = {contentItemId}";
             var rstData = GetRealData(strDataSql);
             var currentDir = GetUploadDir(siteId) + "\\contents\\" + contentId;
-
             foreach (DataRow fileRow in rstData.Rows)
             {
                 var fileName = currentDir + "\\" + fileRow["data"];
@@ -592,7 +537,6 @@ namespace Quantumart.QPublishing.Database
         {
             var mailHost = AppSettings["MailHost"];
             var smtpMail = new SmtpClient { UseDefaultCredentials = false };
-
             if (string.IsNullOrEmpty(mailHost))
             {
                 throw new Exception("MailHost configuration parameter is not defined");
@@ -647,6 +591,5 @@ namespace Quantumart.QPublishing.Database
                 strSqlRegisterNotificationsForUsers = GetSqlRegisterNotificationsForUsers(toTable, contentItemId, notificationId, notificationOn);
             }
         }
-        #endregion
     }
 }

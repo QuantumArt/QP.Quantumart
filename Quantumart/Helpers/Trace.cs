@@ -6,6 +6,7 @@ using System.Web;
 using Microsoft.VisualBasic;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class QpTrace
@@ -47,7 +48,7 @@ namespace Quantumart.QPublishing.Helpers
         public void DoneTrace(TimeSpan duration, bool allowUserSessions, Hashtable values)
         {
             var dp = new DebugPrint();
-            var traceSession = allowUserSessions ? "" : dp.GetSessionString();
+            var traceSession = allowUserSessions ? string.Empty : dp.GetSessionString();
 
             var traceCookies = dp.GetCookiesString();
             var traceValues = dp.GetSimpleDictionaryString(ref values);
@@ -168,8 +169,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void SaveDefValues(string defValuesString, int traceFormatId)
         {
-            MatchCollection matches;
-            MatchesLine(defValuesString, "Value\\((?<key>.*?)\\)=(?<value>.*?);", out matches);
+            MatchesLine(defValuesString, "Value\\((?<key>.*?)\\)=(?<value>.*?);", out var matches);
             var conn = new DBConnector();
             foreach (Match match in matches)
             {
@@ -186,8 +186,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void SaveUndefValues(string undefValuesString, int traceFormatId)
         {
-            MatchCollection matches;
-            MatchesLine(undefValuesString, "Value\\((?<key>.*?)\\);", out matches);
+            MatchesLine(undefValuesString, "Value\\((?<key>.*?)\\);", out var matches);
             var conn = new DBConnector();
             foreach (Match match in matches)
             {

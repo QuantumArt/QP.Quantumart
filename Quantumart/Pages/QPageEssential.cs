@@ -16,6 +16,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.OnScreen;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Pages
 {
     public enum Mode
@@ -56,8 +57,8 @@ namespace Quantumart.QPublishing.Pages
 
         public bool UseMultiSiteLogic
         {
-            get { return _useMultiSiteLogic || DBConnector.AppSettings["UseMultiSiteConfiguration"] == "1"; }
-            set { _useMultiSiteLogic = value; }
+            get => _useMultiSiteLogic || DBConnector.AppSettings["UseMultiSiteConfiguration"] == "1";
+            set => _useMultiSiteLogic = value;
         }
 
         public bool IsLocalAssembling { get; set; } = false;
@@ -116,6 +117,7 @@ namespace Quantumart.QPublishing.Pages
                 {
                     return CssFolder;
                 }
+
                 return "";
             }
         }
@@ -124,8 +126,8 @@ namespace Quantumart.QPublishing.Pages
 
         public string TemplateNetName
         {
-            get { return _templateNetName ?? (_templateNetName = GetTemplateField("NET_TEMPLATE_NAME")); }
-            set { _templateNetName = value; }
+            get => _templateNetName ?? (_templateNetName = GetTemplateField("NET_TEMPLATE_NAME"));
+            set => _templateNetName = value;
         }
 
         public int ExpiresInMinutes => GetIntPageField("CACHE_HOURS") * 60;
@@ -155,52 +157,30 @@ namespace Quantumart.QPublishing.Pages
                         result = false;
                     }
                 }
+
                 return result;
             }
         }
 
         public string TemplateName
         {
-            get { return _templateName ?? (_templateName = GetTemplateField("TEMPLATE_NAME")); }
-            set { _templateName = value; }
+            get => _templateName ?? (_templateName = GetTemplateField("TEMPLATE_NAME"));
+            set => _templateName = value;
         }
 
         private string _templateFolder;
 
         public string TemplateFolder => _templateFolder ?? (_templateFolder = GetTemplateField("TEMPLATE_FOLDER"));
 
-        private DataView GetTemplateView(int pageTemplateId)
-        {
-            if (UseMultiSiteLogic)
-            {
-                return Cnn.GetAllTemplates($"PAGE_TEMPLATE_ID = {pageTemplateId}");
-            }
-            return Cnn.GetTemplates($"PAGE_TEMPLATE_ID = {pageTemplateId}");
-        }
+        private DataView GetTemplateView(int pageTemplateId) => UseMultiSiteLogic ? Cnn.GetAllTemplates($"PAGE_TEMPLATE_ID = {pageTemplateId}") : Cnn.GetTemplates($"PAGE_TEMPLATE_ID = {pageTemplateId}");
 
-        private DataView GetPageView(int pageId)
-        {
-            if (UseMultiSiteLogic)
-            {
-                return Cnn.GetAllPages($"PAGE_ID = {pageId}");
-            }
-            return Cnn.GetPages($"PAGE_ID = {pageId}");
-        }
+        private DataView GetPageView(int pageId) => UseMultiSiteLogic ? Cnn.GetAllPages($"PAGE_ID = {pageId}") : Cnn.GetPages($"PAGE_ID = {pageId}");
 
-        private static string GetViewFieldValue(DataView view, string fieldName)
-        {
-            return view.Count > 0 ? view[0][fieldName.ToUpperInvariant()].ToString() : string.Empty;
-        }
+        private static string GetViewFieldValue(DataView view, string fieldName) => view.Count > 0 ? view[0][fieldName.ToUpperInvariant()].ToString() : string.Empty;
 
-        private string GetTemplateField(string fieldName)
-        {
-            return PageTemplateId != 0 ? GetViewFieldValue(TemplateInfo, fieldName) : string.Empty;
-        }
+        private string GetTemplateField(string fieldName) => PageTemplateId != 0 ? GetViewFieldValue(TemplateInfo, fieldName) : string.Empty;
 
-        private string GetPageField(string fieldName)
-        {
-            return PageId != 0 ? GetViewFieldValue(PageInfo, fieldName) : string.Empty;
-        }
+        private string GetPageField(string fieldName) => PageId != 0 ? GetViewFieldValue(PageInfo, fieldName) : string.Empty;
 
         private bool? GetBooleanTemplateField(string fieldName)
         {
@@ -224,7 +204,7 @@ namespace Quantumart.QPublishing.Pages
 
         public int Expires
         {
-            get { return _expires; }
+            get => _expires;
             set
             {
                 _expires = value;
@@ -234,7 +214,7 @@ namespace Quantumart.QPublishing.Pages
 
         public HttpCacheability HttpCacheability
         {
-            get { return _httpCacheability; }
+            get => _httpCacheability;
             set
             {
                 _httpCacheability = value;
@@ -244,7 +224,7 @@ namespace Quantumart.QPublishing.Pages
 
         public HttpCacheRevalidation HttpCacheRevalidation
         {
-            get { return _httpCacheRevalidation; }
+            get => _httpCacheRevalidation;
             set
             {
                 _httpCacheRevalidation = value;
@@ -254,7 +234,7 @@ namespace Quantumart.QPublishing.Pages
 
         public TimeSpan ProxyMaxAge
         {
-            get { return _proxyMaxAge; }
+            get => _proxyMaxAge;
             set
             {
                 _proxyMaxAge = value;
@@ -264,7 +244,7 @@ namespace Quantumart.QPublishing.Pages
 
         public string CharSet
         {
-            get { return _charSet; }
+            get => _charSet;
 
             set
             {
@@ -275,7 +255,7 @@ namespace Quantumart.QPublishing.Pages
 
         public Encoding ContentEncoding
         {
-            get { return _contentEncoding; }
+            get => _contentEncoding;
             set
             {
                 _contentEncoding = value;
@@ -287,13 +267,11 @@ namespace Quantumart.QPublishing.Pages
 
         public bool IsStage { get; set; }
 
-
         public bool QpIsInStageMode
         {
-            get { return IsStage; }
-            set { IsStage = value; }
+            get => IsStage;
+            set => IsStage = value;
         }
-
 
         public DateTime LastModified { get; set; }
 
@@ -301,28 +279,17 @@ namespace Quantumart.QPublishing.Pages
 
         public bool GenerateTrace { get; set; }
 
-        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive)
-        {
-
-
-
-            return Cnn.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
+        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) => Cnn.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
             includeArchive);
-        }
 
-        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel)
-        {
-            return Cnn.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
+        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel) => Cnn.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
             includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel, true);
-        }
 
-        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords)
-        {
-            return Cnn.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
+        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords) => Cnn.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
             includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel, blnFilterRecords);
-        }
 
         #region "Functions for loading controls"
+
         internal void ShowObject(string name, object sender, object[] parameters, IQPage page, bool useSimpleInitOrder)
         {
             var inputName = page.GetInternalCall(name);
@@ -393,7 +360,6 @@ namespace Quantumart.QPublishing.Pages
 
         private void InitControl(string name, Control ctrl, object sender, bool useSimpleInitOrder)
         {
-
             if (ctrl is QUserControl)
             {
                 InitControl<QUserControl>(name, ctrl, sender, useSimpleInitOrder);
@@ -405,7 +371,6 @@ namespace Quantumart.QPublishing.Pages
             else if (ctrl is PartialCachingControl)
             {
                 AppendControl(sender, ctrl);
-
             }
         }
 
@@ -414,12 +379,14 @@ namespace Quantumart.QPublishing.Pages
             ((Control)sender).Controls.Add(ctrl);
         }
 
-        private void InitControl<T>(string name, Control ctrl, object sender, bool useSimpleInitOrder) where T : Control, IQUserControl
+        private void InitControl<T>(string name, Control ctrl, object sender, bool useSimpleInitOrder)
+            where T : Control, IQUserControl
         {
             if (QpTrace != null)
             {
                 InitControlTrace<T>(ctrl);
             }
+
             ((T)ctrl).UseSimpleInitOrder = useSimpleInitOrder;
             ((T)ctrl).OnLoadControl(sender, ref name);
             if (!useSimpleInitOrder)
@@ -435,7 +402,8 @@ namespace Quantumart.QPublishing.Pages
             }
         }
 
-        private void EndControlTrace<T>(Control ctrl) where T : Control, IQUserControl
+        private void EndControlTrace<T>(Control ctrl)
+            where T : Control, IQUserControl
         {
             if (((T)ctrl).FormatId != 0)
             {
@@ -451,7 +419,8 @@ namespace Quantumart.QPublishing.Pages
             }
         }
 
-        private void InitControlTrace<T>(Control ctrl) where T : Control, IQUserControl
+        private void InitControlTrace<T>(Control ctrl)
+            where T : Control, IQUserControl
         {
             if (QpTrace != null)
             {
@@ -460,15 +429,9 @@ namespace Quantumart.QPublishing.Pages
             }
         }
 
-        internal bool IsTemplateName(string name)
-        {
-            return Templates.Contains(name.ToLowerInvariant());
-        }
+        internal bool IsTemplateName(string name) => Templates.Contains(name.ToLowerInvariant());
 
-        internal bool IsTemplateName(string name, int siteId)
-        {
-            return IsTemplateName($"{siteId},{name}");
-        }
+        internal bool IsTemplateName(string name, int siteId) => IsTemplateName($"{siteId},{name}");
 
         public static string GetNetName(string netName, string id, string typeCode)
         {
@@ -476,6 +439,7 @@ namespace Quantumart.QPublishing.Pages
             {
                 return netName;
             }
+
             return typeCode + id;
         }
 
@@ -496,10 +460,7 @@ namespace Quantumart.QPublishing.Pages
             return sb.ToString();
         }
 
-        internal bool ControlExists(string url)
-        {
-            return File.Exists(HttpContext.Current.Server.MapPath(url));
-        }
+        internal bool ControlExists(string url) => File.Exists(HttpContext.Current.Server.MapPath(url));
 
         public string GetInternalCall(string userCall, SiteInfo[] sites)
         {
@@ -513,6 +474,7 @@ namespace Quantumart.QPublishing.Pages
                     return result;
                 }
             }
+
             return result;
         }
 
@@ -528,6 +490,7 @@ namespace Quantumart.QPublishing.Pages
             var mappedPageId = 0;
             var mappedPageTemplateId = 0;
             var result = string.Empty;
+
             //HttpContext.Current.Response.Write("Getting usercall: " && userCall && "<br>")
             var call = new ObjectCall(userCall, this);
 
@@ -539,13 +502,15 @@ namespace Quantumart.QPublishing.Pages
             }
             else
             {
-                string key = $"{call.TemplateId},{siteId}";
+                var key = $"{call.TemplateId},{siteId}";
                 mappingKey = key;
+
                 //HttpContext.Current.Response.Write("mappingTKey:" && key && "<br>")
                 if (TemplateMapping.Contains(key))
                 {
                     mappedPageTemplateId = (int)TemplateMapping[key];
                 }
+
                 //HttpContext.Current.Response.Write("found: " && TemplateMapping(key).ToString() && "<br>")
 
                 //HttpContext.Current.Response.Write("mappingPKey:" && siteId && "<br>")
@@ -557,12 +522,11 @@ namespace Quantumart.QPublishing.Pages
                 //HttpContext.Current.Response.Write("found: " && PageMapping(siteId).ToString() && "<br>")
             }
 
-
-
             if (call.WithoutTemplate)
             {
                 var key = $"{mappedPageId},{userCall}".ToLowerInvariant();
                 pageKey = key;
+
                 //HttpContext.Current.Response.Write("Pkey:" && key && "<br>")
                 if (PageObjects.Contains(key))
                 {
@@ -570,15 +534,16 @@ namespace Quantumart.QPublishing.Pages
                     pageResult = result;
                     isPageObject = true;
                 }
+
                 //HttpContext.Current.Response.Write("url:" && result && "<br>")
                 //HttpContext.Current.Response.Write("found:" && isPageObject && "<br>")
-
             }
 
             if (!isPageObject)
             {
                 var key = $"{mappedPageTemplateId},{userCall}".ToLowerInvariant();
                 var templateKey = key;
+
                 //HttpContext.Current.Response.Write("Tkey:" && key && "<br>")
                 if (TemplateObjects.Contains(key))
                 {
@@ -586,9 +551,9 @@ namespace Quantumart.QPublishing.Pages
                     templateResult = result;
                     isTemplateObject = true;
                 }
+
                 //HttpContext.Current.Response.Write("url:" && result && "<br>")
                 //HttpContext.Current.Response.Write("found:" && isTemplateObject && "<br>")
-
 
                 if (!isTemplateObject)
                 {
@@ -599,6 +564,7 @@ namespace Quantumart.QPublishing.Pages
                     }
                 }
             }
+
             //HttpContext.Current.Response.Write("<br>")
 
             return result;
@@ -641,19 +607,16 @@ namespace Quantumart.QPublishing.Pages
 
             if (call.WithoutTemplate)
             {
-
                 if (PageObjects.Contains(pageKey))
                 {
                     result = PageObjects[pageKey].ToString();
                     isPageObject = true;
                     pageResult = result;
-
                 }
             }
 
             if (!isPageObject)
             {
-
                 if (TemplateObjects.Contains(templateKey))
                 {
                     result = TemplateObjects[templateKey].ToString();
@@ -667,14 +630,10 @@ namespace Quantumart.QPublishing.Pages
                 }
             }
 
-
             return result;
         }
 
-        public string GetControlUrl(string name)
-        {
-            return GetControlUrlWithException(name, true);
-        }
+        public string GetControlUrl(string name) => GetControlUrlWithException(name, true);
 
         public string GetControlUrlWithException(string name, bool throwException)
         {
@@ -709,30 +668,15 @@ namespace Quantumart.QPublishing.Pages
             return url;
         }
 
-        internal string GetControlUrl(string controlFileName, bool isTemplateObject)
-        {
-            return GetControlUrl(controlFileName, isTemplateObject, TemplateFolder, PageFolder, TemplateNetName);
-        }
+        internal string GetControlUrl(string controlFileName, bool isTemplateObject) => GetControlUrl(controlFileName, isTemplateObject, TemplateFolder, PageFolder, TemplateNetName);
 
-        internal string GetControlUrl(DataRowView drv)
-        {
-            return GetControlUrl(GetControlFileName(drv), IsTemplateObject(drv), GetTemplateFolder(drv), GetPageFolder(drv), GetNetTemplateName(drv));
-        }
+        internal string GetControlUrl(DataRowView drv) => GetControlUrl(GetControlFileName(drv), IsTemplateObject(drv), GetTemplateFolder(drv), GetPageFolder(drv), GetNetTemplateName(drv));
 
-        internal string GetControlUrl(DataRowView drv, int siteId, string externalSiteUrl)
-        {
-            return GetControlUrl(GetControlFileName(drv), IsTemplateObject(drv), GetTemplateFolder(drv), GetPageFolder(drv), GetNetTemplateName(drv), siteId, externalSiteUrl);
-        }
+        internal string GetControlUrl(DataRowView drv, int siteId, string externalSiteUrl) => GetControlUrl(GetControlFileName(drv), IsTemplateObject(drv), GetTemplateFolder(drv), GetPageFolder(drv), GetNetTemplateName(drv), siteId, externalSiteUrl);
 
-        internal string GetControlUrl(DataRowView drv, int siteId)
-        {
-            return GetControlUrl(drv, siteId, string.Empty);
-        }
+        internal string GetControlUrl(DataRowView drv, int siteId) => GetControlUrl(drv, siteId, string.Empty);
 
-        internal string GetControlUrl(string controlFileName, bool isTemplateObject, string templateFolder, string pageFolder, string templateNetName)
-        {
-            return GetControlUrl(controlFileName, isTemplateObject, templateFolder, pageFolder, templateNetName, 0, string.Empty);
-        }
+        internal string GetControlUrl(string controlFileName, bool isTemplateObject, string templateFolder, string pageFolder, string templateNetName) => GetControlUrl(controlFileName, isTemplateObject, templateFolder, pageFolder, templateNetName, 0, string.Empty);
 
         internal string GetControlUrl(string controlFileName, bool isTemplateObject, string templateFolder, string pageFolder, string templateNetName, int siteId, string externalSiteUrl)
         {
@@ -789,15 +733,9 @@ namespace Quantumart.QPublishing.Pages
             return sb.ToString();
         }
 
-        private static bool IsTemplateObject(DataRowView drv)
-        {
-            return ReferenceEquals(drv["PAGE_ID"], DBNull.Value);
-        }
+        private static bool IsTemplateObject(DataRowView drv) => ReferenceEquals(drv["PAGE_ID"], DBNull.Value);
 
-        private static string GetNetTemplateName(DataRowView drv)
-        {
-            return GetNetName(drv["NET_TEMPLATE_NAME"].ToString(), drv["PAGE_TEMPLATE_ID"].ToString(), "t");
-        }
+        private static string GetNetTemplateName(DataRowView drv) => GetNetName(drv["NET_TEMPLATE_NAME"].ToString(), drv["PAGE_TEMPLATE_ID"].ToString(), "t");
 
         private Hashtable _pages;
 
@@ -857,13 +795,11 @@ namespace Quantumart.QPublishing.Pages
             {
                 return GetTemplateFolder(controlDrv["TEMPLATE_NAME"].ToString(), DBConnector.GetNumInt(controlDrv["SITE_ID"]));
             }
+
             return GetTemplateFolder(controlDrv["TEMPLATE_NAME"].ToString());
         }
 
-        internal string GetTemplateFolder(string templateName, int siteId)
-        {
-            return GetTemplateFolder($"{siteId},{templateName}");
-        }
+        internal string GetTemplateFolder(string templateName, int siteId) => GetTemplateFolder($"{siteId},{templateName}");
 
         internal string GetTemplateFolder(string templateName)
         {
@@ -875,10 +811,7 @@ namespace Quantumart.QPublishing.Pages
             return result;
         }
 
-        internal int GetTemplateId(string templateName, int siteId)
-        {
-            return GetTemplateId($"{siteId},{templateName}");
-        }
+        internal int GetTemplateId(string templateName, int siteId) => GetTemplateId($"{siteId},{templateName}");
 
         internal int GetTemplateId(string templateName)
         {
@@ -900,6 +833,7 @@ namespace Quantumart.QPublishing.Pages
             {
                 return GetPageFolder(DBConnector.GetNumInt(controlDrv["PAGE_ID"]));
             }
+
             return PageFolder;
         }
 
@@ -912,6 +846,7 @@ namespace Quantumart.QPublishing.Pages
             }
             return result;
         }
+
         #endregion
 
         public DBConnector Cnn { get; private set; }
@@ -923,22 +858,22 @@ namespace Quantumart.QPublishing.Pages
         // ReSharper disable once InconsistentNaming
         public int site_id
         {
-            get { return SiteId; }
-            set { SiteId = value; }
+            get => SiteId;
+            set => SiteId = value;
         }
 
         // ReSharper disable once InconsistentNaming
         public int page_id
         {
-            get { return PageId; }
-            set { PageId = value; }
+            get => PageId;
+            set => PageId = value;
         }
 
         // ReSharper disable once InconsistentNaming
         public int page_template_id
         {
-            get { return PageTemplateId; }
-            set { PageTemplateId = value; }
+            get => PageTemplateId;
+            set => PageTemplateId = value;
         }
 
         public Hashtable FieldValuesDictionary { get; set; }
@@ -1022,13 +957,13 @@ namespace Quantumart.QPublishing.Pages
         public void HandleInit(IQPage qPage)
         {
             Cnn = new DBConnector { CacheManager = { StoreInDictionary = true } };
+
             //if (PageAssembleMode != Mode.Normal) dbConnector.CacheData = false;
             Cnn.CacheManager.SetWebSpecificInformation(qPage.QPageEssential);
             ObjectCallStack = new ArrayList();
             FillValues();
             PublishedStatusTypeId = Cnn.GetMaximumWeightStatusTypeId(site_id);
             PublishedStatusName = Cnn.GetMaximumWeightStatusTypeName(site_id);
-
 
             if (string.IsNullOrEmpty(SiteUrl))
             {
@@ -1045,13 +980,11 @@ namespace Quantumart.QPublishing.Pages
 
             AbsoluteSiteUrl = Cnn.GetSiteUrl(site_id, !IsStage);
 
-
             AppendStandardHeaders();
 
             SetCachingParameters();
 
             SetPageCharSet();
-
 
             if (GenerateTrace)
             {
@@ -1144,8 +1077,7 @@ namespace Quantumart.QPublishing.Pages
         public void SaveBrowseServerSession()
         {
             object value = HttpContext.Current.Request.QueryString["browse_server_session_id"];
-            int intValue;
-            if (value != null && int.TryParse(value.ToString(), out intValue) && intValue != -1)
+            if (value != null && int.TryParse(value.ToString(), out var intValue) && intValue != -1)
             {
                 HttpContext.Current.Session["BrowseServerSessionID"] = value.ToString();
             }
@@ -1153,7 +1085,6 @@ namespace Quantumart.QPublishing.Pages
 
         private void InternalInitialize(int siteId, int pageId, int pageTemplateId, string uploadUrl, string uploadUrlPrefix, string siteUrl, string pageFileName, string templateNetName, string pageFolder)
         {
-
             page_id = pageId;
             page_template_id = pageTemplateId;
             site_id = siteId;
@@ -1186,6 +1117,7 @@ namespace Quantumart.QPublishing.Pages
         {
             InternalInitialize(siteId, pageId, pageTemplateId, uploadUrl, uploadUrlPrefix, siteUrl, pageFileName, "", pageFolder);
         }
+
         public void Initialize(int siteId, int pageId, int pageTemplateId, string pageFileName, string pageFolder)
         {
             Initialize(siteId, pageId, pageTemplateId, "", "", "", pageFileName, pageFolder);
@@ -1273,10 +1205,7 @@ namespace Quantumart.QPublishing.Pages
             return _objectValuesCollection.ContainsKey(key) ? _objectValuesCollection[key]?.ToString() : "";
         }
 
-        public string Value(string key)
-        {
-            return DirtyValue(key)?.Replace("'", "");
-        }
+        public string Value(string key) => DirtyValue(key)?.Replace("'", "");
 
         public string Value(string key, string defaultValue)
         {
@@ -1316,6 +1245,7 @@ namespace Quantumart.QPublishing.Pages
             {
                 return StrValue(valueName);
             }
+
             return string.Empty;
         }
 
@@ -1331,6 +1261,7 @@ namespace Quantumart.QPublishing.Pages
             {
                 ctx.Response.Write(item + "<br>");
             }
+
             ctx.Response.End();
         }
 
@@ -1344,15 +1275,9 @@ namespace Quantumart.QPublishing.Pages
             return $" and ({filterSql})";
         }
 
-        public static bool IsExpressionEmpty(string expression)
-        {
-            return string.IsNullOrEmpty(expression) || Strings.Trim(expression).Length == 0;
-        }
+        public static bool IsExpressionEmpty(string expression) => string.IsNullOrEmpty(expression) || Strings.Trim(expression).Length == 0;
 
-        public static bool IsOrderSqlValid(string orderSql)
-        {
-            return !IsExpressionEmpty(orderSql);
-        }
+        public static bool IsOrderSqlValid(string orderSql) => !IsExpressionEmpty(orderSql);
 
         public static string GetSimpleContainerOrderExpression(string staticSql, string dynamicSql)
         {
@@ -1364,6 +1289,7 @@ namespace Quantumart.QPublishing.Pages
             {
                 return staticSql;
             }
+
             return " c.modified desc";
         }
 
@@ -1380,16 +1306,12 @@ namespace Quantumart.QPublishing.Pages
                 text = CleanRegex.Replace(text, "");
                 var matches = CleanRegex.Matches(text);
                 count = matches.Count;
-            }
-            while (count != 0);
+            } while (count != 0);
+
             return text;
         }
 
-        public string Field(string key)
-        {
-            return FieldValuesDictionary.ContainsKey(key.ToLowerInvariant()) ?
-                FieldValuesDictionary[key.ToLowerInvariant()].ToString() : key;
-        }
+        public string Field(string key) => FieldValuesDictionary.ContainsKey(key.ToLowerInvariant()) ? FieldValuesDictionary[key.ToLowerInvariant()].ToString() : key;
 
         public void AddHeader(string key, string value)
         {
@@ -1405,17 +1327,15 @@ namespace Quantumart.QPublishing.Pages
                 var queryString = HttpContext.Current.Request.ServerVariables["QUERY_STRING"];
                 queryString = string.Join("&", queryString.Split('&').Where(s => !string.Equals(s, $"browse_server_session_id={idObj}")).ToArray());
                 url = string.IsNullOrEmpty(queryString) ? url : $"{url}?{queryString}";
-                string sql = $"if exists(select * from sysobjects where name = N'VE_URL') exec sp_executesql N'if exists(select * from ve_url where sid = @sid) update ve_url set url = @url where sid = @sid else insert into ve_url(sid, url) values(@sid, @url)', N'@url nvarchar(1024), @sid numeric', @url = '{GetSiteDns(siteId)}{url}', @sid = {idObj}";
+                var sql = $"if exists(select * from sysobjects where name = N'VE_URL') exec sp_executesql N'if exists(select * from ve_url where sid = @sid) update ve_url set url = @url where sid = @sid else insert into ve_url(sid, url) values(@sid, @url)', N'@url nvarchar(1024), @sid numeric', @url = '{GetSiteDns(siteId)}{url}', @sid = {idObj}";
                 Cnn.ProcessData(sql);
             }
         }
 
-        public string GetSiteDns(string siteId)
-        {
-            return "http://" + Cnn.GetDns(Convert.ToInt32(siteId), false);
-        }
+        public string GetSiteDns(string siteId) => "http://" + Cnn.GetDns(Convert.ToInt32(siteId), false);
 
         #region "form.inc"
+
         public void RemoveContentItem(int contentItemId)
         {
             Cnn.SendNotification(contentItemId, NotificationEvent.Remove);
@@ -1428,96 +1348,45 @@ namespace Quantumart.QPublishing.Pages
             AddValue("content_item_id", "");
         }
 
-        public int GetContentId(string contentName)
-        {
-            return Cnn.GetContentId(site_id, contentName);
-        }
+        public int GetContentId(string contentName) => Cnn.GetContentId(site_id, contentName);
 
-        public int GetContentVirtualType(int contentId)
-        {
-            return Cnn.GetContentVirtualType(contentId);
-        }
+        public int GetContentVirtualType(int contentId) => Cnn.GetContentVirtualType(contentId);
 
-        public string FieldName(string contentName, string fieldName)
-        {
-            return "field_" + FieldId(contentName, fieldName);
-        }
+        public string FieldName(string contentName, string fieldName) => "field_" + FieldId(contentName, fieldName);
 
         //getting field id for field name
-        public int FieldId(string contentName, string fieldName)
-        {
-            return Cnn.FieldID(site_id, contentName, fieldName);
-        }
+        public int FieldId(string contentName, string fieldName) => Cnn.FieldID(site_id, contentName, fieldName);
 
-        public string InputName(string contentName, string fieldName)
-        {
-            return Cnn.InputName(site_id, contentName, fieldName);
-        }
+        public string InputName(string contentName, string fieldName) => Cnn.InputName(site_id, contentName, fieldName);
 
-        public bool CheckMaxLength(string str, int maxlength)
-        {
-            return Strings.Len(Strings.Trim(str)) <= maxlength;
-        }
+        public bool CheckMaxLength(string str, int maxlength) => Strings.Len(Strings.Trim(str)) <= maxlength;
 
-        public string ReplaceHtml(string str)
-        {
-            return str.Replace("<", "&lt;").Replace(">", "&gt;");
-        }
+        public string ReplaceHtml(string str) => str.Replace("<", "&lt;").Replace(">", "&gt;");
 
         public void SendNotification(string notificationOn, int contentItemId, string notificationEmail)
         {
             Cnn.SendNotification(site_id, notificationOn, contentItemId, notificationEmail, !IsStage);
         }
 
-        public string GetSiteUrl()
-        {
-            return Cnn.GetSiteUrl(site_id, !IsStage);
-        }
+        public string GetSiteUrl() => Cnn.GetSiteUrl(site_id, !IsStage);
 
-        public string GetActualSiteUrl()
-        {
-            return Cnn.GetActualSiteUrl(site_id);
-        }
+        public string GetActualSiteUrl() => Cnn.GetActualSiteUrl(site_id);
 
-        public string GetContentItemLinkIDs(string linkFieldName, long itemId)
-        {
-            return Cnn.GetContentItemLinkIDs(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkIDs(string linkFieldName, long itemId) => Cnn.GetContentItemLinkIDs(linkFieldName, itemId);
 
-        public string GetContentItemLinkIDs(string linkFieldName, string itemId)
-        {
-            return Cnn.GetContentItemLinkIDs(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkIDs(string linkFieldName, string itemId) => Cnn.GetContentItemLinkIDs(linkFieldName, itemId);
 
-        public string GetContentItemLinkQuery(string linkFieldName, long itemId)
-        {
-            return Cnn.GetContentItemLinkQuery(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkQuery(string linkFieldName, long itemId) => Cnn.GetContentItemLinkQuery(linkFieldName, itemId);
 
-        public string GetContentItemLinkQuery(string linkFieldName, string itemId)
-        {
-            return Cnn.GetContentItemLinkQuery(linkFieldName, itemId);
-        }
+        public string GetContentItemLinkQuery(string linkFieldName, string itemId) => Cnn.GetContentItemLinkQuery(linkFieldName, itemId);
 
-        public string GetLinkIDs(string linkFieldName)
-        {
-            return GetContentItemLinkIDs(linkFieldName, long.Parse(Field("content_item_id")));
-        }
+        public string GetLinkIDs(string linkFieldName) => GetContentItemLinkIDs(linkFieldName, long.Parse(Field("content_item_id")));
 
-        public int GetLinkIdForItem(string linkFieldName, int itemId)
-        {
-            return Cnn.GetLinkIDForItem(linkFieldName, itemId);
-        }
+        public int GetLinkIdForItem(string linkFieldName, int itemId) => Cnn.GetLinkIDForItem(linkFieldName, itemId);
 
-        public string GetContentFieldValue(int itemId, string fieldName)
-        {
-            return Cnn.GetContentFieldValue(itemId, fieldName);
-        }
+        public string GetContentFieldValue(int itemId, string fieldName) => Cnn.GetContentFieldValue(itemId, fieldName);
 
-        public int AddFormToContentWithoutNotification(string contentName, string statusName)
-        {
-            return AddFormToContentWithoutNotification(contentName, statusName, 0);
-        }
+        public int AddFormToContentWithoutNotification(string contentName, string statusName) => AddFormToContentWithoutNotification(contentName, statusName, 0);
 
         public int AddFormToContentWithoutNotification(string contentName, string statusName, int contentItemId)
         {
@@ -1527,10 +1396,7 @@ namespace Quantumart.QPublishing.Pages
             return newItemId;
         }
 
-        public int AddFormToContent(string contentName, string statusName)
-        {
-            return AddFormToContent(contentName, statusName, 0);
-        }
+        public int AddFormToContent(string contentName, string statusName) => AddFormToContent(contentName, statusName, 0);
 
         public int AddFormToContent(string contentName, string statusName, int contentItemId)
         {
@@ -1593,34 +1459,19 @@ namespace Quantumart.QPublishing.Pages
                         Cnn.SendNotification(contentItemId, NotificationEvent.StatusChanged);
                     }
                 }
-
             }
         }
 
-        public string GetContentUploadUrl(string contentName)
-        {
-            return Cnn.GetContentUploadUrl(site_id, contentName);
-        }
+        public string GetContentUploadUrl(string contentName) => Cnn.GetContentUploadUrl(site_id, contentName);
 
-        public string GetContentUploadUrlById(int contentId)
-        {
-            return Cnn.GetContentUploadUrlByID(Cnn.GetSiteIdByContentId(contentId), contentId);
-        }
+        public string GetContentUploadUrlById(int contentId) => Cnn.GetContentUploadUrlByID(Cnn.GetSiteIdByContentId(contentId), contentId);
 
-        public string GetContentName(int contentId)
-        {
-            return Cnn.GetContentName(contentId);
-        }
+        public string GetContentName(int contentId) => Cnn.GetContentName(contentId);
 
-        public string GetFieldUploadUrl(string fieldName, int contentId)
-        {
-            return Cnn.GetFieldUploadUrl(fieldName, contentId);
-        }
+        public string GetFieldUploadUrl(string fieldName, int contentId) => Cnn.GetFieldUploadUrl(fieldName, contentId);
+
         #endregion
 
-        public DataTable GetUsersByItemID_And_Permission(int itemId, int permissionLevel)
-        {
-            return Cnn.GetCachedData("EXEC qp_GetUsersByItemID_And_Permission " + itemId + "," + permissionLevel);
-        }
+        public DataTable GetUsersByItemID_And_Permission(int itemId, int permissionLevel) => Cnn.GetCachedData("EXEC qp_GetUsersByItemID_And_Permission " + itemId + "," + permissionLevel);
     }
 }

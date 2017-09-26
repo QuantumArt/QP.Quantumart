@@ -1,5 +1,6 @@
 using System.Web.UI;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public abstract class QUserControlBase : UserControl, IQUserControlBase

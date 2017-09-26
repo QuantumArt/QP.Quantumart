@@ -1,6 +1,7 @@
-﻿using System.Data;
+using System.Data;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssembleFormatController : AssembleControllerBase
@@ -73,9 +74,6 @@ namespace Quantumart.QP8.Assembling
             AssemblePageFiles();
         }
 
-        internal override string GetFilter()
-        {
-            return "and objf.object_format_id = " + FormatId;
-        }
+        internal override string GetFilter() => "and objf.object_format_id = " + FormatId;
     }
 }

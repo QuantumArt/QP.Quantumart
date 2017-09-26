@@ -1,10 +1,10 @@
-﻿using System.Text;
+using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class ManyToManyUpdateHelper
     {
-        #region private
         public int Counter { get; set; }
 
         private StringBuilder Result { get; }
@@ -31,14 +31,12 @@ namespace Quantumart.QPublishing.Helpers
 
         private string CurrentItemVariableName => $"@current{Counter}";
 
-        #region sql statements
-
         private string CreateOldValueTableSql
         {
             get
             {
                 var sb = new StringBuilder();
-                string selectSql =
+                var selectSql =
                     $"insert into {OldIdTableName} select linked_item_id from {{0}} where link_id = {LinkParamName} and item_id = {ItemParamName}";
                 sb.AppendFormatLine(IdTableSql, OldIdTableName);
                 sb.AppendFormatLine("IF {0} = 1", SplittedParamName);
@@ -84,7 +82,6 @@ namespace Quantumart.QPublishing.Helpers
 
         private string CorrectNewValueTableSql => string.Format(CorrectValueSqlTemplate, NewIdTableName, CrossIdTableName);
 
-
         private string ConditionalDeleteAllAsyncLinkSql
         {
             get
@@ -100,7 +97,7 @@ namespace Quantumart.QPublishing.Helpers
         {
             get
             {
-                string deleteSqlString =
+                var deleteSqlString =
                     $"DELETE FROM {{0}} WHERE link_id = {LinkParamName} AND item_id = {ItemParamName} and linked_item_id in (select id from {OldIdTableName});";
                 var sb = new StringBuilder();
                 sb.AppendFormatLine("IF {0} = 1", SplittedParamName);
@@ -115,7 +112,7 @@ namespace Quantumart.QPublishing.Helpers
         {
             get
             {
-                string insertSqlString =
+                var insertSqlString =
                     $"INSERT INTO {{0}} SELECT {LinkParamName}, {ItemParamName}, id from {NewIdTableName};";
                 var sb = new StringBuilder();
                 sb.AppendFormatLine("IF {0} = 1", SplittedParamName);
@@ -143,15 +140,9 @@ namespace Quantumart.QPublishing.Helpers
             }
         }
 
-        #endregion
-
-        #region collect sql
-
-
         private void СollectSqlForManyToMany(string value)
         {
             CollectValueTablesSql(value);
-
             Result.AppendLine(ConditionalDeleteAllAsyncLinkSql);
             Result.AppendLine(DeleteLinkSql);
             Result.AppendLine(InsertLinkSql);
@@ -168,10 +159,6 @@ namespace Quantumart.QPublishing.Helpers
             Result.AppendLine(CorrectNewValueTableSql);
         }
 
-        #endregion
-        #endregion
-
-        #region constructors
         public ManyToManyUpdateHelper(int counter)
         {
             Counter = counter;
@@ -184,7 +171,5 @@ namespace Quantumart.QPublishing.Helpers
             helper.СollectSqlForManyToMany(value);
             return helper.Result.ToString();
         }
-
-        #endregion
     }
 }

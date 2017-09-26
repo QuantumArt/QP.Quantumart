@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -8,13 +8,13 @@ using System.Xml;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        public void ImportToContent(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy = 1,
-            int[] attrIds = null)
+        public void ImportToContent(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy = 1, int[] attrIds = null)
         {
             ImportToContent(contentId, values, lastModifiedBy, attrIds, false);
         }
@@ -114,14 +114,13 @@ namespace Quantumart.QPublishing.Database
             {
                 foreach (var attr in toManyAttrs)
                 {
-                    string temp;
                     var linkElem = new XElement("item");
                     linkElem.Add(new XAttribute("id", value[SystemColumnNames.Id]));
                     if (attr.LinkId != null)
                     {
                         linkElem.Add(new XAttribute("linkId", attr.LinkId.Value));
                     }
-                    if (value.TryGetValue(attr.Name, out temp))
+                    if (value.TryGetValue(attr.Name, out var temp))
                     {
                         linkElem.Add(new XAttribute("value", temp));
                         linkDoc.Root?.Add(linkElem);
@@ -131,7 +130,6 @@ namespace Quantumart.QPublishing.Database
 
             return linkDoc;
         }
-
 
         private void ImportContentData(XDocument dataDoc)
         {
@@ -176,8 +174,7 @@ namespace Quantumart.QPublishing.Database
                     var elem = new XElement("ITEM");
                     elem.Add(new XAttribute("id", XmlValidChars(value[SystemColumnNames.Id])));
                     elem.Add(new XAttribute("attrId", attr.Id));
-                    string temp;
-                    var valueExists = value.TryGetValue(attr.Name, out temp);
+                    var valueExists = value.TryGetValue(attr.Name, out var temp);
                     if (attr.LinkId.HasValue)
                     {
                         elem.Add(new XElement("DATA", attr.LinkId.Value));
@@ -193,19 +190,23 @@ namespace Quantumart.QPublishing.Database
                         temp = FormatResult(attr, temp, longUploadUrl, longSiteStageUrl, longSiteLiveUrl, true);
                         elem.Add(new XElement(attr.DbField, XmlValidChars(temp)));
                     }
+
                     if (valueExists || overrideMissedFields)
                     {
                         dataDoc.Root?.Add(elem);
                     }
                 }
             }
+
             return dataDoc;
         }
 
         private static string XmlValidChars(string token)
         {
-            if (String.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
+            {
                 return token;
+            }
 
             try
             {
@@ -213,7 +214,7 @@ namespace Quantumart.QPublishing.Database
             }
             catch (XmlException)
             {
-                return InvalidXmlChars.Replace(token, "");
+                return InvalidXmlChars.Replace(token, string.Empty);
             }
         }
 
@@ -240,6 +241,7 @@ namespace Quantumart.QPublishing.Database
                 }
                 doc.Root?.Add(elem);
             }
+
             return doc;
         }
 
@@ -285,7 +287,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.AddWithValue("@lastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@notForReplication", 1);
 
-            var ids = new Queue<int>(GetRealData(cmd).AsEnumerable().Select(n => (int)n["ID"]).ToArray());
+            var ids = new Queue<int>(GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["ID"])).ToArray());
             foreach (var value in values)
             {
                 if (value[SystemColumnNames.Id] == "0")
@@ -298,11 +300,9 @@ namespace Quantumart.QPublishing.Database
         private static int? GetIntFromDictionary(IReadOnlyDictionary<string, string> value, string key, int? defaultValue)
         {
             var result = defaultValue;
-            string tempId;
-            if (value.TryGetValue(key, out tempId))
+            if (value.TryGetValue(key, out var tempId))
             {
-                int id;
-                int.TryParse(tempId, out id);
+                int.TryParse(tempId, out var id);
                 result = id;
             }
 

@@ -1,15 +1,14 @@
 using System;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
-
     public sealed class PlaceHolder : QUserControlBase
     {
         protected override void OnInit(EventArgs e)
         {
-            var page = Page as QPage;
-            if (page != null)
+            if (Page is QPage page)
             {
                 if (simple)
                 {
@@ -18,13 +17,11 @@ namespace Quantumart.QPublishing.Controls
                 else
                 {
                     page.ShowObject(calls, this);
-
                 }
             }
             else
             {
-                var mobilePage = Page as QMobilePage;
-                if (mobilePage != null)
+                if (Page is QMobilePage mobilePage)
                 {
                     if (simple)
                     {

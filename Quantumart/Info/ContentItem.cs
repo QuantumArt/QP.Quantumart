@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -12,6 +12,7 @@ using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class ContentItemValue
@@ -28,11 +29,19 @@ namespace Quantumart.QPublishing.Info
 
     public class VersionNotFoundException : ApplicationException
     {
-        public VersionNotFoundException() { }
+        public VersionNotFoundException()
+        {
+        }
 
-        public VersionNotFoundException(string message) : base(message) { }
+        public VersionNotFoundException(string message)
+            : base(message)
+        {
+        }
 
-        public VersionNotFoundException(string message, Exception innerException) : base(message, innerException) { }
+        public VersionNotFoundException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
     }
 
     [Serializable]
@@ -62,7 +71,7 @@ namespace Quantumart.QPublishing.Info
 
         public string StatusName
         {
-            get { return _statusName; }
+            get => _statusName;
             set
             {
                 if (_statusName != value)
@@ -228,14 +237,14 @@ namespace Quantumart.QPublishing.Info
         {
             var linkTable = Splitted ? "item_link_united" : "item_link";
             var sql = string.Format("EXEC sp_executesql N'SELECT linked_item_id FROM {2} WHERE item_id = @itemId AND link_id = @linkId', N'@itemId NUMERIC, @linkId NUMERIC', @itemId = {0}, @linkId = {1};", Id, linkId, linkTable);
-            var items = Cnn.GetRealData(sql).AsEnumerable().Select(n => (int)(decimal)n["linked_item_id"]);
+            var items = Cnn.GetRealData(sql).Select().Select(row => Convert.ToInt32(row["linked_item_id"]));
             return items;
         }
 
         private IEnumerable<int> GetVersionLinkedItems(int attrId)
         {
-            string sql = $"EXEC sp_executesql N'SELECT linked_item_id FROM item_to_item_version WHERE content_item_version_id = @itemId AND attribute_id = @attrId', N'@itemId NUMERIC, @attrId NUMERIC', @itemId = {VersionId}, @attrId = {attrId};";
-            var items = Cnn.GetRealData(sql).AsEnumerable().Select(n => (int)(decimal)n["linked_item_id"]);
+            var sql = $"EXEC sp_executesql N'SELECT linked_item_id FROM item_to_item_version WHERE content_item_version_id = @itemId AND attribute_id = @attrId', N'@itemId NUMERIC, @attrId NUMERIC', @itemId = {VersionId}, @attrId = {attrId};";
+            var items = Cnn.GetRealData(sql).Select().Select(n => (int)(decimal)n["linked_item_id"]);
             return items;
         }
 
@@ -250,7 +259,7 @@ namespace Quantumart.QPublishing.Info
             cmd.Parameters.AddWithValue("@contentId", contentId);
             cmd.Parameters.AddWithValue("@fieldName", fieldName);
             cmd.Parameters.AddWithValue("@id", Id);
-            return Cnn.GetRealData(cmd).AsEnumerable().Select(n => (int)(decimal)n["content_item_id"]);
+            return Cnn.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
         }
 
         private void InitFieldValues()
@@ -320,7 +329,6 @@ namespace Quantumart.QPublishing.Info
                         value.LinkedItems = new HashSet<int>(items);
                     }
                 }
-
             }
 
             if (classifierIds.Any())
@@ -495,7 +503,7 @@ namespace Quantumart.QPublishing.Info
                 cmd.Parameters.AddWithValue("@article_id", Id);
                 cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(classfierFields) });
                 cmd.Parameters.Add(new SqlParameter("@cids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(types) });
-                result.AddRange(Cnn.GetRealData(cmd).AsEnumerable().Select(n => (int)(decimal)n[0]));
+                result.AddRange(Cnn.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row[0])));
             }
 
             return result;

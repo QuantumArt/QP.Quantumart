@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualBasic;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
@@ -100,15 +101,9 @@ namespace Quantumart.QPublishing.Database
             return localHash.ContainsKey(key) ? (int)localHash[key] : 0;
         }
 
-        public int GetContentIdForAttribute(int id)
-        {
-            return GetContentAttributeObject(id).ContentId;
-        }
+        public int GetContentIdForAttribute(int id) => GetContentAttributeObject(id).ContentId;
 
-        public int GetContentIdForItem(string itemIds)
-        {
-            return GetContentIdForItem(int.Parse(itemIds.Split(',')[0]));
-        }
+        public int GetContentIdForItem(string itemIds) => GetContentIdForItem(int.Parse(itemIds.Split(',')[0]));
 
         public int GetContentIdForItem(int itemId)
         {
@@ -150,7 +145,6 @@ namespace Quantumart.QPublishing.Database
             var content = GetContentObject(contentId);
             return content?.VirtualType ?? LegacyNotFound;
         }
-
 
         public string GetContentFieldValue(int itemId, string fieldName)
         {
@@ -204,10 +198,7 @@ namespace Quantumart.QPublishing.Database
             return localHash.ContainsKey(key) ? (int)localHash[key] : 0;
         }
 
-        public int GetAttributeIdByNetNames(int siteId, string netContentName, string netFieldName)
-        {
-            return GetAttributeIdByNetName(GetContentIdByNetName(siteId, netContentName), netFieldName);
-        }
+        public int GetAttributeIdByNetNames(int siteId, string netContentName, string netFieldName) => GetAttributeIdByNetName(GetContentIdByNetName(siteId, netContentName), netFieldName);
 
         public int GetValidContentAttributeId(string valueFieldName, int contentId)
         {
@@ -238,10 +229,8 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        public string GetFormNameByNetNames(int siteId, string netContentName, string netFieldName)
-        {
-            return FieldName(GetAttributeIdByNetNames(siteId, netContentName, netFieldName));
-        }
+        public string GetFormNameByNetNames(int siteId, string netContentName, string netFieldName) => FieldName(GetAttributeIdByNetNames(siteId, netContentName, netFieldName));
+
         #endregion
     }
 }

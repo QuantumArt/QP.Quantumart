@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.IO;
 using System.Reflection;
@@ -9,6 +9,7 @@ using System.Web;
 using System.Web.UI;
 using Microsoft.VisualBasic;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Pages
 {
     [AttributeUsage(AttributeTargets.Method)]
@@ -26,10 +27,7 @@ namespace Quantumart.QPublishing.Pages
         private int _uniqueIdentifier;
         private bool _writeDebugFile;
 
-        private string _GetFooterHtml()
-        {
-            return "<br/><p class=\"heading3\"><a href=\"http://www.thycotic.com/dotnet_remotescripting.html\">Thycotic.Web.RemoteScripting " + Version + "</a><br/>Developed by Jonathan Cogley</p><br/><br/><p>Example code to create a Remote Scripting Method:</p> <div><pre>[RemoteScriptingMethod(Description=\"Converts text to uppercase.\")]" + Constants.vbLf + "public virtual string ToUpperCase(string s) " + Constants.vbLf + "{" + Constants.vbLf + Constants.vbTab + "return s.ToUpperInvariant();" + Constants.vbLf + "}" + Constants.vbLf + "</pre></div></body></html>";
-        }
+        private string _GetFooterHtml() => "<br/><p class=\"heading3\"><a href=\"http://www.thycotic.com/dotnet_remotescripting.html\">Thycotic.Web.RemoteScripting " + Version + "</a><br/>Developed by Jonathan Cogley</p><br/><br/><p>Example code to create a Remote Scripting Method:</p> <div><pre>[RemoteScriptingMethod(Description=\"Converts text to uppercase.\")]" + Constants.vbLf + "public virtual string ToUpperCase(string s) " + Constants.vbLf + "{" + Constants.vbLf + Constants.vbTab + "return s.ToUpperInvariant();" + Constants.vbLf + "}" + Constants.vbLf + "</pre></div></body></html>";
 
         private string _GetHeaderHtml()
         {
@@ -37,17 +35,16 @@ namespace Quantumart.QPublishing.Pages
             return "<html><head><style type=\"text/css\">BODY { color: #000000; background-color: white; font-family: Verdana; margin-left: 0px; margin-top: 0px; }#content { margin-left: 30px; font-size: .70em; padding-bottom: 2em; }A:link { color: #336699; font-weight: bold; text-decoration: underline; }A:visited { color: #6699cc; font-weight: bold; text-decoration: underline; }A:active { color: #336699; font-weight: bold; text-decoration: underline; }A:hover { color: cc3300; font-weight: bold; text-decoration: underline; }P { color: #000000; margin-top: 0px; margin-bottom: 12px; font-family: Verdana; }pre { width: 500px; background-color: #e5e5cc; padding: 5px; font-family: Courier New; font-size: x-small; margin-top: -5px; border: 1px #f0f0e0 solid; }td { color: #000000; font-family: Verdana; font-size: .7em; }h2 { font-size: 1.5em; font-weight: bold; margin-top: 25px; margin-bottom: 10px; border-top: 1px solid #003366; margin-left: -15px; color: #003366; }h3 { font-size: 1.1em; color: #000000; margin-left: -15px; margin-top: 10px; margin-bottom: 10px; }ul, ol { margin-top: 10px; margin-left: 20px; }li { margin-top: 10px; color: #000000; }font.value { color: darkblue; font: bold; }font.key { color: darkgreen; font: bold; }.heading1 { color: #ffffff; font-family: Tahoma; font-size: 26px; font-weight: normal; background-color: #003366; margin-top: 0px; margin-bottom: 0px; margin-left: -30px; padding-top: 10px; padding-bottom: 3px; padding-left: 15px; width: 105%; }.heading2 { color: #ffffff; font-family: Tahoma; font-size: 16px; font-weight: bolder; background-color: #003366; margin-top: 0px; margin-bottom: 0px; margin-left: -30px; padding-top: 10px; padding-bottom: 3px; padding-left: 15px; width: 105%; }.heading3 { color: #000000; font-family: Tahoma; font-size: 12px; font-weight: bolder; background-color: #c0c0c0; margin-top: 0px; margin-bottom: 0px; margin-left: -30px; padding-top: 10px; padding-bottom: 10px; padding-left: 15px; width: 105%; }.button { background-color: #dcdcdc; font-family: Verdana; font-size: 1em; border-top: #cccccc 1px solid; border-bottom: #666666 1px solid; border-left: #cccccc 1px solid; border-right: #666666 1px solid; }.frmheader { color: #000000; background: #dcdcdc; font-family: Verdana; font-size: .7em; font-weight: normal; border-bottom: 1px solid #dcdcdc; padding-top: 2px; padding-bottom: 2px; }.frmtext { font-family: Verdana; font-size: .7em; margin-top: 8px; margin-bottom: 0px; margin-left: 32px; }.frmInput { font-family: Verdana; font-size: 1em; }.intro { margin-left: -15px; }</style><title>" + str + " Remote Scripting</title></head><body><div id=\"content\"><p class=\"heading1\">" + str + "</p><br>";
         }
 
-        private string _GetNextVariableName()
-        {
-            return "_o" + Math.Max(Interlocked.Increment(ref _uniqueIdentifier), _uniqueIdentifier - 1);
-        }
+        private string _GetNextVariableName() => "_o" + Math.Max(Interlocked.Increment(ref _uniqueIdentifier), _uniqueIdentifier - 1);
 
         private string _GetOperationsHtml()
         {
             var builder = new StringBuilder();
             builder.Append("<span><p class=\"intro\">The following operations are supported.</p>");
+
             var hashtable = _GetRSOperations();
             builder.Append("<ul>");
+
             foreach (string str in hashtable.Keys)
             {
                 builder.Append("<li><a href=\"?op=" + str + "\">" + str + "</a>");
@@ -507,6 +504,7 @@ namespace Quantumart.QPublishing.Pages
                     {
                         Response.Write(string.Concat("<tr><td><b>", parameters[i].Name, "</b></td><td><input TYPE=\"TEXT\" NAME=\"t", i, "\" VALUE=\"\"></td></tr>"));
                     }
+
                     Response.Write("</table><br>");
                     Response.Write("<input TYPE=\"SUBMIT\" VALUE=\"Test the operation\">");
                     Response.Write("<br><br><a href=\"" + request.ServerVariables["SCRIPT_NAME"] + "\">Back</a><br>");
@@ -724,22 +722,22 @@ namespace Quantumart.QPublishing.Pages
 
         public virtual string DebugFilePath
         {
-            get { return _debugFilepath; }
-            set { _debugFilepath = value; }
+            get => _debugFilepath;
+            set => _debugFilepath = value;
         }
 
         protected virtual string RemoteScriptingVersion
         {
-            get { return RsVersion; }
-            set { RsVersion = value; }
+            get => RsVersion;
+            set => RsVersion = value;
         }
 
         public double Version { get; } = 0.9;
 
         public virtual bool WriteDebugFile
         {
-            get { return _writeDebugFile; }
-            set { _writeDebugFile = value; }
+            get => _writeDebugFile;
+            set => _writeDebugFile = value;
         }
     }
 }

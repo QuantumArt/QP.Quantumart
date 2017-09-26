@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -14,6 +14,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
@@ -41,15 +42,9 @@ namespace Quantumart.QPublishing.Database
             return resInputName;
         }
 
-        public string FieldName(int siteId, string contentName, string fieldName)
-        {
-            return FieldName(FieldID(siteId, contentName, fieldName));
-        }
+        public string FieldName(int siteId, string contentName, string fieldName) => FieldName(FieldID(siteId, contentName, fieldName));
 
-        internal string FieldName(int attributeId)
-        {
-            return "field_" + attributeId;
-        }
+        internal string FieldName(int attributeId) => "field_" + attributeId;
 
         #endregion
 
@@ -64,16 +59,10 @@ namespace Quantumart.QPublishing.Database
         }
 
         // compatibility behaviour for UpdateContentItem
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId)
-        {
-            return AddFormToContent(siteId, contentName, statusName, ref values, ref files, contentItemId, true);
-        }
+        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId) => AddFormToContent(siteId, contentName, statusName, ref values, ref files, contentItemId, true);
 
         // shortcut for Add
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files)
-        {
-            return AddFormToContent(siteId, contentName, statusName, ref values, ref files, 0);
-        }
+        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files) => AddFormToContent(siteId, contentName, statusName, ref values, ref files, 0);
 
         // without file collection
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId)
@@ -87,35 +76,29 @@ namespace Quantumart.QPublishing.Database
         {
             var modified = DateTime.MinValue;
             return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, true, false,
-            false, ref modified, false);
+                false, ref modified, false);
         }
 
         //for LINQ-to-SQL classes
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive,
-        bool returnModified, ref DateTime modified)
-        {
-            return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive,
+            bool returnModified, ref DateTime modified) => AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive,
             returnModified, ref modified, true);
-        }
 
         //for new LINQ-to-SQL and EF classes
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive,
-        bool returnModified, ref DateTime modified)
+            bool returnModified, ref DateTime modified)
         {
             HttpFileCollection files = null;
             return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive,
-            returnModified, ref modified, true);
+                returnModified, ref modified, true);
         }
 
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive,
-        bool returnModified, ref DateTime modified, bool updateFlags)
-        {
-            return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false,
-                returnModified, ref modified, updateFlags, false);
-        }
+            bool returnModified, ref DateTime modified, bool updateFlags) => AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false,
+            returnModified, ref modified, updateFlags, false);
 
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, int lastModifiedId, bool delayedSchedule,
-        bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
+            bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
         {
             //prohibit virtual content update or insert
             if (GetContentVirtualType(contentId) > 0)
@@ -160,6 +143,7 @@ namespace Quantumart.QPublishing.Database
                 cmd.Parameters.AddWithValue("@id", contentItemId);
                 statusTypeId = (int)CastDbNull.To<decimal>(GetRealScalarData(cmd));
             }
+
             //saving uploaded files first
             if (files != null)
             {
@@ -187,10 +171,8 @@ namespace Quantumart.QPublishing.Database
                             CheckFileExistence(file, item, values, contentId);
                         }
                     }
-
                 }
             }
-
 
             command.Parameters.Add("@statusId", SqlDbType.Decimal).Value = statusTypeId;
             command.Parameters.Add("@archive", SqlDbType.Decimal).Value = Convert.ToInt32(archive);
@@ -223,7 +205,6 @@ namespace Quantumart.QPublishing.Database
             //inserting sql for updating field values (trigger on content_item already created all field in content_data)
             //also create a list of all dynamic images that need to be created
             //also create sql for updating dynamic image fields
-            string filter = null;
             sqlStringBuilder.AppendLine(attributeId > 0
                 ? GetSqlUpdateAttributes(command, contentItemId,
                     new List<ContentAttribute> { GetContentAttributeObject(attributeId) }, values, true,
@@ -237,7 +218,6 @@ namespace Quantumart.QPublishing.Database
 
             //create dynamic images
             CreateAllDynamicImages(dynamicImagesList);
-
 
             //now perform one update, dynamic image sql is already appended to sb
             command.CommandText = sqlStringBuilder.ToString();
@@ -259,7 +239,6 @@ namespace Quantumart.QPublishing.Database
                 cmd.Parameters.AddWithValue("@itemId", result);
                 modified = (DateTime)GetRealScalarData(cmd);
             }
-
 
             if (content.UseVersionControl)
             {
@@ -319,20 +298,11 @@ namespace Quantumart.QPublishing.Database
             return AddFormToContent(siteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
         }
 
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId)
-        {
-            return UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, true);
-        }
+        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId) => UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, true);
 
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty)
-        {
-            return UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, updateEmpty, "");
-        }
+        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty) => UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, updateEmpty, "");
 
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, string statusName)
-        {
-            return AddFormToContent(siteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
-        }
+        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, string statusName) => AddFormToContent(siteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
 
         #endregion
 
@@ -349,7 +319,6 @@ namespace Quantumart.QPublishing.Database
 
         private string GetDataValueWithDefault(ContentAttribute attr, string data, bool isNewArticle)
         {
-
             var result = data;
             if (attr.DbTypeName == "DATETIME")
             {
@@ -374,7 +343,6 @@ namespace Quantumart.QPublishing.Database
 
         private void ValidateAttributeValue(ContentAttribute attr, string data, bool updateEmpty)
         {
-
             if (string.IsNullOrEmpty(data) && !updateEmpty)
             {
                 return;
@@ -386,6 +354,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     return;
                 }
+
                 if (attr.Required)
                 {
                     HandleInvalidAttributeValue(attr.Name, "Attribute value is required");
@@ -393,10 +362,9 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-                double result;
                 var ci = new CultureInfo("en-US");
 
-                if (attr.LinkId == null && attr.BackRelation == null && (attr.DbTypeName == "DATETIME" && !Information.IsDate(data) || attr.DbTypeName == "NUMERIC" && !double.TryParse(data, NumberStyles.Float, ci.NumberFormat, out result)))
+                if (attr.LinkId == null && attr.BackRelation == null && (attr.DbTypeName == "DATETIME" && !Information.IsDate(data) || attr.DbTypeName == "NUMERIC" && !double.TryParse(data, NumberStyles.Float, ci.NumberFormat, out var _)))
                 {
                     HandleInvalidAttributeValue(attr.Name, $"Attribute value type is incorrect. Value: {data}");
                 }
@@ -413,14 +381,11 @@ namespace Quantumart.QPublishing.Database
                             $"Attribute value does not comply with input mask. Value: '{data}'");
                     }
                 }
-
             }
         }
 
-
         private void ValidateUniqueConstraint(int constraintId, int id, Dictionary<string, string> dataValues, int attributeId)
         {
-
             if (attributeId != 0)
             {
                 var dv = GetConstraints("ATTRIBUTE_ID = " + attributeId);
@@ -474,6 +439,7 @@ namespace Quantumart.QPublishing.Database
                 }
                 msgs.Add($"[{attr.Name}] = '{value}'");
             }
+
             cmd.CommandText =
                 $"SELECT CONTENT_ITEM_ID FROM CONTENT_{contentId}_UNITED WHERE {string.Join(" AND ", sqls.ToArray())} AND CONTENT_ITEM_ID <> @itemId";
             var dt = GetRealData(cmd);
@@ -486,13 +452,11 @@ namespace Quantumart.QPublishing.Database
                 conflictIds.AddRange(from DataRow row in dt.Rows select row["CONTENT_ITEM_ID"].ToString());
                 throw new QpInvalidAttributeException(
                     $"Unique constraint violation: {string.Join(", ", msgs.ToArray())}. Article IDs: {string.Join(", ", conflictIds.ToArray())}");
-
             }
         }
 
         private bool ValidateInputMask(string inputMask, string data)
         {
-
             var regEx = new Regex(inputMask, RegexOptions.IgnoreCase);
             var matches = regEx.Matches(data);
 
@@ -571,8 +535,6 @@ namespace Quantumart.QPublishing.Database
 
         public void CheckFileExistence(HttpPostedFile fileToSave, string valueFieldName, Hashtable values, int contentId)
         {
-
-
             var attrId = GetValidContentAttributeId(valueFieldName, contentId);
             if (attrId == 0)
             {
@@ -585,7 +547,6 @@ namespace Quantumart.QPublishing.Database
             {
                 return;
             }
-
 
             var fileDir = GetDirectoryForFileAttribute(attrId);
             if (File.Exists(fileDir + "\\" + fileName))
@@ -609,7 +570,6 @@ namespace Quantumart.QPublishing.Database
                     fileName = fileNameWithoutExtension + "[" + index + "]" + "." + fileExtension;
                 }
 
-
                 values[actualFieldName] = fileName;
             }
 
@@ -624,13 +584,11 @@ namespace Quantumart.QPublishing.Database
 
         private void GetDynamicImagesForImage(int attributeId, int contentItemId, string imageName, List<DynamicImageInfo> imagesList)
         {
-
             var imageAttr = GetContentAttributeObject(attributeId);
             var attrDir = GetDirectoryForFileAttribute(imageAttr.Id);
             var contentDir = GetContentLibraryDirectory(imageAttr.SiteId, imageAttr.ContentId);
 
             var attrs = GetContentAttributeObjects(imageAttr.ContentId).Where(n => n.RelatedImageId == imageAttr.Id);
-
 
             foreach (var attr in attrs)
             {
@@ -648,13 +606,9 @@ namespace Quantumart.QPublishing.Database
                     MaxSize = attr.DynamicImage.MaxSize
                 };
 
-                image.DynamicUrl = !string.IsNullOrEmpty(image.ImageName) ?
-                    DynamicImage.GetDynamicImageRelUrl(image.ImageName, image.AttrId, image.FileType).Replace("'", "''") :
-                    "NULL";
+                image.DynamicUrl = !string.IsNullOrEmpty(image.ImageName) ? DynamicImage.GetDynamicImageRelUrl(image.ImageName, image.AttrId, image.FileType).Replace("'", "''") : "NULL";
 
                 imagesList.Add(image);
-
-
             }
         }
 
@@ -699,9 +653,7 @@ namespace Quantumart.QPublishing.Database
             var counter = 0;
             var isNewArticle = contentItemId == 0;
 
-
             var dataValues = new Dictionary<string, string>();
-
 
             var contentAttributes = attrs as ContentAttribute[] ?? attrs.ToArray();
             foreach (var attr in contentAttributes)
@@ -745,15 +697,14 @@ namespace Quantumart.QPublishing.Database
                     if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
                     {
                         data = data
-                            .Replace(longUploadUrl, UploadPlaceHolder)
-                            .Replace(longSiteStageUrl, SitePlaceHolder)
-                            .Replace(longSiteLiveUrl, SitePlaceHolder)
-                        ;
+                                .Replace(longUploadUrl, UploadPlaceHolder)
+                                .Replace(longSiteStageUrl, SitePlaceHolder)
+                                .Replace(longSiteLiveUrl, SitePlaceHolder)
+                            ;
                     }
 
                     if (attr.Type != AttributeType.DynamicImage)
                     {
-
                         var dataParamName = "@qp_data" + counter;
                         var blobDataParamName = "@qp_blob_data" + counter;
                         var idParamName = "@field" + counter;
@@ -882,6 +833,7 @@ namespace Quantumart.QPublishing.Database
                     list.Add(id);
                 }
             }
+
             return list;
         }
 

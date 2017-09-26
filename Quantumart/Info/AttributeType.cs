@@ -1,4 +1,5 @@
-﻿namespace Quantumart.QPublishing.Info
+// ReSharper disable once CheckNamespace
+namespace Quantumart.QPublishing.Info
 {
     public enum AttributeType
     {

@@ -1,6 +1,7 @@
-﻿using System.Data.SqlClient;
+using System.Data.SqlClient;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public interface IQueryObject

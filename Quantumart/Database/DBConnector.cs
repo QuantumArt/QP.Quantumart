@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Configuration;
@@ -13,18 +13,18 @@ using System.Web;
 using System.Xml;
 using Microsoft.VisualBasic;
 using Microsoft.Win32;
+using Quantumart.QP8.Assembling;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
-using Quantumart.QP8.Assembling;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        #region fields and properties
         private const string IdentityParamString = "@itemId";
 
         private bool _throwLoadFileExceptions = true;
@@ -40,6 +40,7 @@ namespace Quantumart.QPublishing.Database
         public bool ForceLocalCache { get; set; }
 
         private int? _lastModifiedBy;
+
         public int LastModifiedBy
         {
             get
@@ -53,15 +54,13 @@ namespace Quantumart.QPublishing.Database
                 {
                     result = (int)HttpContext.Current.Items[LastModifiedByKey];
                 }
+
                 return result;
             }
-            set
-            {
-                _lastModifiedBy = value;
-            }
+            set => _lastModifiedBy = value;
         }
 
-        public bool UseLocalCache => HttpRuntime.Cache == null || ForceLocalCache;
+        public bool UseLocalCache => ForceLocalCache;
 
         public bool CacheData { get; set; }
 
@@ -118,7 +117,6 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-
         private bool NeedToDisposeActualSqlConnection => ExternalConnection == null && InternalConnection == null;
 
         private string _instanceCachePrefix;
@@ -149,11 +147,7 @@ namespace Quantumart.QPublishing.Database
 
                 return !CheckIsLive();
             }
-            set
-            {
-                _isStage = value;
-            }
-
+            set => _isStage = value;
         }
 
         public IFileSystem FileSystem { get; set; }
@@ -165,10 +159,6 @@ namespace Quantumart.QPublishing.Database
         internal string UploadBindingPlaceHolder => "<%#upload_url%>";
 
         internal string SiteBindingPlaceHolder => "<%#site_url%>";
-
-        #endregion
-
-        #region constructors
 
         static DBConnector()
         {
@@ -186,7 +176,6 @@ namespace Quantumart.QPublishing.Database
 
         public DBConnector(string strConnectionString)
         {
-
             ForceLocalCache = false;
             CacheData = true;
             UpdateManyToMany = true;
@@ -211,8 +200,6 @@ namespace Quantumart.QPublishing.Database
             ExternalTransaction = transaction;
         }
 
-        #endregion
-
         #region static methods
 
         public static string GetConnectionString(string customerCode)
@@ -230,7 +217,7 @@ namespace Quantumart.QPublishing.Database
         public static XmlDocument GetQpConfig()
         {
             var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
-                      RegistryView.Registry32);
+                RegistryView.Registry32);
             var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey != null)
             {
@@ -266,15 +253,9 @@ namespace Quantumart.QPublishing.Database
             return string.IsNullOrEmpty(result) ? defaultValue : result;
         }
 
-        public static bool GetNumBool(object obj)
-        {
-            return Convert.ToBoolean((decimal)obj);
-        }
+        public static bool GetNumBool(object obj) => Convert.ToBoolean((decimal)obj);
 
-        public static int GetNumInt(object obj)
-        {
-            return (int)(decimal)obj;
-        }
+        public static int GetNumInt(object obj) => (int)(decimal)obj;
 
         private static string ExtractCachePrefix(string cnnString)
         {
@@ -293,7 +274,6 @@ namespace Quantumart.QPublishing.Database
                     throw new ArgumentException("The connection supplied string should contain at least 'Initial Catalog' or 'Database' keyword.");
                 }
 
-
                 var serverName = cnnParams
                     .Where(n => string.Equals(n.Key, "Data Source", StringComparison.InvariantCultureIgnoreCase)
                         || string.Equals(n.Key, "Server", StringComparison.InvariantCultureIgnoreCase))
@@ -305,11 +285,12 @@ namespace Quantumart.QPublishing.Database
                     throw new ArgumentException("The connection string supplied should contain at least 'Data Source' or 'Server' keyword.");
                 }
 
-
                 result = $"{dbName}.{serverName}.";
             }
+
             return result;
         }
+
         #endregion
 
         #region Utility methods
@@ -326,11 +307,7 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        public string FormatField(string input, int siteId)
-        {
-            return FormatField(input, siteId, !IsStage);
-        }
-
+        public string FormatField(string input, int siteId) => FormatField(input, siteId, !IsStage);
 
         public int InsertDataWithIdentity(string queryString)
         {
@@ -341,15 +318,7 @@ namespace Quantumart.QPublishing.Database
             return GetNumInt(idParam.Value);
         }
 
-        public int GetIdentityId(SqlCommand command)
-        {
-            if (command.Parameters.Contains(IdentityParamString))
-            {
-                return GetNumInt(command.Parameters[IdentityParamString].Value);
-            }
-
-            return 0;
-        }
+        public int GetIdentityId(SqlCommand command) => command.Parameters.Contains(IdentityParamString) ? GetNumInt(command.Parameters[IdentityParamString].Value) : 0;
 
         public string ReplaceCommas(string str)
         {
@@ -367,34 +336,27 @@ namespace Quantumart.QPublishing.Database
         private string LoadFileContents(string key)
         {
             var path = key.Replace(CacheManager.FileContentsCacheKeyPrefix, string.Empty);
-            var result = String.Empty;
+            var result = string.Empty;
             try
             {
                 result = File.ReadAllText(path);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 if (_throwLoadFileExceptions)
+                {
                     throw;
+                }
             }
 
             return result;
         }
 
-        private SqlConnection GetActualSqlConnection(string internalConnectionString)
-        {
-            return (InternalConnection ?? ExternalConnection) as SqlConnection ?? new SqlConnection(internalConnectionString);
-        }
+        private SqlConnection GetActualSqlConnection(string internalConnectionString) => (InternalConnection ?? ExternalConnection) as SqlConnection ?? new SqlConnection(internalConnectionString);
 
-        private SqlConnection GetActualSqlConnection()
-        {
-            return GetActualSqlConnection(InstanceConnectionString);
-        }
+        private SqlConnection GetActualSqlConnection() => GetActualSqlConnection(InstanceConnectionString);
 
-        private SqlTransaction GetActualSqlTransaction()
-        {
-            return (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
-        }
+        private SqlTransaction GetActualSqlTransaction() => (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
 
         #region site
 
@@ -410,10 +372,7 @@ namespace Quantumart.QPublishing.Database
             return site?.AssembleFormatsInLive ?? false;
         }
 
-        public bool CheckIsLive()
-        {
-            return AppSettings["isLive"] != "false";
-        }
+        public bool CheckIsLive() => AppSettings["isLive"] != "false";
 
         public bool GetAllowUserSessions(int siteId)
         {
@@ -481,7 +440,6 @@ namespace Quantumart.QPublishing.Database
 
         public bool IsTargetTableAsync(int id)
         {
-
             var cmd = new SqlCommand("qp_is_target_table_async") { CommandType = CommandType.StoredProcedure };
             var idParam = cmd.Parameters.Add("@content_item_id", SqlDbType.Decimal);
             idParam.Value = id;
@@ -497,15 +455,9 @@ namespace Quantumart.QPublishing.Database
 
         #region Statuses
 
-        public int GetMaximumWeightStatusTypeId(int siteId)
-        {
-            return ((StatusType)GetStatusHashTable()[siteId]).Id;
-        }
+        public int GetMaximumWeightStatusTypeId(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Id;
 
-        public string GetMaximumWeightStatusTypeName(int siteId)
-        {
-            return ((StatusType)GetStatusHashTable()[siteId]).Name;
-        }
+        public string GetMaximumWeightStatusTypeName(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Name;
 
         public DataRowView GetMaximumWeightStatusRow(int siteId)
         {
@@ -526,10 +478,7 @@ namespace Quantumart.QPublishing.Database
             return LegacyNotFound;
         }
 
-        public DataRow GetPreviousStatusHistoryRecord(int id)
-        {
-            return Status.GetPreviousStatusHistoryRecord(id, this);
-        }
+        public DataRow GetPreviousStatusHistoryRecord(int id) => Status.GetPreviousStatusHistoryRecord(id, this);
 
         #endregion
 
@@ -537,7 +486,6 @@ namespace Quantumart.QPublishing.Database
 
         public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, ref long totalRecords)
         {
-
             const string searchSp = "qp_fulltextSiteSearch";
             var dt = new DataTable();
             var ds = new DataSet();
@@ -584,10 +532,8 @@ namespace Quantumart.QPublishing.Database
                     totalRecords = (long)ds.Tables[0].Rows[0]["total"];
                 }
 
-
                 adapter.AcceptChangesDuringFill = true;
             }
-
 
             return dt;
         }
@@ -595,7 +541,6 @@ namespace Quantumart.QPublishing.Database
         public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, DateTime startDate, DateTime endDate, int showStaticContent, ref long totalRecords
         )
         {
-
             const string searchSp = "qp_fulltextSiteSearchWithDate";
             var dt = new DataTable();
             var ds = new DataSet();
@@ -646,10 +591,8 @@ namespace Quantumart.QPublishing.Database
                     totalRecords = (long)ds.Tables[0].Rows[0]["total"];
                 }
 
-
                 adapter.AcceptChangesDuringFill = true;
             }
-
 
             return dt;
         }
@@ -668,9 +611,8 @@ namespace Quantumart.QPublishing.Database
                 const string simpleExpression = "AND C.STATUS_TYPE_ID = ";
                 const string complexExpressionBegin = "AND C.STATUS_TYPE_ID IN (";
                 const string complexExpressionEnd = ")";
-                var divider = ",";
-                var statusString = "";
 
+                var statusString = string.Empty;
                 var simpleRegex = new Regex(Regex.Escape(simpleExpression) + "([\\d]+)");
                 var complexRegex = new Regex(Regex.Escape(complexExpressionBegin) + "([^\\)]+)" + Regex.Escape(complexExpressionEnd));
 
@@ -692,31 +634,30 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
 
-                if (!string.IsNullOrEmpty(statusString))
+                if (string.IsNullOrEmpty(statusString))
                 {
-                    var statuses = new ArrayList();
-                    statuses.AddRange(statusString.Split(','));
-                    foreach (var status in statusString.Split(','))
-                    {
-                        var statusesView = GetStatuses($"[STATUS_TYPE_ID] = {status}");
-                        var statusName = statusesView[0]["STATUS_TYPE_NAME"].ToString();
-                        var statusesView2 = GetStatuses(
-                            $"[STATUS_TYPE_ID] <> {status} AND [STATUS_TYPE_NAME] = '{statusName}'");
-                        foreach (DataRowView row in statusesView2)
-                        {
-                            statuses.Add(row["STATUS_TYPE_ID"].ToString());
-                        }
-                    }
+                    return result;
+                }
 
-
-                    if (statuses.Count > 0)
+                var statuses = new ArrayList();
+                statuses.AddRange(statusString.Split(','));
+                foreach (var status in statusString.Split(','))
+                {
+                    var statusesView = GetStatuses($"[STATUS_TYPE_ID] = {status}");
+                    var statusName = statusesView[0]["STATUS_TYPE_NAME"].ToString();
+                    var statusesView2 = GetStatuses($"[STATUS_TYPE_ID] <> {status} AND [STATUS_TYPE_NAME] = '{statusName}'");
+                    foreach (DataRowView row in statusesView2)
                     {
-                        var newStatusString = string.Join(",", (string[])statuses.ToArray());
-                        result = result.Replace(complexExpressionBegin + statusString + complexExpressionEnd, complexExpressionBegin + newStatusString + complexExpressionEnd);
+                        statuses.Add(row["STATUS_TYPE_ID"].ToString());
                     }
                 }
-            }
 
+                if (statuses.Count > 0)
+                {
+                    var newStatusString = string.Join(",", (string[])statuses.ToArray());
+                    result = result.Replace(complexExpressionBegin + statusString + complexExpressionEnd, complexExpressionBegin + newStatusString + complexExpressionEnd);
+                }
+            }
 
             return result;
         }
@@ -733,11 +674,7 @@ namespace Quantumart.QPublishing.Database
             return new DataView(result).ToTable();
         }
 
-
-        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords)
-        {
-            return GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
-        }
+        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords) => GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
 
         #endregion
 
@@ -754,15 +691,13 @@ namespace Quantumart.QPublishing.Database
             return isLive ? site.AssemblyDirectory : site.StageAssemblyDirectory;
         }
 
-        public string GetAppDataDirectory(int siteId, bool isLive)
-        {
-            return GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
-        }
+        public string GetAppDataDirectory(int siteId, bool isLive) => GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
 
         public string GetDefaultMapFileContents(int siteId, bool isLive, string contextName)
         {
             var saved = _throwLoadFileExceptions;
             _throwLoadFileExceptions = false;
+
             var result = GetMapFileContents(siteId, isLive, contextName + ".map");
             _throwLoadFileExceptions = saved;
             if (string.IsNullOrEmpty(result))
@@ -770,6 +705,7 @@ namespace Quantumart.QPublishing.Database
                 var key = $"Quantumart.QP8.OnlineMapping.{siteId}.{isLive}.{contextName}";
                 result = GetCachedEntity(key, GetRealDefaultMapFileContents);
             }
+
             return result;
         }
 
@@ -790,7 +726,6 @@ namespace Quantumart.QPublishing.Database
             var isLive = bool.Parse(arr[4]);
             var contextName = arr[5];
 
-
             if (string.IsNullOrEmpty(contextName))
             {
                 contextName = GetSite(siteId).ContextClassName;
@@ -806,20 +741,11 @@ namespace Quantumart.QPublishing.Database
             return mapping;
         }
 
-        public string GetMapFileContents(int siteId, bool isLive, string fileName)
-        {
-            return GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
-        }
+        public string GetMapFileContents(int siteId, bool isLive, string fileName) => GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
 
-        public string GetDefaultMapFileContents(int siteId, string contextName = null)
-        {
-            return GetDefaultMapFileContents(siteId, !IsStage, contextName);
-        }
+        public string GetDefaultMapFileContents(int siteId, string contextName = null) => GetDefaultMapFileContents(siteId, !IsStage, contextName);
 
-        public string GetMapFileContents(int siteId, string fileName)
-        {
-            return GetMapFileContents(siteId, !IsStage, fileName);
-        }
+        public string GetMapFileContents(int siteId, string fileName) => GetMapFileContents(siteId, !IsStage, fileName);
 
         #endregion
     }

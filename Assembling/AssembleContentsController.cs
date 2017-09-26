@@ -1,18 +1,19 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml.Xsl;
-using Quantumart.QP8.Assembling.Info;
-using System.Reflection;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using System.Xml.Xsl;
+using Quantumart.QP8.Assembling.Info;
 using Quantumart.QP8.Assembling.T4;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssembleContentsController : AssembleControllerBase
@@ -114,12 +115,14 @@ namespace Quantumart.QP8.Assembling
 
         public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca)"));
 
-        public AssembleContentsController(int siteId, string connectionParameter) : base(connectionParameter)
+        public AssembleContentsController(int siteId, string connectionParameter)
+            : base(connectionParameter)
         {
             FillController(siteId, null);
         }
 
-        public AssembleContentsController(int siteId, string sqlMetalPath, string connectionParameter) : base(connectionParameter)
+        public AssembleContentsController(int siteId, string sqlMetalPath, string connectionParameter)
+            : base(connectionParameter)
         {
             FillController(siteId, sqlMetalPath);
         }
@@ -135,7 +138,7 @@ namespace Quantumart.QP8.Assembling
             CurrentAssembleMode = AssembleMode.Contents;
             SiteId = siteId;
             SqlMetalPath = sqlMetalPath;
-            UseT4 = String.IsNullOrEmpty(sqlMetalPath);
+            UseT4 = string.IsNullOrEmpty(sqlMetalPath);
         }
 
         private string _siteRoot;
@@ -147,16 +150,15 @@ namespace Quantumart.QP8.Assembling
                 var path = SiteRow["is_live"].ToString() == "1" ? "assembly_path" : "stage_assembly_path";
                 return _siteRoot ?? (_siteRoot = SiteRow[path].ToString().Replace(@"\bin", ""));
             }
-            set { _siteRoot = value; }
+            set => _siteRoot = value;
         }
-
 
         private bool? _isLive;
 
         public new bool IsLive
         {
-            get { return _isLive ?? (_isLive = Convert.ToBoolean(int.Parse(SiteRow["is_live"].ToString()))).Value; }
-            set { _isLive = value; }
+            get => _isLive ?? (_isLive = Convert.ToBoolean(int.Parse(SiteRow["is_live"].ToString()))).Value;
+            set => _isLive = value;
         }
 
         public bool DisableClassGeneration { get; set; }
@@ -171,10 +173,7 @@ namespace Quantumart.QP8.Assembling
 
         public bool ProceedDbIndependentGeneration => GetFlag("proceed_db_independent_generation", false);
 
-        public bool GetFlag(string key, bool defaultValue)
-        {
-            return !SiteRow.Table.Columns.Contains(key) ? defaultValue : (bool)SiteRow[key];
-        }
+        public bool GetFlag(string key, bool defaultValue) => !SiteRow.Table.Columns.Contains(key) ? defaultValue : (bool)SiteRow[key];
 
         public string DataContextClass
         {
@@ -187,14 +186,13 @@ namespace Quantumart.QP8.Assembling
 
         private FileNameHelper _fileNameHelper;
 
-        public FileNameHelper FileNameHelper => _fileNameHelper ?? (_fileNameHelper = new FileNameHelper {SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb});
+        public FileNameHelper FileNameHelper => _fileNameHelper ?? (_fileNameHelper = new FileNameHelper { SiteRoot = SiteRoot, DataContextClass = DataContextClass, ProceedMappingWithDb = ProceedMappingWithDb });
 
-        public XmlPreprocessor XmlPreprocessor { get; private set;  }
+        public XmlPreprocessor XmlPreprocessor { get; private set; }
 
-        public XmlDocument DbmlFile { get; private set;  }
+        public XmlDocument DbmlFile { get; private set; }
 
         public XDocument MapFile { get; private set; }
-
 
         public string GetMapping(string name)
         {
@@ -226,7 +224,6 @@ namespace Quantumart.QP8.Assembling
 
         public override void Assemble()
         {
-
             XmlPreprocessor = new XmlPreprocessor(this, false);
             if (ImportMappingToDb)
             {
@@ -244,15 +241,16 @@ namespace Quantumart.QP8.Assembling
                     schemaInfo = XmlPreprocessor.GeneratePartialMapping(FileNameHelper, info);
                     GenerateClasses(schemaInfo);
                 }
-
             }
         }
 
         private void GenerateClasses(SchemaInfo info)
         {
             if (DisableClassGeneration)
+            {
                 return;
- 
+            }
+
             GenerateDbmlFile();
 
             if (!GenerateMapFileOnly)
@@ -263,7 +261,6 @@ namespace Quantumart.QP8.Assembling
             GenerateMapFile(info);
 
             MapFile.Save(FileNameHelper.MapFilePath);
-
 
             if (!GenerateMapFileOnly)
             {
@@ -281,15 +278,9 @@ namespace Quantumart.QP8.Assembling
             return assembly.GetManifestResourceStream(fullResourceName);
         }
 
-        private static XmlWriter GetXmlWriter(XmlDocument doc)
-        {
-            return doc.CreateNavigator().AppendChild();
-        }
+        private static XmlWriter GetXmlWriter(XmlDocument doc) => doc.CreateNavigator().AppendChild();
 
-        private IXPathNavigable GetMappingResultNavigator()
-        {
-            return XmlPreprocessor.MappingResultXml.CreateNavigator();
-        }
+        private IXPathNavigable GetMappingResultNavigator() => XmlPreprocessor.MappingResultXml.CreateNavigator();
 
         private void GenerateDbmlFile()
         {
@@ -306,7 +297,6 @@ namespace Quantumart.QP8.Assembling
                     }
                 }
             }
-
         }
 
         private void GenerateManyToMany()
@@ -414,8 +404,6 @@ namespace Quantumart.QP8.Assembling
 
                 c.SetAttributeValue("Storage", value);
             }
-
-
         }
 
         private void GenerateMain()
@@ -432,15 +420,12 @@ namespace Quantumart.QP8.Assembling
                 {
                     throw new ApplicationException($"Error while proceeding T4 template for file {FileNameHelper.DbmlFilePath}: {e.Message}", e);
                 }
-
             }
             else
             {
                 RunSqlMetal();
             }
-
         }
-
 
         private void RunSqlMetal()
         {
@@ -466,21 +451,20 @@ namespace Quantumart.QP8.Assembling
                 {
                     var message = string.Join("\r\n",
                         Regex.Split(Output, "\r\n")
-                        .Where(n => n.Contains("Error "))
-                        .Select(n =>
-                            {
-                                var line = Regex.Match(n, @".dbml\(([\d]+)\)").Groups[1].Value;
-                                line = string.IsNullOrEmpty(line) ? "" : $"Line {line}: ";
-                                return line + n.Substring(n.IndexOf("Error ", StringComparison.Ordinal));
-                            }
-                        )
-                        .ToArray()
+                            .Where(n => n.Contains("Error "))
+                            .Select(n =>
+                                {
+                                    var line = Regex.Match(n, @".dbml\(([\d]+)\)").Groups[1].Value;
+                                    line = string.IsNullOrEmpty(line) ? "" : $"Line {line}: ";
+                                    return line + n.Substring(n.IndexOf("Error ", StringComparison.Ordinal));
+                                }
+                            )
+                            .ToArray()
                     );
                     throw new ApplicationException(
                         $"Some errors has been found while processing the file {FileNameHelper.DbmlFilePath}:\r\n{message}");
                 }
             }
-  
         }
 
         private string GenerateCommandLineParams(FileNameHelper helper)

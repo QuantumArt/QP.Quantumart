@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class PathInfo
@@ -29,7 +30,6 @@ namespace Quantumart.QP8.Assembling.Info
         public string TemplateFolderPath { get; private set; }
 
         public string PageFolderPath { get; private set; }
-
 
         public string FullPagePath { get; private set; }
 
@@ -61,10 +61,7 @@ namespace Quantumart.QP8.Assembling.Info
 
         public string TemplateControlsFolderName => GetTemplateControlsFolderName(_info.NetTemplateName);
 
-        private static string GetTemplateControlsFolderName(string name)
-        {
-            return TemplateControlsFolderPrefix + name.Replace(".", "_");
-        }
+        private static string GetTemplateControlsFolderName(string name) => TemplateControlsFolderPrefix + name.Replace(".", "_");
 
         public bool IsLive
         {
@@ -170,7 +167,6 @@ namespace Quantumart.QP8.Assembling.Info
                 BaseUploadUrl = _info.FirstDataRow["UPLOAD_URL"].ToString();
                 UploadUrlPrefix = "";
             }
-
         }
 
         private string GetActualDns()
@@ -184,25 +180,17 @@ namespace Quantumart.QP8.Assembling.Info
                 ? _info.FirstDataRow["DNS"].ToString()
                 : _info.FirstDataRow["STAGE_DNS"].ToString();
         }
-        private string GetSiteUrl()
-        {
-            return IsLive
-                ? _info.FirstDataRow["LIVE_VIRTUAL_ROOT"].ToString()
-                : _info.FirstDataRow["STAGE_VIRTUAL_ROOT"].ToString();
-        }
+
+        private string GetSiteUrl() => IsLive
+            ? _info.FirstDataRow["LIVE_VIRTUAL_ROOT"].ToString()
+            : _info.FirstDataRow["STAGE_VIRTUAL_ROOT"].ToString();
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings")]
-        public string GetContentUploadUrl(int contentId)
-        {
-            return BaseUploadUrl + "contents/" + contentId;
-        }
+        public string GetContentUploadUrl(int contentId) => BaseUploadUrl + "contents/" + contentId;
 
         public string CacheFilePath => string.Format(CultureInfo.InvariantCulture, "{0}\\dependencies", BaseAssemblePath);
 
-        public string FullCacheFileName(string shortFileName)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0}\\{1}", CacheFilePath, shortFileName);
-        }
+        public string FullCacheFileName(string shortFileName) => string.Format(CultureInfo.InvariantCulture, "{0}\\{1}", CacheFilePath, shortFileName);
 
         public string StructureCacheFile => FullCacheFileName("structure.dep");
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Data;
 using System.Globalization;
@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public enum AssembleMode
@@ -37,10 +38,7 @@ namespace Quantumart.QP8.Assembling
 
         public static string RenamesWithoutPage { get; protected set; } = ", pt.charset as template_charset, pt.enable_viewstate as template_enable_viewstate ";
 
-        internal virtual string GetFilter()
-        {
-            return string.Empty;
-        }
+        internal virtual string GetFilter() => string.Empty;
 
         protected AssembleControllerBase()
         {
@@ -101,10 +99,7 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        protected StreamWriter CreateFile(string path)
-        {
-            return new StreamWriter(path, false, Info.Encoding);
-        }
+        protected StreamWriter CreateFile(string path) => new StreamWriter(path, false, Info.Encoding);
 
         protected static void DeleteFile(string path)
         {
@@ -137,10 +132,7 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        protected static string GetControlEnableViewStateString(ControlInfo control)
-        {
-            return control.EnableViewState ? "EnableViewState=\"True\"" : "EnableViewState=\"False\"";
-        }
+        protected static string GetControlEnableViewStateString(ControlInfo control) => control.EnableViewState ? "EnableViewState=\"True\"" : "EnableViewState=\"False\"";
 
         protected string PageSourceString
         {
@@ -178,10 +170,7 @@ namespace Quantumart.QP8.Assembling
 
         protected string FullClassName => string.Format(CultureInfo.InvariantCulture, "{0}.{1}", NamespaceName, ClassName);
 
-        protected string GetControlFullClassName(ControlInfo control)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0}.{1}", NamespaceName, control.ClassName);
-        }
+        protected string GetControlFullClassName(ControlInfo control) => string.Format(CultureInfo.InvariantCulture, "{0}.{1}", NamespaceName, control.ClassName);
 
         protected string ClassDefinition
         {
@@ -200,7 +189,6 @@ namespace Quantumart.QP8.Assembling
                 sb.Append(ClassName);
                 return sb.ToString();
             }
-
         }
 
         protected string PageInheritsDefinition
@@ -456,6 +444,7 @@ namespace Quantumart.QP8.Assembling
                         undefValue = control.IsCSharp ? undefValue.Replace("\"", "\\\"") : undefValue.Replace("\"", "\"\"");
                         sb.Append(Padding(checked(padLevel + 1))).AppendFormat("traceBuilder.Append(\"Value({0});\"){1}", undefValue, LineEnd(control.IsCSharp)).AppendLine("");
                     }
+
                     sb.Append(Padding(checked(padLevel + 1))).AppendFormat("{0}.UndefTraceString = traceBuilder.ToString(){1}", Self(control.IsCSharp), LineEnd(control.IsCSharp)).AppendLine("");
                 }
 
@@ -547,10 +536,7 @@ namespace Quantumart.QP8.Assembling
             return new CodeFile(sb.ToString(), control.CommonFileName);
         }
 
-        internal string GetControlPresentation(ControlInfo control)
-        {
-            return GetControlPresentationCodeFile(control).Code;
-        }
+        internal string GetControlPresentation(ControlInfo control) => GetControlPresentationCodeFile(control).Code;
 
         internal CodeFile GetControlCodeBehindCodeFile(ControlInfo control, bool isSystem)
         {
@@ -575,10 +561,7 @@ namespace Quantumart.QP8.Assembling
             return new CodeFile(sb.ToString(), isSystem ? control.CommonSystemCodeFileName : control.CommonCodeFileName);
         }
 
-        internal string GetControlCodeBehind(ControlInfo control, bool isSystem)
-        {
-            return GetControlCodeBehindCodeFile(control, isSystem).Code;
-        }
+        internal string GetControlCodeBehind(ControlInfo control, bool isSystem) => GetControlCodeBehindCodeFile(control, isSystem).Code;
 
         public CodeFile PagePresentationCodeFile
         {
@@ -704,20 +687,11 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        private static string GetPresentationTimeStamp()
-        {
-            return $"<%--Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}--%>";
-        }
+        private static string GetPresentationTimeStamp() => $"<%--Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}--%>";
 
-        private static string GetCodeTimeStamp(ControlInfo control)
-        {
-            return $"{GetSingleLineComment(control)}Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}";
-        }
+        private static string GetCodeTimeStamp(ControlInfo control) => $"{GetSingleLineComment(control)}Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}";
 
-        private static string GetPageCodeTimeStamp()
-        {
-            return $"'Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}";
-        }
+        private static string GetPageCodeTimeStamp() => $"'Generated at {DateTime.Now.ToShortDateString()} {DateTime.Now.ToLongTimeString()}";
 
         private void DeleteOldControlFiles(ControlInfo control)
         {
@@ -775,35 +749,17 @@ namespace Quantumart.QP8.Assembling
             return "Namespace " + name;
         }
 
-        protected static string GetEndNamespace(bool isCSharp)
-        {
-            return isCSharp ? "}" : "End Namespace";
-        }
+        protected static string GetEndNamespace(bool isCSharp) => isCSharp ? "}" : "End Namespace";
 
-        protected static string GetEndClass(ControlInfo control)
-        {
-            return control.IsCSharp ? "}" : "End Class";
-        }
+        protected static string GetEndClass(ControlInfo control) => control.IsCSharp ? "}" : "End Class";
 
-        protected static string GetSingleLineComment(ControlInfo control)
-        {
-            return control.IsCSharp ? "//" : "'";
-        }
+        protected static string GetSingleLineComment(ControlInfo control) => control.IsCSharp ? "//" : "'";
 
-        protected static string GetObjectVariableDeclaration(bool isCSharp, string name, string type, string value)
-        {
-            return GetVariableDeclarationLeft(isCSharp, name, type, type) + " = new " + type + "(" + value + ")" + LineEnd(isCSharp);
-        }
+        protected static string GetObjectVariableDeclaration(bool isCSharp, string name, string type, string value) => GetVariableDeclarationLeft(isCSharp, name, type, type) + " = new " + type + "(" + value + ")" + LineEnd(isCSharp);
 
-        protected static string GetObjectVariableDeclaration(bool isCSharp, string name, string type)
-        {
-            return GetObjectVariableDeclaration(isCSharp, name, type, "");
-        }
+        protected static string GetObjectVariableDeclaration(bool isCSharp, string name, string type) => GetObjectVariableDeclaration(isCSharp, name, type, "");
 
-        protected static string GetVariableDeclaration(bool isCSharp, string name, string vbType, string csType, string value)
-        {
-            return GetVariableDeclarationLeft(isCSharp, name, vbType, csType) + " = " + value + LineEnd(isCSharp);
-        }
+        protected static string GetVariableDeclaration(bool isCSharp, string name, string vbType, string csType, string value) => GetVariableDeclarationLeft(isCSharp, name, vbType, csType) + " = " + value + LineEnd(isCSharp);
 
         protected static string GetVariableDeclarationLeft(bool isCSharp, string name, string vbType, string csType)
         {
@@ -825,20 +781,11 @@ namespace Quantumart.QP8.Assembling
             return "If " + vbCondition + " Then";
         }
 
-        protected static string GetIf(bool isCSharp, string condition)
-        {
-            return GetIf(isCSharp, condition, condition);
-        }
+        protected static string GetIf(bool isCSharp, string condition) => GetIf(isCSharp, condition, condition);
 
-        protected static string GetEndIf(bool isCSharp)
-        {
-            return isCSharp ? "}" : "End If";
-        }
+        protected static string GetEndIf(bool isCSharp) => isCSharp ? "}" : "End If";
 
-        protected static string GetEndSub(bool isCSharp)
-        {
-            return isCSharp ? "}" : "End Sub";
-        }
+        protected static string GetEndSub(bool isCSharp) => isCSharp ? "}" : "End Sub";
 
         protected static string Padding(int size)
         {
@@ -851,20 +798,11 @@ namespace Quantumart.QP8.Assembling
             return sb.ToString();
         }
 
-        internal static string LineEnd(bool isCSharp)
-        {
-            return isCSharp ? ";" : "";
-        }
+        internal static string LineEnd(bool isCSharp) => isCSharp ? ";" : "";
 
-        internal static string Cast(bool isCSharp, string expr, string type)
-        {
-            return isCSharp ? $"({type})({expr})" : $"DirectCast({expr}, {type})";
-        }
+        internal static string Cast(bool isCSharp, string expr, string type) => isCSharp ? $"({type})({expr})" : $"DirectCast({expr}, {type})";
 
-        internal static string Self(bool isCSharp)
-        {
-            return isCSharp ? "this" : "Me";
-        }
+        internal static string Self(bool isCSharp) => isCSharp ? "this" : "Me";
 
         internal static string BoolStr(bool isCSharp, bool value)
         {
@@ -876,35 +814,17 @@ namespace Quantumart.QP8.Assembling
             return isCSharp ? "false" : "False";
         }
 
-        internal static string ConcatChar(bool isCSharp)
-        {
-            return isCSharp ? "+" : "&";
-        }
+        internal static string ConcatChar(bool isCSharp) => isCSharp ? "+" : "&";
 
-        internal static string BeginItemChar(bool isCSharp)
-        {
-            return isCSharp ? "[" : "(";
-        }
+        internal static string BeginItemChar(bool isCSharp) => isCSharp ? "[" : "(";
 
-        internal static string EndItemChar(bool isCSharp)
-        {
-            return isCSharp ? "]" : ")";
-        }
+        internal static string EndItemChar(bool isCSharp) => isCSharp ? "]" : ")";
 
-        internal static string Ref(bool isCSharp)
-        {
-            return isCSharp ? "ref" : "";
-        }
+        internal static string Ref(bool isCSharp) => isCSharp ? "ref" : "";
 
-        internal static string InEqual(bool isCSharp)
-        {
-            return isCSharp ? "!=" : "<>";
-        }
+        internal static string InEqual(bool isCSharp) => isCSharp ? "!=" : "<>";
 
-        internal static string Imports(bool isCSharp)
-        {
-            return isCSharp ? "using" : "Imports";
-        }
+        internal static string Imports(bool isCSharp) => isCSharp ? "using" : "Imports";
 
         protected string GetUsingNamespaces(ControlInfo control)
         {

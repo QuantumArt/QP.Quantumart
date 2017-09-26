@@ -1,5 +1,6 @@
-﻿using System.IO;
+using System.IO;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.FileSystem
 {
     public class RealFileSystem : IFileSystem

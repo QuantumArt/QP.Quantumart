@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     public class QpInvalidAttributeException : ApplicationException

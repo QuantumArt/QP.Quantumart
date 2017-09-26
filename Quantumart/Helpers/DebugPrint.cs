@@ -6,6 +6,7 @@ using System.Text;
 using System.Web;
 using Microsoft.VisualBasic;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class DebugPrint
