@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>NET47;netcoreapp2.0</TargetFrameworks>
-    <Version>3.0.0-beta</Version>
+    <Version>3.0.0</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -28,7 +28,7 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
     <PackageId>Quantumart.AspNetCore</PackageId>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
     <IncludeSource>True</IncludeSource>
     <IncludeSymbols>True</IncludeSymbols>
@@ -40,15 +40,15 @@
       <BuildOutputInPackage Include="$(OutputPath)Quantumart.QP8.Assembling.dll" />
     </ItemGroup>
   </Target>
-  
+
   <ItemGroup Condition="'$(TargetFramework)'=='NET47'">
     <ProjectReference Include="..\Assembling\Assembling.csproj" PrivateAssets="All" />
   </ItemGroup>
-  
+
   <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
     <DefineConstants>ASPNETCORE;NET4</DefineConstants>
   </PropertyGroup>
