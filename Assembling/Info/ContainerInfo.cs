@@ -3,6 +3,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class ContainerInfo
@@ -15,7 +16,6 @@ namespace Quantumart.QP8.Assembling.Info
                 Statuses = GetStatuses();
                 Workflow = GetWorkflow();
                 MaxStatusId = GetMaxStatus();
-
             }
         }
 
@@ -284,7 +284,10 @@ namespace Quantumart.QP8.Assembling.Info
                 {
                     for (var i = 0; i < Statuses.Count; i++)
                     {
-                        if (i != 0) { sb.Append(", "); }
+                        if (i != 0)
+                        {
+                            sb.Append(", ");
+                        }
                         sb.AppendFormat("'{0}'", GetStatusName(Statuses[i]["STATUS_TYPE_ID"].ToString()));
                     }
                 }
@@ -314,15 +317,9 @@ namespace Quantumart.QP8.Assembling.Info
             }
         }
 
-        private DataView GetWorkflow()
-        {
-            return new DataView(Info.Workflow) { RowFilter = "CONTENT_ID = " + ContentId() };
-        }
+        private DataView GetWorkflow() => new DataView(Info.Workflow) { RowFilter = "CONTENT_ID = " + ContentId() };
 
-        private int GetWorkflowField(string fieldName)
-        {
-            return WorkflowAssigned ? Convert.ToInt32((decimal)Workflow[0][fieldName]) : 0;
-        }
+        private int GetWorkflowField(string fieldName) => WorkflowAssigned ? Convert.ToInt32((decimal)Workflow[0][fieldName]) : 0;
 
         ~ContainerInfo()
         {

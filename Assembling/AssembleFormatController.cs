@@ -1,6 +1,7 @@
-﻿using System.Data;
+using System.Data;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssembleFormatController : AssembleControllerBase
@@ -29,7 +30,7 @@ namespace Quantumart.QP8.Assembling
 
         public AssembleFormatController(int formatId, AssembleMode mode, DataTable data)
         {
-            FillController(formatId, mode, "", data);
+            FillController(formatId, mode, string.Empty, data);
         }
 
         private void FillController(int formatId, AssembleMode mode)
@@ -42,6 +43,7 @@ namespace Quantumart.QP8.Assembling
                 " LEFT JOIN page AS p ON p.page_id=obj.page_id" +
                 " INNER JOIN site AS s ON pt.site_id = s.site_id" +
                 " WHERE objf.object_format_id=" + formatId;
+
             FillController(formatId, mode, sqlQuery, null);
         }
 
@@ -73,9 +75,6 @@ namespace Quantumart.QP8.Assembling
             AssemblePageFiles();
         }
 
-        internal override string GetFilter()
-        {
-            return "and objf.object_format_id = " + FormatId;
-        }
+        internal override string GetFilter() => "and objf.object_format_id = " + FormatId;
     }
 }

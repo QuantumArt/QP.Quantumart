@@ -1,5 +1,6 @@
 using System;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class ObjectCall
@@ -7,7 +8,7 @@ namespace Quantumart.QP8.Assembling.Info
         public ObjectCall(string call, AssembleInfo info)
         {
             TemplateName = info.TemplateName;
-            FormatName = "";
+            FormatName = string.Empty;
 
             char[] splitParams = { '.' };
             var callParams = call.Split(splitParams);
@@ -30,7 +31,6 @@ namespace Quantumart.QP8.Assembling.Info
                         TypeCode = "TO";
                         TemplateName = callParams[0];
                         ObjectName = callParams[1];
-
                     }
                     else
                     {

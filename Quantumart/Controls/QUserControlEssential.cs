@@ -8,15 +8,18 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
 using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public class QUserControlEssential
     {
         private readonly IQUserControl _currentControl;
+        private readonly DBConnector _dbConnector;
 
-        public QUserControlEssential(IQUserControl control)
+        public QUserControlEssential(IQUserControl control, DBConnector dbConnector)
         {
             _currentControl = control;
+            _dbConnector = dbConnector;
         }
 
         public bool DisableDataBind { get; set; } = false;
@@ -121,10 +124,7 @@ namespace Quantumart.QPublishing.Controls
             return str + ".ascx";
         }
 
-        public virtual string FieldNs(DataRow pDataItem, string key, string defaultValue)
-        {
-            return Field(pDataItem, key, defaultValue);
-        }
+        public virtual string FieldNs(DataRow pDataItem, string key, string defaultValue) => Field(pDataItem, key, defaultValue);
 
         public virtual string Field(bool isStage, DataRow pDataItem, string key, string defaultValue)
         {
@@ -136,20 +136,11 @@ namespace Quantumart.QPublishing.Controls
             return Field(pDataItem, key, defaultValue);
         }
 
-        public string OnFly(DataRow pDataItem, string key)
-        {
-            return OnFly(pDataItem, key, "");
-        }
+        public string OnFly(DataRow pDataItem, string key) => OnFly(pDataItem, key, "");
 
-        public string OnFly(DataRowView pDataItem, string key, string defaultValue)
-        {
-            return OnFly(pDataItem.Row, key, defaultValue);
-        }
+        public string OnFly(DataRowView pDataItem, string key, string defaultValue) => OnFly(pDataItem.Row, key, defaultValue);
 
-        public string OnFly(DataRowView pDataItem, string key)
-        {
-            return OnFly(pDataItem.Row, key);
-        }
+        public string OnFly(DataRowView pDataItem, string key) => OnFly(pDataItem.Row, key);
 
         public string OnFly(DataRow pDataItem, string key, string defaultValue)
         {
@@ -175,44 +166,30 @@ namespace Quantumart.QPublishing.Controls
             var uploadUrl = _currentControl.upload_url;
             result = result.Replace("<%=upload_url%>", uploadUrl);
             result = result.Replace("<%#upload_url%>", uploadUrl);
-            var siteUrl = DBConnector.AppSettings["UseAbsoluteSiteUrl"] == "1" ? _currentControl.absolute_site_url : _currentControl.site_url;
+            var siteUrl = _dbConnector.AppSettings["UseAbsoluteSiteUrl"] == "1" ? _currentControl.absolute_site_url : _currentControl.site_url;
             result = result.Replace("<%=site_url%>", siteUrl);
             result = result.Replace("<%#site_url%>", siteUrl);
             return result;
         }
 
-        protected bool CheckAllowOnScreen()
-        {
-            return
-                _currentControl.IsStage
-                && QScreen.UserAuthenticated()
-                && !QScreen.IsBrowseServerMode()
-                && _currentControl.QPage.Cnn.GetEnableOnScreen(_currentControl.QPage.site_id)
-                && _currentControl.QPage.QScreen.FieldBorderMode != 0
-                && HttpContext.Current.Session["allow_stage_edit_field"].ToString() != "0";
-        }
+        protected bool CheckAllowOnScreen() => _currentControl.IsStage
+            && new QScreen(_dbConnector).UserAuthenticated()
+            && !new QScreen(_dbConnector).IsBrowseServerMode()
+            && _currentControl.QPage.DbConnector.GetEnableOnScreen(_currentControl.QPage.site_id)
+            && _currentControl.QPage.QScreen.FieldBorderMode != 0
+            && HttpContext.Current.Session["allow_stage_edit_field"].ToString() != "0";
 
         public string OnScreenFlyEdit(string value, string itemId, string fieldName)
         {
-            int id;
-            var functionReturnValue = int.TryParse(itemId, out id) ? OnScreenFlyEdit(value, id, fieldName) : FormatField(value);
+            var functionReturnValue = int.TryParse(itemId, out var id) ? OnScreenFlyEdit(value, id, fieldName) : FormatField(value);
             return functionReturnValue;
         }
 
-        public string OnStageFlyEdit(string value, string itemId, string fieldName)
-        {
-            return OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnStageFlyEdit(string value, string itemId, string fieldName) => OnScreenFlyEdit(value, itemId, fieldName);
 
-        public string OnScreenFlyEdit(string value, int itemId, string fieldName)
-        {
-            return OnScreenFlyEditCommon(FormatField(value), itemId, fieldName);
-        }
+        public string OnScreenFlyEdit(string value, int itemId, string fieldName) => OnScreenFlyEditCommon(FormatField(value), itemId, fieldName);
 
-        public string OnStageFlyEdit(string value, int itemId, string fieldName)
-        {
-            return OnScreenFlyEdit(value, itemId, fieldName);
-        }
+        public string OnStageFlyEdit(string value, int itemId, string fieldName) => OnScreenFlyEdit(value, itemId, fieldName);
 
         protected string OnScreenFlyEditCommon(string value, int itemId, string fieldName)
         {
@@ -263,20 +240,13 @@ namespace Quantumart.QPublishing.Controls
             return OnStageDiv(value, fieldName, itemId, contentId, isBorderStatic, editable, attrType, attrRequired);
         }
 
-        public string OnStage(string value, string itemId)
-        {
-            return OnScreen(value, itemId);
-        }
+        public string OnStage(string value, string itemId) => OnScreen(value, itemId);
 
-        public string OnStage(string value, int itemId)
-        {
-            return OnScreen(value, itemId);
-        }
+        public string OnStage(string value, int itemId) => OnScreen(value, itemId);
 
         public string OnScreen(string value, string itemId)
         {
-            int id;
-            var functionReturnValue = int.TryParse(itemId, out id) ? OnScreen(value, id) : FormatField(value);
+            var functionReturnValue = int.TryParse(itemId, out var id) ? OnScreen(value, id) : FormatField(value);
             return functionReturnValue;
         }
 
@@ -294,7 +264,6 @@ namespace Quantumart.QPublishing.Controls
             return OnStageDiv(value, "", itemId, contentId, "", false, "", 0);
         }
 
-
         public string OnStageDiv(string value, string fieldName, int itemId, int contentId, string isBorderStatic, bool editable, string attrType, int attrRequired)
         {
             if (HttpContext.Current.Session["UID"] == null)
@@ -302,7 +271,7 @@ namespace Quantumart.QPublishing.Controls
                 return value;
             }
 
-            var access = QScreen.DbGetUserAccess("content_item", itemId, (int)HttpContext.Current.Session["UID"]);
+            var access = new QScreen(_dbConnector).DbGetUserAccess("content_item", itemId, (int)HttpContext.Current.Session["UID"]);
             if (access < 3)
             {
                 return value;
@@ -320,29 +289,29 @@ namespace Quantumart.QPublishing.Controls
 
             if (editable)
             {
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Cancel"), "cancel", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Cancel"), "cancel", "");
             }
 
             if (access >= 3 && editable)
             {
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Save"), "save", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Save"), "save", "");
             }
 
-            sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Edit in Form View"), "go_info", @"style=""display:none""");
-            sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Add New"), "go_new", @"style=""display:none""");
-            sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Create Like"), "create_like", @"style=""display:none""");
+            sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Edit in Form View"), "go_info", @"style=""display:none""");
+            sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Add New"), "go_new", @"style=""display:none""");
+            sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Create Like"), "create_like", @"style=""display:none""");
 
             if (attrType == "visualedit")
             {
                 sb.Append(@"<td width=""14""><img src=""/rs/images/onfly/onfly_div.jpg"" width=""14"" height=""26"" border=""0""></td>");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Bold"), "bold", "");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Italic"), "italic", "");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Underline"), "underline", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Bold"), "bold", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Italic"), "italic", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Underline"), "underline", "");
                 sb.Append(@"<td width=""14""><img src=""/rs/images/onfly/onfly_div.jpg"" width=""14"" height=""26"" border=""0""></td>");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Align Left"), "left", "");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Align Center"), "center", "");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Align Right"), "right", "");
-                sb.AppendFormat(btnHtml, id, TranslateManager.Translate("Align Justify"), "justify", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Align Left"), "left", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Align Center"), "center", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Align Right"), "right", "");
+                sb.AppendFormat(btnHtml, id, new TranslateManager(_dbConnector).Translate("Align Justify"), "justify", "");
             }
 
             sb.AppendFormat(@"</tr></table></div><div id=""onfly_div_{0}"" on_fly_type=""onfly_div"" onfly_no=""{0}"" style=""{1}"" hicolor=""#aaaaff"" item_id=""{2}"" is_dotnet=""1"" content_id=""{3}"" site_id=""{4}"" attr_required=""{5}"" attribute_name=""{6}"" static_border = ""{7}"" contenteditable=""{8}"" >", id, onFlyInitStyle, itemId, contentId, _currentControl.site_id, attrRequired, fieldName, isBorderStatic, editable ? "true" : "false");
@@ -361,9 +330,6 @@ namespace Quantumart.QPublishing.Controls
             return sb.ToString();
         }
 
-        public string GetReturnStageUrl()
-        {
-            return QScreenInst != null ? QScreenInst.GetReturnStageUrl() : "";
-        }
+        public string GetReturnStageUrl() => QScreenInst != null ? QScreenInst.GetReturnStageUrl() : "";
     }
 }

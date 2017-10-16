@@ -1,6 +1,7 @@
-﻿using System.Data;
+using System.Data;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssembleSelectedObjectsController : AssembleControllerBase
@@ -21,7 +22,6 @@ namespace Quantumart.QP8.Assembling
                 " where obj.object_id in ( " + Ids + ")";
 
             Info = new AssembleInfo(this, sqlQuery);
-
         }
 
         public AssembleSelectedObjectsController(string ids, DataTable data)
@@ -31,10 +31,7 @@ namespace Quantumart.QP8.Assembling
             Info = new AssembleInfo(this, data);
         }
 
-        internal override string GetFilter()
-        {
-            return " and obj.object_id in ( " + Ids + ")";
-        }
+        internal override string GetFilter() => " and obj.object_id in ( " + Ids + ")";
 
         public override void Assemble()
         {

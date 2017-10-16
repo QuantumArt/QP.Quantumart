@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class AssembleInfo
@@ -24,19 +25,16 @@ namespace Quantumart.QP8.Assembling.Info
             FillAssembleInfo();
         }
 
-        public bool GetNumericBoolean(string fieldName)
-        {
-            return Convert.ToBoolean(GetInt32(fieldName));
-        }
+        public bool GetNumericBoolean(string fieldName) => Convert.ToBoolean(GetInt32(fieldName));
 
         public int GetInt32(string fieldName)
         {
-            int result;
             if (FirstDataRow.Table.Columns[fieldName] == null)
             {
                 throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Field {0} is not found in the page-level information table", fieldName));
             }
-            if (!int.TryParse(GetString(fieldName), out result))
+
+            if (!int.TryParse(GetString(fieldName), out var result))
             {
                 throw new InvalidCastException(string.Format(CultureInfo.InvariantCulture, "Cannot convert field {0} to Int32", fieldName));
             }
@@ -44,10 +42,7 @@ namespace Quantumart.QP8.Assembling.Info
             return result;
         }
 
-        public string GetString(string fieldName)
-        {
-            return FirstDataRow.Table.Columns[fieldName] != null ? FirstDataRow[fieldName].ToString() : "";
-        }
+        public string GetString(string fieldName) => FirstDataRow.Table.Columns[fieldName] != null ? FirstDataRow[fieldName].ToString() : string.Empty;
 
         public bool GetBoolean(string fieldName)
         {
@@ -160,7 +155,10 @@ namespace Quantumart.QP8.Assembling.Info
             Workflow = Controller.Cnn.GetDataTable("select cwb.content_id, st.status_type_id, st.status_type_name from workflow_rules wr inner join status_type st on wr.successor_status_id = st.status_type_id inner join content_workflow_bind cwb on cwb.workflow_id = wr.workflow_id where st.weight = (select max(st2.weight) from workflow_rules wr2 inner join status_type st2 on wr.successor_status_id = st.status_type_id where wr2.workflow_id = wr.workflow_id)");
 
             var pageIdForFilter = PageId;
-            if (string.IsNullOrEmpty(pageIdForFilter)) { pageIdForFilter = "0"; }
+            if (string.IsNullOrEmpty(pageIdForFilter))
+            {
+                pageIdForFilter = "0";
+            }
             Objects = Controller.Cnn.GetDataTable("select pt.template_name, pt.net_template_name, pt.page_template_id, p.page_id, obj.[object_name], obj.[object_id], obj.net_object_name, objf.format_name, objf.net_format_name, obj.object_format_id as default_format_id, p.page_folder, objf.object_format_id as current_format_id from object as obj inner join object_format as objf on obj.object_id = objf.object_id inner join page_template pt on obj.page_template_id = pt.page_template_id left join page as p on p.page_id = obj.page_id where pt.site_id = " + SiteId + " and (obj.page_id is null or obj.page_id = " + pageIdForFilter + ")");
         }
 
@@ -202,10 +200,7 @@ namespace Quantumart.QP8.Assembling.Info
 
         public string NetTemplateName => GetNetName(GetString("NET_TEMPLATE_NAME"), TemplateId.ToString(CultureInfo.InvariantCulture), "t");
 
-        public static string GetNetName(string netName, string id, string typeCode)
-        {
-            return !string.IsNullOrEmpty(netName) ? netName : typeCode + id;
-        }
+        public static string GetNetName(string netName, string id, string typeCode) => !string.IsNullOrEmpty(netName) ? netName : typeCode + id;
 
         public string TemplateName => GetString("TEMPLATE_NAME");
 
@@ -262,18 +257,18 @@ namespace Quantumart.QP8.Assembling.Info
         public string BaseClassName => !string.IsNullOrEmpty(CustomClassName) ? CustomClassName : SystemClassName;
 
         public bool IsAssembleObjectsMode => Mode == AssembleMode.AllPageObjects ||
-                                             Mode == AssembleMode.AllTemplateObjects ||
-                                             Mode == AssembleMode.SelectedObjects;
+            Mode == AssembleMode.AllTemplateObjects ||
+            Mode == AssembleMode.SelectedObjects;
 
         public bool IsAssembleFormatMode => Mode == AssembleMode.GlobalCss ||
-                                            Mode == AssembleMode.Notification ||
-                                            Mode == AssembleMode.Preview ||
-                                            Mode == AssembleMode.PreviewById ||
-                                            Mode == AssembleMode.PreviewAll;
+            Mode == AssembleMode.Notification ||
+            Mode == AssembleMode.Preview ||
+            Mode == AssembleMode.PreviewById ||
+            Mode == AssembleMode.PreviewAll;
 
         public bool IsPreviewMode => Mode == AssembleMode.PreviewById ||
-                                     Mode == AssembleMode.PreviewAll ||
-                                     Mode == AssembleMode.Preview;
+            Mode == AssembleMode.PreviewAll ||
+            Mode == AssembleMode.Preview;
 
         public bool IsLive => Location == AssembleLocation.Live;
 
@@ -298,10 +293,7 @@ namespace Quantumart.QP8.Assembling.Info
             }
         }
 
-        public static string Configuration(string key)
-        {
-            return !string.IsNullOrEmpty(ConfigurationManager.AppSettings[key]) ? ConfigurationManager.AppSettings[key] : "";
-        }
+        public static string Configuration(string key) => !string.IsNullOrEmpty(ConfigurationManager.AppSettings[key]) ? ConfigurationManager.AppSettings[key] : "";
 
         public Status GetMaxStatus(int siteId)
         {
@@ -357,9 +349,18 @@ namespace Quantumart.QP8.Assembling.Info
         {
             switch (controlTypeId)
             {
-                case 2: { return ControlType.PublishingContainer; }
-                case 9: { return ControlType.PublishingForm; }
-                default: { return ControlType.Generic; }
+                case 2:
+                {
+                    return ControlType.PublishingContainer;
+                }
+                case 9:
+                {
+                    return ControlType.PublishingForm;
+                }
+                default:
+                {
+                    return ControlType.Generic;
+                }
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class XmlPreprocessor
@@ -58,25 +59,13 @@ namespace Quantumart.QP8.Assembling
             return new ContentProperties(id, isVirtual, isUserQuery) { SplitArticles = splitArticles };
         }
 
-        private static int? GetNullableInt32(DataRowView row, string key)
-        {
-            return !(row[key] is DBNull) ? (int?)GetInt32(row, key) : null;
-        }
+        private static int? GetNullableInt32(DataRowView row, string key) => !(row[key] is DBNull) ? (int?)GetInt32(row, key) : null;
 
-        private static int GetInt32(DataRowView row, string key)
-        {
-            return int.Parse(row[key].ToString(), CultureInfo.InvariantCulture);
-        }
+        private static int GetInt32(DataRowView row, string key) => int.Parse(row[key].ToString(), CultureInfo.InvariantCulture);
 
-        private static int GetFieldId(DataRowView row)
-        {
-            return GetInt32(row, "attribute_id");
-        }
+        private static int GetFieldId(DataRowView row) => GetInt32(row, "attribute_id");
 
-        private static int GetFieldSize(DataRowView row)
-        {
-            return GetInt32(row, "attribute_size");
-        }
+        private static int GetFieldSize(DataRowView row) => GetInt32(row, "attribute_size");
 
         private static string GetFieldType(DataRowView row)
         {
@@ -111,15 +100,9 @@ namespace Quantumart.QP8.Assembling
             throw new ArgumentNullException("Link_id is null for field " + GetInt32(row, "attribute_id"));
         }
 
-        private static int? GetRelatedM2OId(DataRowView row)
-        {
-            return GetNullableInt32(row, "related_m2o_id");
-        }
+        private static int? GetRelatedM2OId(DataRowView row) => GetNullableInt32(row, "related_m2o_id");
 
-        private static int? GetBaseM2OId(DataRowView row)
-        {
-            return GetNullableInt32(row, "back_related_attribute_id");
-        }
+        private static int? GetBaseM2OId(DataRowView row) => GetNullableInt32(row, "back_related_attribute_id");
 
         private DataRowView GetRootRow(DataRowView row)
         {
@@ -154,39 +137,38 @@ namespace Quantumart.QP8.Assembling
             {
                 case "O2M":
                 case "M2O":
+                {
+                    var dv = new DataView(Controller.FieldsTable);
+                    var relatedId = row["O2M" == fieldType ? "related_attribute_id" : "back_related_attribute_id"].ToString();
+                    if (string.IsNullOrEmpty(relatedId))
                     {
-                        var dv = new DataView(Controller.FieldsTable);
-                        var relatedId = row["O2M" == fieldType ? "related_attribute_id" : "back_related_attribute_id"].ToString();
-                        if (string.IsNullOrEmpty(relatedId))
-                        {
-                            return 0;
-                        }
-
-                        dv.RowFilter = "attribute_id = " + relatedId;
-                        return dv.Count == 0 ? 0 : int.Parse(dv[0]["content_id"].ToString(), CultureInfo.InvariantCulture);
+                        return 0;
                     }
+
+                    dv.RowFilter = "attribute_id = " + relatedId;
+                    return dv.Count == 0 ? 0 : int.Parse(dv[0]["content_id"].ToString(), CultureInfo.InvariantCulture);
+                }
                 case "M2M":
+                {
+                    var rootRow = GetRootRow(row);
+                    if (rootRow == null)
                     {
-                        var rootRow = GetRootRow(row);
-                        if (rootRow == null)
-                        {
-                            return 0;
-                        }
-
-                        var dv = new DataView(Controller.LinkTable)
-                        {
-                            RowFilter =
-                                string.Format(CultureInfo.InvariantCulture, "link_id = {0} and content_id = {1}",
-                                    rootRow["link_id"], rootRow["content_id"])
-                        };
-
-                        return dv.Count == 0 ? 0 : int.Parse(dv[0]["linked_content_id"].ToString(), CultureInfo.InvariantCulture);
+                        return 0;
                     }
+
+                    var dv = new DataView(Controller.LinkTable)
+                    {
+                        RowFilter =
+                            string.Format(CultureInfo.InvariantCulture, "link_id = {0} and content_id = {1}",
+                                rootRow["link_id"], rootRow["content_id"])
+                    };
+
+                    return dv.Count == 0 ? 0 : int.Parse(dv[0]["linked_content_id"].ToString(), CultureInfo.InvariantCulture);
+                }
             }
 
             return 0;
         }
-
 
         private DataRowView GetFieldRow(string name, int contentId)
         {
@@ -232,11 +214,11 @@ namespace Quantumart.QP8.Assembling
             var usedLinks = new HashSet<string>(
                 doc.Descendants("attribute")
                     .Where(el => el.Attribute("link_id") != null)
-                    .Select(el => el.Attribute("link_id").Value)
+                    .Select(el => el.Attribute("link_id")?.Value)
                     .Where(n => !string.IsNullOrEmpty(n))
                     .Distinct());
 
-            var definedLinks = new HashSet<string>(doc.Descendants("link").Select(el => el.Attribute("id").Value));
+            var definedLinks = new HashSet<string>(doc.Descendants("link").Select(el => el.Attribute("id")?.Value));
             var undefinedLinks = usedLinks.Where(n => !definedLinks.Contains(n)).ToArray();
             var unusedLinks = new HashSet<string>(definedLinks.Where(n => !usedLinks.Contains(n)));
             var equalCounts = doc.Descendants("link")
@@ -244,7 +226,7 @@ namespace Quantumart.QP8.Assembling
                 .Select(g => new { key = g.Key, count = g.Count() })
                 .ToDictionary(n => n.key, n => n.count);
 
-            doc.Descendants("link").Where(n => unusedLinks.Contains(n.Attribute("id").Value)).Remove();
+            doc.Descendants("link").Where(n => unusedLinks.Contains(n.Attribute("id")?.Value)).Remove();
             var dv = new DataView(Controller.ContentToContentTable);
             foreach (var linkId in undefinedLinks)
             {
@@ -252,12 +234,12 @@ namespace Quantumart.QP8.Assembling
                 AppendToSchema(doc, GetLinkElement(dv[0].Row, equalCounts, true));
             }
 
-            var redefinedLinks = doc.Descendants("link").Select(el => el.Attribute("id").Value).ToArray();
+            var redefinedLinks = doc.Descendants("link").Select(el => el.Attribute("id")?.Value).ToArray();
             foreach (var linkId in redefinedLinks)
             {
                 dv.RowFilter = "link_id = " + linkId;
-                var node = doc.Descendants("link").Single(n => n.Attribute("id").Value == linkId.ToString());
-                node.ReplaceWith(GetLinkElement(dv[0].Row, equalCounts, node.Attribute("mapped_name").Value, node.Attribute("plural_mapped_name").Value, true));
+                var node = doc.Descendants("link").Single(n => n.Attribute("id")?.Value == linkId.ToString());
+                node.ReplaceWith(GetLinkElement(dv[0].Row, equalCounts, node.Attribute("mapped_name")?.Value, node.Attribute("plural_mapped_name")?.Value, true));
             }
         }
 
@@ -467,20 +449,11 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        private static bool HasRussianChars(string text)
-        {
-            return Regex.IsMatch(text, @"[а-яА-Я]");
-        }
+        private static bool HasRussianChars(string text) => Regex.IsMatch(text, @"[а-яА-Я]");
 
-        private static bool IsValidIdentifier(string text)
-        {
-            return Regex.IsMatch(text, @"^[a-zA-Z][0-9a-zA-Z_]+$");
-        }
+        private static bool IsValidIdentifier(string text) => Regex.IsMatch(text, @"^[a-zA-Z][0-9a-zA-Z_]+$");
 
-        private static string GetDefaultName(int id, bool isContent)
-        {
-            return isContent ? "Content" + id : "Field" + id;
-        }
+        private static string GetDefaultName(int id, bool isContent) => isContent ? "Content" + id : "Field" + id;
 
         public static string GetMappedName(string name, int id, bool isContent)
         {
@@ -504,77 +477,76 @@ namespace Quantumart.QP8.Assembling
             return mappedName;
         }
 
-
         private static Hashtable GetRusEngTranslator()
         {
             var dict = new Hashtable
             {
-                {"а", "a"},
-                {"б", "b"},
-                {"в", "v"},
-                {"г", "g"},
-                {"д", "d"},
-                {"е", "e"},
-                {"ё", "e"},
-                {"ж", "zh"},
-                {"з", "z"},
-                {"и", "i"},
-                {"й", "y"},
-                {"к", "k"},
-                {"л", "l"},
-                {"м", "m"},
-                {"н", "n"},
-                {"о", "o"},
-                {"п", "p"},
-                {"р", "r"},
-                {"с", "s"},
-                {"т", "t"},
-                {"у", "u"},
-                {"ф", "f"},
-                {"х", "kh"},
-                {"ц", "ts"},
-                {"ч", "ch"},
-                {"ш", "sh"},
-                {"щ", "shch"},
-                {"ъ", ""},
-                {"ы", "y"},
-                {"ь", ""},
-                {"э", "e"},
-                {"ю", "yu"},
-                {"я", "ya"},
-                {"А", "A"},
-                {"Б", "B"},
-                {"В", "V"},
-                {"Г", "G"},
-                {"Д", "D"},
-                {"Е", "E"},
-                {"Ё", "E"},
-                {"Ж", "Zh"},
-                {"З", "Z"},
-                {"И", "I"},
-                {"Й", "Y"},
-                {"К", "K"},
-                {"Л", "L"},
-                {"М", "M"},
-                {"Н", "N"},
-                {"О", "O"},
-                {"П", "P"},
-                {"Р", "R"},
-                {"С", "S"},
-                {"Т", "T"},
-                {"У", "U"},
-                {"Ф", "F"},
-                {"Х", "Kh"},
-                {"Ц", "Ts"},
-                {"Ч", "Ch"},
-                {"Ш", "Sh"},
-                {"Щ", "Shch"},
-                {"Ъ", ""},
-                {"Ы", "Y"},
-                {"Ь", ""},
-                {"Э", "E"},
-                {"Ю", "Yu"},
-                {"Я", "Ya"}
+                { "а", "a" },
+                { "б", "b" },
+                { "в", "v" },
+                { "г", "g" },
+                { "д", "d" },
+                { "е", "e" },
+                { "ё", "e" },
+                { "ж", "zh" },
+                { "з", "z" },
+                { "и", "i" },
+                { "й", "y" },
+                { "к", "k" },
+                { "л", "l" },
+                { "м", "m" },
+                { "н", "n" },
+                { "о", "o" },
+                { "п", "p" },
+                { "р", "r" },
+                { "с", "s" },
+                { "т", "t" },
+                { "у", "u" },
+                { "ф", "f" },
+                { "х", "kh" },
+                { "ц", "ts" },
+                { "ч", "ch" },
+                { "ш", "sh" },
+                { "щ", "shch" },
+                { "ъ", "" },
+                { "ы", "y" },
+                { "ь", "" },
+                { "э", "e" },
+                { "ю", "yu" },
+                { "я", "ya" },
+                { "А", "A" },
+                { "Б", "B" },
+                { "В", "V" },
+                { "Г", "G" },
+                { "Д", "D" },
+                { "Е", "E" },
+                { "Ё", "E" },
+                { "Ж", "Zh" },
+                { "З", "Z" },
+                { "И", "I" },
+                { "Й", "Y" },
+                { "К", "K" },
+                { "Л", "L" },
+                { "М", "M" },
+                { "Н", "N" },
+                { "О", "O" },
+                { "П", "P" },
+                { "Р", "R" },
+                { "С", "S" },
+                { "Т", "T" },
+                { "У", "U" },
+                { "Ф", "F" },
+                { "Х", "Kh" },
+                { "Ц", "Ts" },
+                { "Ч", "Ch" },
+                { "Ш", "Sh" },
+                { "Щ", "Shch" },
+                { "Ъ", "" },
+                { "Ы", "Y" },
+                { "Ь", "" },
+                { "Э", "E" },
+                { "Ю", "Yu" },
+                { "Я", "Ya" }
             };
 
             return dict;
@@ -590,6 +562,7 @@ namespace Quantumart.QP8.Assembling
                 var s2 = dict.Contains(s) ? dict[s].ToString() : s;
                 sb.Append(s2);
             }
+
             return sb.ToString();
         }
 
@@ -614,10 +587,7 @@ namespace Quantumart.QP8.Assembling
             return result;
         }
 
-        private XElement GetLinkElement(DataRow row, Dictionary<string, int> equalCounts, bool useDb)
-        {
-            return GetLinkElement(row, equalCounts, string.Empty, string.Empty, useDb);
-        }
+        private XElement GetLinkElement(DataRow row, Dictionary<string, int> equalCounts, bool useDb) => GetLinkElement(row, equalCounts, string.Empty, string.Empty, useDb);
 
         private XElement GetLinkElement(DataRow row, Dictionary<string, int> equalCounts, string customMappedName, string customPluralMappedName, bool useDb)
         {
@@ -702,7 +672,7 @@ namespace Quantumart.QP8.Assembling
                     new XAttribute("mapped_name", mappedName),
                     new XAttribute("plural_mapped_name", pluralMappedName),
                     new XAttribute("use_default_filtration", useDefaultFiltration)
-                    );
+                );
 
             var relatedCounts = new Dictionary<string, int>();
             var dv = new DataView(Controller.FieldsTable) { RowFilter = "content_id = " + id };
@@ -774,7 +744,6 @@ namespace Quantumart.QP8.Assembling
             return relCount;
         }
 
-
         private static object AttributeWithDefault(XElement elem, string name, object defaultValue)
         {
             var attr = elem.Attribute(name);
@@ -819,7 +788,6 @@ namespace Quantumart.QP8.Assembling
             var mappedPluralName = AttributeWithDefault(content, "plural_mapped_name", DBNull.Value);
             ImportMappedContent(contentId, mappedName, mappedPluralName);
             return contentId;
-
         }
 
         private void ImportMappedContent(decimal contentId, object mappedName, object mappedPluralName)
@@ -921,7 +889,6 @@ namespace Quantumart.QP8.Assembling
                 ResolveMapping(helper.UsableMappingXmlFileName, helper.MappingResultXmlFileName);
             }
 
-
             return info;
         }
 
@@ -974,7 +941,6 @@ namespace Quantumart.QP8.Assembling
                 CreateLinqFolders(helper);
                 doc.Save(useDb ? helper.MappingXmlFilePath : helper.OldGeneratedMappingXmlFileName);
             }
-
 
             return doc;
         }

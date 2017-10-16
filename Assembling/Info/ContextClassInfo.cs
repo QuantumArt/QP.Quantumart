@@ -1,4 +1,5 @@
-﻿namespace Quantumart.QP8.Assembling.Info
+// ReSharper disable once CheckNamespace
+namespace Quantumart.QP8.Assembling.Info
 {
     public class ContextClassInfo
     {

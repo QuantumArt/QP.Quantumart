@@ -1,6 +1,7 @@
 using System.Data;
 
 // ReSharper disable InconsistentNaming
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public interface IQPublishControl

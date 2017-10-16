@@ -2,37 +2,32 @@ using System;
 using System.Globalization;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public class PublishingForm : QPublishControl
     {
+        protected PublishingForm(DBConnector dbConnector)
+            : base(dbConnector)
+        {
+        }
+
         public string ThankYouPage { get; set; }
 
         public string PublishedStatusName { get; set; }
 
-        protected virtual string Field(string fieldName)
-        {
-            return Data.Rows.Count != 0 ? FormatField(Data.Rows[0][fieldName].ToString()) : "";
-        }
+        protected new virtual string Field(string fieldName) => Data.Rows.Count != 0 ? FormatField(Data.Rows[0][fieldName].ToString()) : "";
 
         // ReSharper disable once InconsistentNaming
-        protected virtual string FieldNS(string fieldName)
-        {
-            return Field(fieldName);
-        }
+        protected new virtual string FieldNS(string fieldName) => Field(fieldName);
 
-        protected virtual string FieldCheckboxCheck(string fieldName)
-        {
-            return Data.Rows.Count != 0 && Data.Rows[0][fieldName] != DBNull.Value &&
-                   !string.IsNullOrEmpty(Data.Rows[0][fieldName].ToString()) &&
-                   DBConnector.GetNumInt(Data.Rows[0][fieldName]) > 0
-                ? "checked"
-                : string.Empty;
-        }
+        protected virtual string FieldCheckboxCheck(string fieldName) => Data.Rows.Count != 0 && Data.Rows[0][fieldName] != DBNull.Value && !string.IsNullOrEmpty(Data.Rows[0][fieldName].ToString()) && DBConnector.GetNumInt(Data.Rows[0][fieldName]) > 0
+            ? "checked"
+            : string.Empty;
 
         protected virtual string FieldDateTime(string fieldName, string format)
         {
-            var result = "";
+            var result = string.Empty;
             if (Data.Rows.Count != 0 && !Data.Rows[0].IsNull(fieldName))
             {
                 var fieldValue = Convert.ToDateTime(Data.Rows[0][fieldName]);
@@ -49,6 +44,7 @@ namespace Quantumart.QPublishing.Controls
                         break;
                 }
             }
+
             return result;
         }
 

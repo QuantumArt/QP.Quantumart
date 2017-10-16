@@ -1,6 +1,6 @@
-﻿using System.IO;
-using System.Xml.Linq;
+using System.IO;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class FileNameHelper
@@ -11,25 +11,15 @@ namespace Quantumart.QP8.Assembling.Info
 
         public bool ProceedMappingWithDb { get; set; }
 
-
         public string AppDataFolder => $@"{SiteRoot}\App_Data";
 
         public string AppCodeFolder => $@"{SiteRoot}\App_Code";
 
-        private string AppDataFile(string fileName)
-        {
-            return $@"{AppDataFolder}\{fileName}";
-        }
+        private string AppDataFile(string fileName) => $@"{AppDataFolder}\{fileName}";
 
-        private string AppCodeFile(string fileName)
-        {
-            return $@"{AppCodeFolder}\{fileName}";
-        }
+        private string AppCodeFile(string fileName) => $@"{AppCodeFolder}\{fileName}";
 
-        private string GetPrefixedFileName(string fileName)
-        {
-            return $"{DataContextClass}{fileName}";
-        }
+        private string GetPrefixedFileName(string fileName) => $"{DataContextClass}{fileName}";
 
         public string OldGeneratedMappingXmlFileName => OldDefaultMappingXmlFilePath;
 

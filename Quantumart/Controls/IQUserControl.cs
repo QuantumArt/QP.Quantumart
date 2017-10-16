@@ -6,6 +6,7 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Pages;
 
 // ReSharper disable InconsistentNaming
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public interface IQUserControl
@@ -74,7 +75,7 @@ namespace Quantumart.QPublishing.Controls
 
         void ShowControlNS(string name, object sender, object[] parameters);
 
-        DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive);
+        DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, out long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive);
 
         DBConnector Cnn { get; }
 

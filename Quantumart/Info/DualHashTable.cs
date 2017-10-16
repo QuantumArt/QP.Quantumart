@@ -1,5 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class DualHashTable
@@ -10,8 +11,8 @@ namespace Quantumart.QPublishing.Info
             Items = new Hashtable();
         }
 
-        public Hashtable Ids { get; private set; }
+        public Hashtable Ids { get; }
 
-        public Hashtable Items { get; private set; }
+        public Hashtable Items { get; }
     }
 }

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Data;
 using System.IO;
 using System.Text;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class AssemblePageController : AssembleControllerBase

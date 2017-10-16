@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.Win32;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class DbConnector
@@ -24,10 +25,7 @@ namespace Quantumart.QP8.Assembling
             }
         }
 
-        private static string RemoveProvider(string cnnString)
-        {
-            return Regex.Replace(cnnString, @"provider[\s]?=[\s]?[^;]+", "", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        }
+        private static string RemoveProvider(string cnnString) => Regex.Replace(cnnString, @"provider[\s]?=[\s]?[^;]+", "", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public string CustomerCode { get; }
 
@@ -41,14 +39,14 @@ namespace Quantumart.QP8.Assembling
                 {
                     _mConnectionString = GetConnectionString();
                 }
+
                 return _mConnectionString;
             }
         }
 
         private string GetConnectionString()
         {
-            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
-                               RegistryView.Registry32);
+            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey == null)
             {
@@ -144,7 +142,7 @@ namespace Quantumart.QP8.Assembling
         public static string GetValue(DataRow row, string columnName, string defaultValue)
         {
             var obj = row[columnName];
-            return obj == null || obj.ToString() == "" ? defaultValue : obj.ToString();
+            return obj == null || obj.ToString() == string.Empty ? defaultValue : obj.ToString();
         }
     }
 }

@@ -1,3 +1,4 @@
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class SecurityOptions

@@ -1,7 +1,5 @@
-﻿using System;
+using System;
 using System.Collections;
-using System.Collections.Specialized;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
@@ -9,22 +7,31 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
 using System.Xml;
-using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
-using Quantumart.QPublishing.Resizer;
+#if ASPNETCORE
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
+#else
+using System.Collections.Specialized;
+using System.Configuration;
+using System.Web;
+#endif
+#if !ASPNETCORE && NET4
 using Quantumart.QP8.Assembling;
+using Quantumart.QPublishing.Resizer;
+#endif
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        #region fields and properties
         private const string IdentityParamString = "@itemId";
 
         private bool _throwLoadFileExceptions = true;
@@ -40,6 +47,27 @@ namespace Quantumart.QPublishing.Database
         public bool ForceLocalCache { get; set; }
 
         private int? _lastModifiedBy;
+
+#if ASPNETCORE
+        public int LastModifiedBy
+        {
+            get
+            {
+                var result = 1;
+                if (_lastModifiedBy.HasValue)
+                {
+                    result = _lastModifiedBy.Value;
+                }
+                else if (HttpContext.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
+                {
+                    result = (int)HttpContext.Items[LastModifiedByKey];
+                }
+
+                return result;
+            }
+            set => _lastModifiedBy = value;
+        }
+#else
         public int LastModifiedBy
         {
             get
@@ -53,15 +81,14 @@ namespace Quantumart.QPublishing.Database
                 {
                     result = (int)HttpContext.Current.Items[LastModifiedByKey];
                 }
+
                 return result;
             }
-            set
-            {
-                _lastModifiedBy = value;
-            }
+            set => _lastModifiedBy = value;
         }
+#endif
 
-        public bool UseLocalCache => HttpRuntime.Cache == null || ForceLocalCache;
+        public bool UseLocalCache => ForceLocalCache;
 
         public bool CacheData { get; set; }
 
@@ -84,6 +111,107 @@ namespace Quantumart.QPublishing.Database
         private IDbConnection InternalConnection { get; set; }
 
         private IDbTransaction InternalTransaction { get; set; }
+
+#if ASPNETCORE
+        public HttpContext HttpContext { get; }
+
+        public DbConnectorSettings DbConnectorSettings { get; }
+#else
+        public NameValueCollection AppSettings => ConfigurationManager.AppSettings;
+#endif
+
+#if !ASPNETCORE
+        static DBConnector()
+        {
+            if (ConfigurationManager.ConnectionStrings["qp_database"] != null)
+            {
+                ConnectionString = ConfigurationManager.ConnectionStrings["qp_database"].ConnectionString;
+                ConfigurationManager.AppSettings["ConnectionString"] = ConnectionString;
+            }
+        }
+#endif
+
+#if ASPNETCORE
+        public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
+            : this(ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
+        {
+        }
+
+
+        public DBConnector(IDbConnection connection, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
+            : this(connection.ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
+        {
+            ExternalConnection = connection;
+        }
+
+        public DBConnector(IDbConnection connection, IDbTransaction transaction, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
+            : this(connection, dbConnectorSettings, cache, httpContextAccessor)
+        {
+            ExternalTransaction = transaction;
+        }
+
+        public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
+        {
+            if (dbConnectorSettings.ConnectionStrings == null)
+            {
+                dbConnectorSettings.ConnectionStrings = new Dictionary<string, string>();
+            }
+
+            if (dbConnectorSettings.ConnectionStrings.ContainsKey("qp_database") && !string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionStrings["qp_database"]))
+            {
+                ConnectionString = dbConnectorSettings.ConnectionStrings["qp_database"];
+                dbConnectorSettings.ConnectionString = ConnectionString;
+            }
+
+            ForceLocalCache = false;
+            CacheData = true;
+            UpdateManyToMany = true;
+            UpdateManyToOne = true;
+            ThrowNotificationExceptions = true;
+
+            CustomConnectionString = strConnectionString;
+            CacheManager = new DbCacheManager(this, cache);
+            FileSystem = new RealFileSystem();
+#if !ASPNETCORE && NET4
+            DynamicImageCreator = new DynamicImage();
+#endif
+            DbConnectorSettings = dbConnectorSettings;
+            HttpContext = httpContextAccessor.HttpContext;
+        }
+#else
+        public DBConnector()
+            : this(ConnectionString)
+        {
+        }
+
+        public DBConnector(string strConnectionString)
+        {
+            ForceLocalCache = false;
+            CacheData = true;
+            UpdateManyToMany = true;
+            UpdateManyToOne = true;
+            ThrowNotificationExceptions = true;
+
+            CustomConnectionString = strConnectionString;
+            CacheManager = new DbCacheManager(this);
+            FileSystem = new RealFileSystem();
+#if !ASPNETCORE && NET4
+            DynamicImageCreator = new DynamicImage();
+#endif
+        }
+
+        public DBConnector(IDbConnection connection)
+            : this(connection.ConnectionString)
+        {
+            ExternalConnection = connection;
+        }
+
+        public DBConnector(IDbConnection connection, IDbTransaction transaction)
+            : this(connection)
+        {
+            ExternalTransaction = transaction;
+        }
+#endif
 
         private void CreateInternalConnection(bool withTransaction)
         {
@@ -118,7 +246,6 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-
         private bool NeedToDisposeActualSqlConnection => ExternalConnection == null && InternalConnection == null;
 
         private string _instanceCachePrefix;
@@ -127,9 +254,9 @@ namespace Quantumart.QPublishing.Database
 
         public static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public static NameValueCollection AppSettings => ConfigurationManager.AppSettings;
-
+#if !ASPNETCORE && NET4
         public IDynamicImage DynamicImageCreator { get; set; }
+#endif
 
         private bool? _isStage;
 
@@ -142,18 +269,16 @@ namespace Quantumart.QPublishing.Database
                     return _isStage.Value;
                 }
 
+#if !ASPNETCORE
                 if (CacheManager.Page != null)
                 {
                     return CacheManager.Page.IsStage;
                 }
+#endif
 
                 return !CheckIsLive();
             }
-            set
-            {
-                _isStage = value;
-            }
-
+            set => _isStage = value;
         }
 
         public IFileSystem FileSystem { get; set; }
@@ -165,55 +290,6 @@ namespace Quantumart.QPublishing.Database
         internal string UploadBindingPlaceHolder => "<%#upload_url%>";
 
         internal string SiteBindingPlaceHolder => "<%#site_url%>";
-
-        #endregion
-
-        #region constructors
-
-        static DBConnector()
-        {
-            if (ConfigurationManager.ConnectionStrings["qp_database"] != null)
-            {
-                ConnectionString = ConfigurationManager.ConnectionStrings["qp_database"].ConnectionString;
-                ConfigurationManager.AppSettings["ConnectionString"] = ConnectionString;
-            }
-        }
-
-        public DBConnector()
-            : this(ConnectionString)
-        {
-        }
-
-        public DBConnector(string strConnectionString)
-        {
-
-            ForceLocalCache = false;
-            CacheData = true;
-            UpdateManyToMany = true;
-            UpdateManyToOne = true;
-            ThrowNotificationExceptions = true;
-
-            CustomConnectionString = strConnectionString;
-            CacheManager = new DbCacheManager(this);
-            FileSystem = new RealFileSystem();
-            DynamicImageCreator = new DynamicImage();
-        }
-
-        public DBConnector(IDbConnection connection)
-            : this(connection.ConnectionString)
-        {
-            ExternalConnection = connection;
-        }
-
-        public DBConnector(IDbConnection connection, IDbTransaction transaction)
-            : this(connection)
-        {
-            ExternalTransaction = transaction;
-        }
-
-        #endregion
-
-        #region static methods
 
         public static string GetConnectionString(string customerCode)
         {
@@ -229,8 +305,7 @@ namespace Quantumart.QPublishing.Database
 
         public static XmlDocument GetQpConfig()
         {
-            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine,
-                      RegistryView.Registry32);
+            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey != null)
             {
@@ -266,15 +341,9 @@ namespace Quantumart.QPublishing.Database
             return string.IsNullOrEmpty(result) ? defaultValue : result;
         }
 
-        public static bool GetNumBool(object obj)
-        {
-            return Convert.ToBoolean((decimal)obj);
-        }
+        public static bool GetNumBool(object obj) => Convert.ToBoolean((decimal)obj);
 
-        public static int GetNumInt(object obj)
-        {
-            return (int)(decimal)obj;
-        }
+        public static int GetNumInt(object obj) => (int)(decimal)obj;
 
         private static string ExtractCachePrefix(string cnnString)
         {
@@ -283,8 +352,7 @@ namespace Quantumart.QPublishing.Database
             {
                 var cnnParams = cnnString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).AsEnumerable().Select(s => new { Key = s.Split('=')[0], Value = s.Split('=')[1] }).ToArray();
                 var dbName = cnnParams
-                    .Where(n => string.Equals(n.Key, "Initial Catalog", StringComparison.InvariantCultureIgnoreCase)
-                        || string.Equals(n.Key, "Database", StringComparison.InvariantCultureIgnoreCase))
+                    .Where(n => string.Equals(n.Key, "Initial Catalog", StringComparison.InvariantCultureIgnoreCase) || string.Equals(n.Key, "Database", StringComparison.InvariantCultureIgnoreCase))
                     .Select(n => n.Value)
                     .FirstOrDefault();
 
@@ -293,10 +361,8 @@ namespace Quantumart.QPublishing.Database
                     throw new ArgumentException("The connection supplied string should contain at least 'Initial Catalog' or 'Database' keyword.");
                 }
 
-
                 var serverName = cnnParams
-                    .Where(n => string.Equals(n.Key, "Data Source", StringComparison.InvariantCultureIgnoreCase)
-                        || string.Equals(n.Key, "Server", StringComparison.InvariantCultureIgnoreCase))
+                    .Where(n => string.Equals(n.Key, "Data Source", StringComparison.InvariantCultureIgnoreCase) || string.Equals(n.Key, "Server", StringComparison.InvariantCultureIgnoreCase))
                     .Select(n => n.Value)
                     .FirstOrDefault();
 
@@ -305,14 +371,11 @@ namespace Quantumart.QPublishing.Database
                     throw new ArgumentException("The connection string supplied should contain at least 'Data Source' or 'Server' keyword.");
                 }
 
-
                 result = $"{dbName}.{serverName}.";
             }
+
             return result;
         }
-        #endregion
-
-        #region Utility methods
 
         public string FormatField(string input, int siteId, bool isLive)
         {
@@ -320,17 +383,19 @@ namespace Quantumart.QPublishing.Database
             var uploadUrl = GetImagesUploadUrl(siteId, true);
             result = result.Replace(UploadPlaceHolder, uploadUrl);
             result = result.Replace(UploadBindingPlaceHolder, uploadUrl);
+
+#if ASPNETCORE
+            var siteUrl = DbConnectorSettings.UseAbsoluteSiteUrl == 1 ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
+#else
             var siteUrl = AppSettings["UseAbsoluteSiteUrl"] == "1" ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
+#endif
             result = result.Replace(SitePlaceHolder, siteUrl);
             result = result.Replace(SiteBindingPlaceHolder, siteUrl);
+
             return result;
         }
 
-        public string FormatField(string input, int siteId)
-        {
-            return FormatField(input, siteId, !IsStage);
-        }
-
+        public string FormatField(string input, int siteId) => FormatField(input, siteId, !IsStage);
 
         public int InsertDataWithIdentity(string queryString)
         {
@@ -341,15 +406,7 @@ namespace Quantumart.QPublishing.Database
             return GetNumInt(idParam.Value);
         }
 
-        public int GetIdentityId(SqlCommand command)
-        {
-            if (command.Parameters.Contains(IdentityParamString))
-            {
-                return GetNumInt(command.Parameters[IdentityParamString].Value);
-            }
-
-            return 0;
-        }
+        public int GetIdentityId(SqlCommand command) => command.Parameters.Contains(IdentityParamString) ? GetNumInt(command.Parameters[IdentityParamString].Value) : 0;
 
         public string ReplaceCommas(string str)
         {
@@ -367,84 +424,53 @@ namespace Quantumart.QPublishing.Database
         private string LoadFileContents(string key)
         {
             var path = key.Replace(CacheManager.FileContentsCacheKeyPrefix, string.Empty);
-            var result = String.Empty;
+            var result = string.Empty;
             try
             {
                 result = File.ReadAllText(path);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 if (_throwLoadFileExceptions)
+                {
                     throw;
+                }
             }
 
             return result;
         }
 
-        private SqlConnection GetActualSqlConnection(string internalConnectionString)
-        {
-            return (InternalConnection ?? ExternalConnection) as SqlConnection ?? new SqlConnection(internalConnectionString);
-        }
+        private SqlConnection GetActualSqlConnection(string internalConnectionString) => (InternalConnection ?? ExternalConnection) as SqlConnection ?? new SqlConnection(internalConnectionString);
 
-        private SqlConnection GetActualSqlConnection()
-        {
-            return GetActualSqlConnection(InstanceConnectionString);
-        }
+        private SqlConnection GetActualSqlConnection() => GetActualSqlConnection(InstanceConnectionString);
 
-        private SqlTransaction GetActualSqlTransaction()
-        {
-            return (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
-        }
+        private SqlTransaction GetActualSqlTransaction() => (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
 
-        #region site
+#if ASPNETCORE
+        public bool CheckIsLive() => DbConnectorSettings.IsLive;
+#else
+        public bool CheckIsLive() => AppSettings["isLive"] != "false";
+#endif
 
-        public bool IsLive(int siteId)
-        {
-            var site = GetSite(siteId);
-            return site?.IsLive ?? true;
-        }
+        public bool IsLive(int siteId) => GetSite(siteId)?.IsLive ?? true;
 
-        public bool ForceLive(int siteId)
-        {
-            var site = GetSite(siteId);
-            return site?.AssembleFormatsInLive ?? false;
-        }
+        public bool ForceLive(int siteId) => GetSite(siteId)?.AssembleFormatsInLive ?? false;
 
-        public bool CheckIsLive()
-        {
-            return AppSettings["isLive"] != "false";
-        }
+        public bool GetAllowUserSessions(int siteId) => GetSite(siteId)?.AllowUserSessions ?? true;
 
-        public bool GetAllowUserSessions(int siteId)
-        {
-            var site = GetSite(siteId);
-            return site?.AllowUserSessions ?? true;
-        }
-
-        public bool GetEnableOnScreen(int siteId)
-        {
-            var site = GetSite(siteId);
-            return site?.EnableOnScreen ?? false;
-        }
-
-        #endregion
-
-        #region article
+        public bool GetEnableOnScreen(int siteId) => GetSite(siteId)?.EnableOnScreen ?? false;
 
         public void CopyArticleSchedule(int fromArticleId, int toArticleId)
         {
-            var testcmd =
-                new SqlCommand(
-                    "select count(*) From information_schema.columns where column_name = 'use_service' and table_name = 'content_item_schedule'")
-                {
-                    CommandType = CommandType.Text
-                };
-            var colCount = (int)GetRealScalarData(testcmd);
-            var serviceString = colCount == 0 ? "" : ", USE_SERVICE";
+            var testcmd = new SqlCommand("select count(*) From information_schema.columns where column_name = 'use_service' and table_name = 'content_item_schedule'")
+            {
+                CommandType = CommandType.Text
+            };
 
+            var colCount = (int)GetRealScalarData(testcmd);
+            var serviceString = colCount == 0 ? string.Empty : ", USE_SERVICE";
             using (var cmd = new SqlCommand())
             {
-                cmd.CommandType = CommandType.Text;
                 var sb = new StringBuilder();
                 sb.AppendLine("update content_item_schedule set delete_job = 1 where content_item_id = @newId");
                 sb.AppendLine("delete from content_item_schedule where content_item_id = @newId");
@@ -452,6 +478,7 @@ namespace Quantumart.QPublishing.Database
                 sb.AppendFormatLine("select @newId, MAXIMUM_OCCURENCES, GETDATE(), GETDATE(), LAST_MODIFIED_BY, freq_type, freq_interval, freq_subday_type, freq_subday_interval, freq_relative_interval, freq_recurrence_factor, active_start_date, active_end_date, active_start_time, active_end_time, occurences, use_duration, duration, duration_units, DEACTIVATE, DELETE_JOB{0}", serviceString);
                 sb.AppendLine("from content_item_schedule where content_item_id = @oldId");
                 cmd.CommandText = sb.ToString();
+                cmd.CommandType = CommandType.Text;
                 cmd.Parameters.AddWithValue("@oldId", fromArticleId);
                 cmd.Parameters.AddWithValue("@newId", toArticleId);
                 ProcessData(cmd);
@@ -481,7 +508,6 @@ namespace Quantumart.QPublishing.Database
 
         public bool IsTargetTableAsync(int id)
         {
-
             var cmd = new SqlCommand("qp_is_target_table_async") { CommandType = CommandType.StoredProcedure };
             var idParam = cmd.Parameters.Add("@content_item_id", SqlDbType.Decimal);
             idParam.Value = id;
@@ -491,25 +517,13 @@ namespace Quantumart.QPublishing.Database
             return (bool)returnParam.Value;
         }
 
-        #endregion
+        public int GetMaximumWeightStatusTypeId(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Id;
 
-        #endregion
-
-        #region Statuses
-
-        public int GetMaximumWeightStatusTypeId(int siteId)
-        {
-            return ((StatusType)GetStatusHashTable()[siteId]).Id;
-        }
-
-        public string GetMaximumWeightStatusTypeName(int siteId)
-        {
-            return ((StatusType)GetStatusHashTable()[siteId]).Name;
-        }
+        public string GetMaximumWeightStatusTypeName(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Name;
 
         public DataRowView GetMaximumWeightStatusRow(int siteId)
         {
-            var dv = GetStatuses("SITE_ID = " + siteId);
+            var dv = GetStatuses($"SITE_ID = {siteId}");
             dv.Sort = "WEIGHT DESC";
             return dv[0];
         }
@@ -518,33 +532,19 @@ namespace Quantumart.QPublishing.Database
         {
             var filter = $"SITE_ID = {siteId} AND STATUS_TYPE_NAME='{statusName}'";
             var dv = GetStatuses(filter);
-            if (dv.Count > 0)
-            {
-                return GetNumInt(dv[0]["STATUS_TYPE_ID"]);
-            }
-
-            return LegacyNotFound;
+            return dv.Count > 0 ? GetNumInt(dv[0]["STATUS_TYPE_ID"]) : LegacyNotFound;
         }
 
-        public DataRow GetPreviousStatusHistoryRecord(int id)
-        {
-            return Status.GetPreviousStatusHistoryRecord(id, this);
-        }
-
-        #endregion
-
-        #region Full-text search
+        public DataRow GetPreviousStatusHistoryRecord(int id) => Status.GetPreviousStatusHistoryRecord(id, this);
 
         public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, ref long totalRecords)
         {
-
             const string searchSp = "qp_fulltextSiteSearch";
-            var dt = new DataTable();
-            var ds = new DataSet();
             const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
 
+            var dt = new DataTable();
+            var ds = new DataSet();
             var useMorphologyInt = useMorphology ? 1 : 0;
-
             if (GetCachedData(strSql).Rows.Count > 0)
             {
                 var adapter = new SqlDataAdapter();
@@ -561,9 +561,10 @@ namespace Quantumart.QPublishing.Database
                         Transaction = GetActualSqlTransaction(),
                         CommandType = CommandType.StoredProcedure
                     };
+
                     adapter.SelectCommand.Parameters.Add("@tabname", SqlDbType.NVarChar, 255).Value = tabname;
                     adapter.SelectCommand.Parameters.Add("@use_morphology", SqlDbType.Int, 4).Value = useMorphologyInt;
-                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = Strings.LCase(expression);
+                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = expression.ToLower();
                     adapter.SelectCommand.Parameters.Add("@minrank", SqlDbType.Int, 4).Value = minRank;
                     adapter.SelectCommand.Parameters.Add("@startpos", SqlDbType.Int, 4).Value = startPos;
                     adapter.SelectCommand.Parameters.Add("@count", SqlDbType.Int, 100).Value = recordCount;
@@ -584,25 +585,20 @@ namespace Quantumart.QPublishing.Database
                     totalRecords = (long)ds.Tables[0].Rows[0]["total"];
                 }
 
-
                 adapter.AcceptChangesDuringFill = true;
             }
-
 
             return dt;
         }
 
-        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, DateTime startDate, DateTime endDate, int showStaticContent, ref long totalRecords
-        )
+        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, DateTime startDate, DateTime endDate, int showStaticContent, ref long totalRecords)
         {
-
             const string searchSp = "qp_fulltextSiteSearchWithDate";
             var dt = new DataTable();
             var ds = new DataSet();
+
             const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
-
             var useMorphologyInt = useMorphology ? 1 : 0;
-
             if (GetCachedData(strSql).Rows.Count > 0)
             {
                 var adapter = new SqlDataAdapter();
@@ -619,9 +615,10 @@ namespace Quantumart.QPublishing.Database
                         Transaction = GetActualSqlTransaction(),
                         CommandType = CommandType.StoredProcedure
                     };
+
                     adapter.SelectCommand.Parameters.Add("@tabname", SqlDbType.NVarChar, 255).Value = tabname;
                     adapter.SelectCommand.Parameters.Add("@use_morphology", SqlDbType.Int, 4).Value = useMorphologyInt;
-                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = Strings.LCase(expression);
+                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = expression.ToLower();
                     adapter.SelectCommand.Parameters.Add("@minrank", SqlDbType.Int, 4).Value = minRank;
                     adapter.SelectCommand.Parameters.Add("@startpos", SqlDbType.Int, 4).Value = startPos;
                     adapter.SelectCommand.Parameters.Add("@count", SqlDbType.Int, 100).Value = recordCount;
@@ -646,31 +643,23 @@ namespace Quantumart.QPublishing.Database
                     totalRecords = (long)ds.Tables[0].Rows[0]["total"];
                 }
 
-
                 adapter.AcceptChangesDuringFill = true;
             }
-
 
             return dt;
         }
 
-        #endregion
-
-        #region Publishing Container
-
         public string CorrectStatuses(int srcSiteId, int destSiteId, string where)
         {
             var result = where;
-
             if (destSiteId != 0 && srcSiteId != destSiteId)
             {
                 result = result.ToUpperInvariant();
                 const string simpleExpression = "AND C.STATUS_TYPE_ID = ";
                 const string complexExpressionBegin = "AND C.STATUS_TYPE_ID IN (";
                 const string complexExpressionEnd = ")";
-                var divider = ",";
-                var statusString = "";
 
+                var statusString = string.Empty;
                 var simpleRegex = new Regex(Regex.Escape(simpleExpression) + "([\\d]+)");
                 var complexRegex = new Regex(Regex.Escape(complexExpressionBegin) + "([^\\)]+)" + Regex.Escape(complexExpressionEnd));
 
@@ -692,31 +681,30 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
 
-                if (!string.IsNullOrEmpty(statusString))
+                if (string.IsNullOrEmpty(statusString))
                 {
-                    var statuses = new ArrayList();
-                    statuses.AddRange(statusString.Split(','));
-                    foreach (var status in statusString.Split(','))
-                    {
-                        var statusesView = GetStatuses($"[STATUS_TYPE_ID] = {status}");
-                        var statusName = statusesView[0]["STATUS_TYPE_NAME"].ToString();
-                        var statusesView2 = GetStatuses(
-                            $"[STATUS_TYPE_ID] <> {status} AND [STATUS_TYPE_NAME] = '{statusName}'");
-                        foreach (DataRowView row in statusesView2)
-                        {
-                            statuses.Add(row["STATUS_TYPE_ID"].ToString());
-                        }
-                    }
+                    return result;
+                }
 
-
-                    if (statuses.Count > 0)
+                var statuses = new ArrayList();
+                statuses.AddRange(statusString.Split(','));
+                foreach (var status in statusString.Split(','))
+                {
+                    var statusesView = GetStatuses($"[STATUS_TYPE_ID] = {status}");
+                    var statusName = statusesView[0]["STATUS_TYPE_NAME"].ToString();
+                    var statusesView2 = GetStatuses($"[STATUS_TYPE_ID] <> {status} AND [STATUS_TYPE_NAME] = '{statusName}'");
+                    foreach (DataRowView row in statusesView2)
                     {
-                        var newStatusString = string.Join(",", (string[])statuses.ToArray());
-                        result = result.Replace(complexExpressionBegin + statusString + complexExpressionEnd, complexExpressionBegin + newStatusString + complexExpressionEnd);
+                        statuses.Add(row["STATUS_TYPE_ID"].ToString());
                     }
                 }
-            }
 
+                if (statuses.Count > 0)
+                {
+                    var newStatusString = string.Join(",", (string[])statuses.ToArray());
+                    result = result.Replace(complexExpressionBegin + statusString + complexExpressionEnd, complexExpressionBegin + newStatusString + complexExpressionEnd);
+                }
+            }
 
             return result;
         }
@@ -730,18 +718,12 @@ namespace Quantumart.QPublishing.Database
                 obj.WithReset = true;
                 result = CacheManager.GetQueryResult(obj, out totalRecords);
             }
+
             return new DataView(result).ToTable();
         }
 
-
-        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords)
-        {
-            return GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
-        }
-
-        #endregion
-
-        #region LINQ-to-SQL classes support
+        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords) =>
+            GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
 
         public string GetBinDirectory(int siteId, bool isLive)
         {
@@ -754,25 +736,26 @@ namespace Quantumart.QPublishing.Database
             return isLive ? site.AssemblyDirectory : site.StageAssemblyDirectory;
         }
 
-        public string GetAppDataDirectory(int siteId, bool isLive)
-        {
-            return GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
-        }
+        public string GetAppDataDirectory(int siteId, bool isLive) => GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
 
         public string GetDefaultMapFileContents(int siteId, bool isLive, string contextName)
         {
             var saved = _throwLoadFileExceptions;
             _throwLoadFileExceptions = false;
+
             var result = GetMapFileContents(siteId, isLive, contextName + ".map");
             _throwLoadFileExceptions = saved;
+
             if (string.IsNullOrEmpty(result))
             {
                 var key = $"Quantumart.QP8.OnlineMapping.{siteId}.{isLive}.{contextName}";
                 result = GetCachedEntity(key, GetRealDefaultMapFileContents);
             }
+
             return result;
         }
 
+#if !ASPNETCORE && NET4
         private string GetRealDefaultMapFileContents(string key)
         {
             if (string.IsNullOrEmpty(key))
@@ -789,15 +772,12 @@ namespace Quantumart.QPublishing.Database
             var siteId = int.Parse(arr[3]);
             var isLive = bool.Parse(arr[4]);
             var contextName = arr[5];
-
-
             if (string.IsNullOrEmpty(contextName))
             {
                 contextName = GetSite(siteId).ContextClassName;
             }
 
             var mapping = new AssembleContentsController(siteId, InstanceConnectionString) { IsLive = isLive }.GetMapping(contextName);
-
             if (string.IsNullOrEmpty(mapping))
             {
                 throw new ApplicationException($"Cannot receive mapping for context '{contextName}' from site (ID={siteId})");
@@ -805,22 +785,14 @@ namespace Quantumart.QPublishing.Database
 
             return mapping;
         }
+#else
+        private static string GetRealDefaultMapFileContents(string key) => throw new NotImplementedException("Not implemented at .net core app framework");
+#endif
 
-        public string GetMapFileContents(int siteId, bool isLive, string fileName)
-        {
-            return GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
-        }
+        public string GetMapFileContents(int siteId, bool isLive, string fileName) => GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
 
-        public string GetDefaultMapFileContents(int siteId, string contextName = null)
-        {
-            return GetDefaultMapFileContents(siteId, !IsStage, contextName);
-        }
+        public string GetDefaultMapFileContents(int siteId, string contextName = null) => GetDefaultMapFileContents(siteId, !IsStage, contextName);
 
-        public string GetMapFileContents(int siteId, string fileName)
-        {
-            return GetMapFileContents(siteId, !IsStage, fileName);
-        }
-
-        #endregion
+        public string GetMapFileContents(int siteId, string fileName) => GetMapFileContents(siteId, !IsStage, fileName);
     }
 }

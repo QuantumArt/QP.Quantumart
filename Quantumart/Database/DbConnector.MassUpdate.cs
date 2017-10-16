@@ -7,10 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using Microsoft.VisualBasic;
 using Quantumart.QPublishing.Info;
-using Quantumart.QPublishing.Resizer;
 
+#if !ASPNETCORE && NET4
+using Quantumart.QPublishing.Resizer;
+#endif
+
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     public class MassUpdateOptions
@@ -64,12 +67,13 @@ namespace Quantumart.QPublishing.Database
                 var fullAttrs = GetContentAttributeObjects(contentId).Where(n => n.Type != AttributeType.M2ORelation).ToArray();
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
+#if !ASPNETCORE && NET4
                 CreateDynamicImages(arrValues, fullAttrs);
-
+#endif
                 ValidateConstraints(arrValues, fullAttrs, content, options.ReplaceUrls);
+
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
                 ImportContentData(dataDoc);
-
 
                 var attrString = string.Join(",", resultAttrs.Select(n => n.Id.ToString()).ToArray());
                 ReplicateData(arrValues, attrString);
@@ -93,7 +97,6 @@ namespace Quantumart.QPublishing.Database
                     {
                         var oldFolder = GetVersionFolderForContent(contentId, id);
                         FileSystem.RemoveDirectory(oldFolder);
-
                     }
                 }
 
@@ -125,13 +128,11 @@ namespace Quantumart.QPublishing.Database
 
         private static IEnumerable<string> GetDynamicImageExtraNames(Dictionary<string, string>[] arrValues, ContentAttribute[] fullAttrs)
         {
-            var baseImages = fullAttrs.Where(n => n.Type == AttributeType.Image).
-                Where(n => arrValues.Any(m => m.ContainsKey(n.Name)))
-                .ToDictionary(n => n.Id, m => m.Name.ToLowerInvariant());
-
+            var baseImages = fullAttrs.Where(n => n.Type == AttributeType.Image).Where(n => arrValues.Any(m => m.ContainsKey(n.Name))).ToDictionary(n => n.Id, m => m.Name.ToLowerInvariant());
             var baseImagesValues = baseImages.Select(n => n.Value).ToArray();
-
             var dynImages = fullAttrs.Where(n => n.Type == AttributeType.DynamicImage)
+
+                // ReSharper disable once PossibleInvalidOperationException
                 .Where(n => baseImages.ContainsKey(n.RelatedImageId.Value))
                 .Select(n => new
                 {
@@ -143,11 +144,7 @@ namespace Quantumart.QPublishing.Database
                     n => n.Select(k => k.DynImageName).ToArray()
                 );
 
-            var extraNames =
-                baseImagesValues
-                    .SelectMany(n => dynImages.ContainsKey(n) ? dynImages[n] : Enumerable.Empty<string>())
-                    .ToArray();
-            return extraNames;
+            return baseImagesValues.SelectMany(n => dynImages.ContainsKey(n) ? dynImages[n] : Enumerable.Empty<string>()).ToArray();
         }
 
         private void UpdateModified(IEnumerable<Dictionary<string, string>> arrValues, IEnumerable<int> existingIds, int[] newIds, int contentId)
@@ -167,15 +164,14 @@ namespace Quantumart.QPublishing.Database
             };
 
             var arrModified = GetRealData(cmd)
-                .AsEnumerable()
-                .ToDictionary(n => (int)n.Field<decimal>("content_item_id"), m => m.Field<DateTime>("modified"));
+                .Select()
+                .ToDictionary(kRow => Convert.ToInt32(kRow["content_item_id"]), vRow => Convert.ToDateTime(vRow["modified"]));
 
             var newHash = new HashSet<int>(newIds);
             foreach (var value in arrValues)
             {
                 var id = int.Parse(value[SystemColumnNames.Id]);
-                DateTime modified;
-                if (id != 0 && arrModified.TryGetValue(id, out modified))
+                if (id != 0 && arrModified.TryGetValue(id, out var modified))
                 {
                     value[SystemColumnNames.Modified] = modified.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
                     if (newHash.Contains(id))
@@ -202,9 +198,10 @@ namespace Quantumart.QPublishing.Database
 
             cmd.Parameters.AddWithValue("@maxNumber", maxNumber);
             cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(ids) });
-            return GetRealData(cmd).AsEnumerable().Select(n => (int)n.Field<decimal>("content_item_version_id")).ToArray();
+            return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
         }
 
+#if !ASPNETCORE && NET4
         private void CreateDynamicImages(Dictionary<string, string>[] arrValues, ContentAttribute[] fullAttrs)
         {
             foreach (var dynImageAttr in fullAttrs.Where(n => n.RelatedImageId.HasValue))
@@ -219,8 +216,7 @@ namespace Quantumart.QPublishing.Database
                 var contentDir = GetContentLibraryDirectory(imageAttr.SiteId, imageAttr.ContentId);
                 foreach (var article in arrValues)
                 {
-                    string image;
-                    if (article.TryGetValue(imageAttr.Name, out image))
+                    if (article.TryGetValue(imageAttr.Name, out var image))
                     {
                         var info = new DynamicImageInfo
                         {
@@ -235,40 +231,45 @@ namespace Quantumart.QPublishing.Database
                             MaxSize = dynImageAttr.DynamicImage.MaxSize
                         };
 
+
                         DynamicImageCreator.CreateDynamicImage(info);
                         article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info.ImageName, info.AttrId, info.FileType);
                     }
                 }
             }
         }
+#endif
 
         private void CreateFilesVersions(IEnumerable<Dictionary<string, string>> values, int[] ids, int contentId)
         {
             var fileAttrs = GetFilesAttributesForVersionControl(contentId).ToArray();
             if (fileAttrs.Any())
             {
-                var newVersionIds = GetLatestVersionIds(ids);
+                var newVersionIds = GetLatestVersionIds(ids).ToList();
                 var fileAttrIds = fileAttrs.Select(n => n.Id).ToArray();
                 var fileAttrDirs = fileAttrs.ToDictionary(n => n.Name, m => GetDirectoryForFileAttribute(m.Id));
                 var currentVersionFolder = GetCurrentVersionFolderForContent(contentId);
                 if (newVersionIds.Any())
                 {
-                    var files = GetVersionDataValues(newVersionIds, fileAttrIds).AsEnumerable().Select(n => new
-                    {
-                        FieldId = (int)n.Field<decimal>("attribute_id"),
-                        VersionId = (int)n.Field<decimal>("content_item_version_id"),
-                        Data = n.Field<string>("data")
-                    })
-                    .Where(n => !string.IsNullOrEmpty(n.Data))
-                    .Select(n => new FileToCopy
-                    {
-                        Name = Path.GetFileName(n.Data),
-                        Folder = currentVersionFolder,
-                        ToFolder = GetVersionFolderForContent(contentId, n.VersionId)
-                    }).Distinct().ToArray();
+                    var files = GetVersionDataValues(newVersionIds, fileAttrIds)
+                        .Select()
+                        .Select(row => new
+                        {
+                            FieldId = Convert.ToInt32(row["attribute_id"]),
+                            VersionId = Convert.ToInt32(row["content_item_version_id"]),
+                            Data = Convert.ToString(row["data"])
+                        })
+                        .Where(n => !string.IsNullOrEmpty(n.Data))
+                        .Select(n => new FileToCopy
+                        {
+                            Name = Path.GetFileName(n.Data),
+                            Folder = currentVersionFolder,
+                            ToFolder = GetVersionFolderForContent(contentId, n.VersionId)
+                        }).Distinct().ToArray();
 
                     CopyArticleFiles(files);
                 }
+
                 var strIds = new HashSet<string>(ids.Select(n => n.ToString()));
                 var newFiles = values
                     .Where(n => strIds.Contains(n[SystemColumnNames.Id]))
@@ -280,12 +281,10 @@ namespace Quantumart.QPublishing.Database
                         Name = n.Value,
                         Folder = fileAttrDirs[n.Key],
                         ToFolder = currentVersionFolder
-                    }
-                    ).ToArray();
+                    }).ToArray();
 
                 CopyArticleFiles(newFiles);
             }
-
         }
 
         private void ValidateConstraints(IList<Dictionary<string, string>> values, IEnumerable<ContentAttribute> attrs, Content content, bool replaceUrls)
@@ -295,6 +294,7 @@ namespace Quantumart.QPublishing.Database
             {
                 var constraints = validatedAttrs.GroupBy(n => n.ConstraintId).Select(n => new
                 {
+                    // ReSharper disable once PossibleInvalidOperationException
                     Id = (int)n.Key,
                     Attrs = n.ToArray()
                 }).ToArray();
@@ -321,7 +321,7 @@ namespace Quantumart.QPublishing.Database
                     {
                         if (set.Contains(str))
                         {
-                            var msg = string.Join(", ", item.Descendants("DATA").Select(n => $"[{n.Attribute("name").Value}] = '{n.Value}'"));
+                            var msg = string.Join(", ", item.Descendants("DATA").Select(n => $"[{n.Attribute("name")?.Value}] = '{n.Value}'"));
                             throw new QpInvalidAttributeException("Unique constraint violation between articles being added/updated: " + msg);
                         }
 
@@ -343,8 +343,7 @@ namespace Quantumart.QPublishing.Database
                 temp.Add(new XAttribute("id", m[SystemColumnNames.Id]));
                 temp.Add(attrs.Select(n =>
                 {
-                    string value;
-                    var valueExists = m.TryGetValue(n.Name, out value);
+                    var valueExists = m.TryGetValue(n.Name, out var value);
                     if (valueExists)
                     {
                         value = FormatResult(n, value, longUploadUrl, longSiteStageUrl, longSiteLiveUrl, replaceUrls);
@@ -370,7 +369,7 @@ namespace Quantumart.QPublishing.Database
             var validatedIds = validatedDataDoc
                 .Descendants("ITEM")
                 .Where(n => !n.Descendants("MISSED_DATA").Any())
-                .Select(n => int.Parse(n.Attribute("id").Value))
+                .Select(n => int.Parse(n.Attribute("id")?.Value ?? throw new InvalidOperationException()))
                 .ToArray();
 
             var contentId = attrs[0].ContentId;
@@ -413,7 +412,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = validatedDataDoc.ToString(SaveOptions.None) });
             cmd.Parameters.Add(new SqlParameter("@validatedIds", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(validatedIds) });
 
-            var conflictIds = GetRealData(cmd).AsEnumerable().Select(n => (int)n.Field<decimal>("CONTENT_ITEM_ID")).ToArray();
+            var conflictIds = GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["CONTENT_ITEM_ID"])).ToArray();
             if (conflictIds.Any())
             {
                 throw new QpInvalidAttributeException($"Unique constraint violation for content articles. Fields: {attrNames}. Article IDs: {string.Join(", ", conflictIds.ToArray())}");
@@ -436,8 +435,7 @@ namespace Quantumart.QPublishing.Database
                     var elem = new XElement("ITEM");
                     elem.Add(new XAttribute("id", value[SystemColumnNames.Id]));
                     elem.Add(new XAttribute("attrId", attr.Id));
-                    string result;
-                    var valueExists = value.TryGetValue(attr.Name, out result);
+                    var valueExists = value.TryGetValue(attr.Name, out var result);
                     if (attr.LinkId.HasValue)
                     {
                         if (!valueExists && isNewArticle && !string.IsNullOrEmpty(attr.DefaultValue))
@@ -472,7 +470,6 @@ namespace Quantumart.QPublishing.Database
                         }
                         dataDoc.Root?.Add(elem);
                     }
-
                 }
             }
 
@@ -481,23 +478,27 @@ namespace Quantumart.QPublishing.Database
 
         private string FormatResult(ContentAttribute attr, string result, string longUploadUrl, string longSiteStageUrl, string longSiteLiveUrl, bool replaceUrls)
         {
-            if (attr.DbTypeName == "DATETIME" && Information.IsDate(result))
+            switch (attr.DbTypeName)
             {
-                result = DateTime.Parse(result).ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            else if (attr.DbTypeName == "NUMERIC")
-            {
-                result = result.Replace(",", ".");
-            }
-            else if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
-            {
-                if (replaceUrls)
-                {
-                    result = result
-                       .Replace(longUploadUrl, UploadPlaceHolder)
-                       .Replace(longSiteStageUrl, SitePlaceHolder)
-                       .Replace(longSiteLiveUrl, SitePlaceHolder);
-                }
+                case "DATETIME" when DateTime.TryParse(result, out DateTime _):
+                    result = DateTime.Parse(result).ToString("yyyy-MM-dd HH:mm:ss");
+                    break;
+                case "NUMERIC":
+                    result = result.Replace(",", ".");
+                    break;
+                default:
+                    if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
+                    {
+                        if (replaceUrls)
+                        {
+                            result = result
+                                .Replace(longUploadUrl, UploadPlaceHolder)
+                                .Replace(longSiteStageUrl, SitePlaceHolder)
+                                .Replace(longSiteLiveUrl, SitePlaceHolder);
+                        }
+                    }
+
+                    break;
             }
 
             return result;
@@ -507,7 +508,7 @@ namespace Quantumart.QPublishing.Database
         {
             var createVersionsString = createVersions
                 ? "exec qp_create_content_item_versions @OldIds, @lastModifiedBy"
-                : "";
+                : string.Empty;
 
             var insertInto = $@"
                 DECLARE @Articles TABLE
@@ -575,7 +576,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.AddWithValue("@lastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@notForReplication", 1);
 
-            var ids = new Queue<int>(GetRealData(cmd).AsEnumerable().Select(n => (int)(decimal)n["ID"]).ToArray());
+            var ids = new Queue<int>(GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["ID"])).ToArray());
             var newIds = ids.ToArray();
             foreach (var value in values)
             {

@@ -1,4 +1,4 @@
-﻿namespace Quantumart.QPublishing.Info
+namespace Quantumart.QPublishing.Info
 {
     public class RelationInfo
     {

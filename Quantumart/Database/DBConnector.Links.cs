@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlTypes;
@@ -9,17 +9,13 @@ using System.Xml;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        #region GetContentItemLinkIds
-
-        public string GetContentItemLinkIDs(string linkFieldName, long itemId)
-        {
-            return GetContentItemLinkIDs(linkFieldName, itemId.ToString());
-        }
+        public string GetContentItemLinkIDs(string linkFieldName, long itemId) => GetContentItemLinkIDs(linkFieldName, itemId.ToString());
 
         public string GetContentItemLinkIDs(string linkFieldName, string itemIds)
         {
@@ -27,34 +23,18 @@ namespace Quantumart.QPublishing.Database
             return info == null ? "0" : GetContentItemLinkIDs(info.LinkId, itemIds, info.IsManyToMany);
         }
 
-        public string GetContentItemLinkIDs(int linkId, long itemId)
-        {
-            return GetContentItemLinkIDs(linkId, itemId.ToString());
-        }
+        public string GetContentItemLinkIDs(int linkId, long itemId) => GetContentItemLinkIDs(linkId, itemId.ToString());
 
-        public string GetContentItemLinkIDs(int linkId, string itemIds)
-        {
-            return GetContentItemLinkIDs(linkId, itemIds, true);
-        }
+        public string GetContentItemLinkIDs(int linkId, string itemIds) => GetContentItemLinkIDs(linkId, itemIds, true);
 
-        public string GetContentItemLinkIDs(int linkId, long itemId, bool isManyToMany)
-        {
-            return GetContentItemLinkIDs(linkId, itemId.ToString(), isManyToMany);
-        }
+        public string GetContentItemLinkIDs(int linkId, long itemId, bool isManyToMany) => GetContentItemLinkIDs(linkId, itemId.ToString(), isManyToMany);
 
         public string GetContentItemLinkIDs(int linkId, string itemIds, bool isManyToMany)
         {
             var itemLinkHash = GetItemLinkHashTable();
             var key = CacheManager.GetItemLinkElementHashKey(linkId, itemIds, isManyToMany);
-            if (itemLinkHash.ContainsKey(key))
-            {
-                return itemLinkHash[key].ToString();
-            }
-
-            return CacheManager.AddItemLinkHashEntry(linkId, itemIds, isManyToMany);
+            return itemLinkHash.ContainsKey(key) ? itemLinkHash[key].ToString() : CacheManager.AddItemLinkHashEntry(linkId, itemIds, isManyToMany);
         }
-
-        #region IdsToXml
 
         public static string IdsToXml(IEnumerable<int> ids)
         {
@@ -67,26 +47,13 @@ namespace Quantumart.QPublishing.Database
             return commaList.Split(',').Where(n => re.IsMatch(n)).Select(int.Parse);
         }
 
-        public static string CommaListToXml(string commaList)
-        {
+        public static string CommaListToXml(string commaList) => IdsToXml(CommaListToIds(commaList));
 
-            return IdsToXml(CommaListToIds(commaList));
-        }
+        public static DataTable CommaListToDataTable(string commaList) => IdsToDataTable(CommaListToIds(commaList));
 
-        public static DataTable CommaListToDataTable(string commaList)
-        {
-            return IdsToDataTable(CommaListToIds(commaList));
-        }
+        public static SqlXml XmlToSqlXml(string xml) => new SqlXml(new XmlTextReader(new StringReader(xml)));
 
-        public static SqlXml XmlToSqlXml(string xml)
-        {
-            return new SqlXml(new XmlTextReader(new StringReader(xml)));
-        }
-
-        public static SqlXml IdsToSqlXml(IEnumerable<int> ids)
-        {
-            return XmlToSqlXml(IdsToXml(ids));
-        }
+        public static SqlXml IdsToSqlXml(IEnumerable<int> ids) => XmlToSqlXml(IdsToXml(ids));
 
         public static DataTable IdsToDataTable(IEnumerable<int> ids)
         {
@@ -103,21 +70,9 @@ namespace Quantumart.QPublishing.Database
             return dt;
         }
 
-        public static SqlXml CommaListToSqlXml(string commaList)
-        {
-            return XmlToSqlXml(CommaListToXml(commaList));
-        }
+        public static SqlXml CommaListToSqlXml(string commaList) => XmlToSqlXml(CommaListToXml(commaList));
 
-        #endregion
-
-        #endregion
-
-        #region GetRealContentItemLinkIds
-
-        public string GetRealContentItemLinkIDs(string linkFieldName, long itemId)
-        {
-            return GetRealContentItemLinkIDs(linkFieldName, itemId.ToString());
-        }
+        public string GetRealContentItemLinkIDs(string linkFieldName, long itemId) => GetRealContentItemLinkIDs(linkFieldName, itemId.ToString());
 
         public string GetRealContentItemLinkIDs(string linkFieldName, string itemIds)
         {
@@ -125,24 +80,15 @@ namespace Quantumart.QPublishing.Database
             return info == null ? string.Empty : GetRealContentItemLinkIDs(info.LinkId, itemIds, info.IsManyToMany);
         }
 
-        public string GetRealContentItemLinkIDs(int linkId, long itemId)
-        {
-            return GetRealContentItemLinkIDs(linkId, itemId.ToString());
-        }
+        public string GetRealContentItemLinkIDs(int linkId, long itemId) => GetRealContentItemLinkIDs(linkId, itemId.ToString());
 
-        public string GetRealContentItemLinkIDs(int linkId, string itemIds)
-        {
-            return GetRealContentItemLinkIDs(linkId, itemIds, true);
-        }
+        public string GetRealContentItemLinkIDs(int linkId, string itemIds) => GetRealContentItemLinkIDs(linkId, itemIds, true);
 
-        public string GetRealContentItemLinkIDs(int linkId, long itemId, bool isManyToMany)
-        {
-            return GetRealContentItemLinkIDs(linkId, itemId.ToString(), isManyToMany);
-        }
+        public string GetRealContentItemLinkIDs(int linkId, long itemId, bool isManyToMany) => GetRealContentItemLinkIDs(linkId, itemId.ToString(), isManyToMany);
 
         public string GetRealContentItemLinkIDs(int linkId, string itemIds, bool isManyToMany)
         {
-            var sql = GetContentItemLinkQuery(linkId, itemIds, isManyToMany);
+            var sql = GetContentItemLinkQuery(linkId, itemIds, isManyToMany, false);
             if (string.IsNullOrEmpty(sql))
             {
                 return string.Empty;
@@ -176,43 +122,25 @@ namespace Quantumart.QPublishing.Database
                     }
                 }
             }
-            return result.Select(n => new KeyValuePair<int, string>(n.Key, string.Join(",", n.Value.ToArray())))
-                .ToDictionary(n => n.Key, n => n.Value);
 
-
+            return result.Select(n => new KeyValuePair<int, string>(n.Key, string.Join(",", n.Value.ToArray()))).ToDictionary(n => n.Key, n => n.Value);
         }
 
-
-        #endregion
-
-        #region GetContentItemLinkQuery
-        public string GetContentItemLinkQuery(string linkFieldName, long itemId)
-        {
-            return GetContentItemLinkQuery(linkFieldName, itemId.ToString());
-        }
+        public string GetContentItemLinkQuery(string linkFieldName, long itemId) => GetContentItemLinkQuery(linkFieldName, itemId.ToString());
 
         public string GetContentItemLinkQuery(string linkFieldName, string itemIds)
         {
             var info = GetRelationInfoForItem(linkFieldName, itemIds);
-            return info == null ? string.Empty : GetContentItemLinkQuery(info.LinkId, itemIds, info.IsManyToMany);
+            return info == null ? string.Empty : GetContentItemLinkQuery(info.LinkId, itemIds, info.IsManyToMany, false);
         }
 
-        public string GetContentItemLinkQuery(int linkId, long itemId)
-        {
-            return GetContentItemLinkQuery(linkId, itemId.ToString());
-        }
+        public string GetContentItemLinkQuery(int linkId, long itemId) => GetContentItemLinkQuery(linkId, itemId.ToString());
 
-        public string GetContentItemLinkQuery(int linkId, string itemIds)
-        {
-            return GetContentItemLinkQuery(linkId, itemIds, true);
-        }
+        public string GetContentItemLinkQuery(int linkId, string itemIds) => GetContentItemLinkQuery(linkId, itemIds, true, false);
 
-        public string GetContentItemLinkQuery(int linkId, long itemId, bool isManyToMany)
-        {
-            return GetContentItemLinkQuery(linkId, itemId.ToString(), isManyToMany);
-        }
+        public string GetContentItemLinkQuery(int linkId, long itemId, bool isManyToMany) => GetContentItemLinkQuery(linkId, itemId.ToString(), isManyToMany, false);
 
-        public string GetContentItemLinkQuery(int linkId, string itemIds, bool isManyToMany, bool returnAll = false)
+        public string GetContentItemLinkQuery(int linkId, string itemIds, bool isManyToMany, bool returnAll)
         {
             if (linkId == LegacyNotFound)
             {
@@ -253,19 +181,13 @@ namespace Quantumart.QPublishing.Database
 
             return string.Format("SELECT {3} FROM {0} WITH (NOLOCK) WHERE [{1}] in ({2})", table, attr.Name, itemIds, select);
         }
-        #endregion
 
-        #region GetLinkID
         // ReSharper disable once InconsistentNaming
-        public int GetLinkIDForItem(string linkFieldName, int itemId)
-        {
-            return GetLinkID(linkFieldName, GetContentIdForItem(itemId));
-        }
+        public int GetLinkIDForItem(string linkFieldName, int itemId) => GetLinkID(linkFieldName, GetContentIdForItem(itemId));
+
         // ReSharper disable once InconsistentNaming
-        public int GetLinkIDForItem(string linkFieldName, string itemIds)
-        {
-            return GetLinkID(linkFieldName, GetContentIdForItem(itemIds));
-        }
+        public int GetLinkIDForItem(string linkFieldName, string itemIds) => GetLinkID(linkFieldName, GetContentIdForItem(itemIds));
+
         // ReSharper disable once InconsistentNaming
         public int GetLinkID(string linkFieldName, int contentId)
         {
@@ -285,14 +207,7 @@ namespace Quantumart.QPublishing.Database
             return localHash.ContainsKey(key) ? (int)localHash[key] : 0;
         }
 
-        #endregion
-
-        #region GetRelationInfo
-
-        internal RelationInfo GetRelationInfoForItem(string linkFieldName, string itemId)
-        {
-            return GetRelationInfo(linkFieldName, GetContentIdForItem(itemId));
-        }
+        internal RelationInfo GetRelationInfoForItem(string linkFieldName, string itemId) => GetRelationInfo(linkFieldName, GetContentIdForItem(itemId));
 
         internal RelationInfo GetRelationInfo(string linkFieldName, int contentId)
         {
@@ -305,14 +220,7 @@ namespace Quantumart.QPublishing.Database
                 return CacheManager.AddLinkHashEntry(contentKey, nameKey);
             }
 
-            if (localHash.ContainsKey(nameKey))
-            {
-                return (RelationInfo)localHash[nameKey];
-            }
-
-            return null;
+            return localHash.ContainsKey(nameKey) ? (RelationInfo)localHash[nameKey] : null;
         }
-
-        #endregion
     }
 }

@@ -4,6 +4,7 @@ using System.Data;
 using System.Globalization;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public enum ControlType
@@ -35,10 +36,7 @@ namespace Quantumart.QP8.Assembling.Info
 
         public DataRow Row { get; }
 
-        public bool GetNumericBoolean(string fieldName)
-        {
-            return Convert.ToBoolean(GetInt32(fieldName));
-        }
+        public bool GetNumericBoolean(string fieldName) => Convert.ToBoolean(GetInt32(fieldName));
 
         public int GetInt32(string fieldName)
         {
@@ -46,13 +44,11 @@ namespace Quantumart.QP8.Assembling.Info
             {
                 throw new DataException(string.Format(CultureInfo.InvariantCulture, "Field {0} is not found in the object-level information table", fieldName));
             }
+
             return Convert.ToInt32(GetString(fieldName), CultureInfo.InvariantCulture);
         }
 
-        public string GetString(string fieldName)
-        {
-            return Row.Table.Columns[fieldName] != null ? Row[fieldName].ToString() : "";
-        }
+        public string GetString(string fieldName) => Row.Table.Columns[fieldName] != null ? Row[fieldName].ToString() : "";
 
         public bool GetBoolean(string fieldName)
         {
@@ -60,13 +56,11 @@ namespace Quantumart.QP8.Assembling.Info
             {
                 throw new DataException(string.Format(CultureInfo.InvariantCulture, "Field {0} is not found in the object-level information table", fieldName));
             }
+
             return (bool)Row[fieldName];
         }
 
-        public object GetObject(string fieldName)
-        {
-            return Row[fieldName];
-        }
+        public object GetObject(string fieldName) => Row[fieldName];
 
         public AssembleInfo Info { get; }
 
@@ -169,10 +163,7 @@ namespace Quantumart.QP8.Assembling.Info
             return sb.ToString();
         }
 
-        private static bool NotRoot(string formatName)
-        {
-            return !string.IsNullOrEmpty(formatName);
-        }
+        private static bool NotRoot(string formatName) => !string.IsNullOrEmpty(formatName);
 
         public string CommonFileName => GetFileName(NetObjectName, NetFormatName);
 
@@ -238,7 +229,6 @@ namespace Quantumart.QP8.Assembling.Info
                 default:
                     return "custom_class_for_generics";
             }
-
         }
 
         private string CustomClassName
@@ -268,7 +258,6 @@ namespace Quantumart.QP8.Assembling.Info
 
                 return "Quantumart.QPublishing." + (Info.AssembleForMobile ? "QMobileQUserControl" : "QUserControl");
             }
-
         }
 
         public string BaseClassName => !string.IsNullOrEmpty(CustomClassName) ? CustomClassName : SystemClassName;

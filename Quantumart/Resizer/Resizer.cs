@@ -3,6 +3,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Resizer
 {
     public class Resizer
@@ -28,7 +29,6 @@ namespace Quantumart.QPublishing.Resizer
                     parameters.Param[0] = parameter;
 
                     var imageCodecInfo = GetEncoderInfo("image/jpeg");
-
                     using (var fs = File.OpenWrite(filePath))
                     {
                         img.Save(fs, imageCodecInfo, parameters);
@@ -49,6 +49,7 @@ namespace Quantumart.QPublishing.Resizer
                     {
                         img.Save(fs, convertFormat);
                     }
+
                     break;
             }
         }

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
+using Quantumart.Helpers;
 using Quantumart.QPublishing.Database;
-using Quantumart.QPublishing.Pages;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class ContainerQueryObject : IQueryObject
@@ -36,7 +37,7 @@ namespace Quantumart.QPublishing.Info
 
         public int ContentId { get; set; }
 
-        public DBConnector Cnn { get; set; }
+        public DBConnector DbConnector { get; set; }
 
         public string CachePrefix { get; set; }
 
@@ -50,9 +51,9 @@ namespace Quantumart.QPublishing.Info
 
         public bool IsFirstPage => int.Parse(StartRow) <= 1;
 
-        public ContainerQueryObject(DBConnector cnn, string select, string from, string where, string orderBy, string startRow, string pageSize)
+        public ContainerQueryObject(DBConnector dbConnector, string select, string from, string where, string orderBy, string startRow, string pageSize)
         {
-            Cnn = cnn;
+            DbConnector = dbConnector;
             Select = select;
             From = from;
             Where = where;
@@ -61,9 +62,8 @@ namespace Quantumart.QPublishing.Info
             PageSize = pageSize;
         }
 
-
-        public ContainerQueryObject(DBConnector cnn, string select, string from, string where, string orderBy, string startRow, string pageSize, bool getCount, bool useSecurity, double duration, string startLevel, string endLevel, int contentId, int uid, int gid)
-            : this(cnn, select, from, where, orderBy, startRow, pageSize)
+        public ContainerQueryObject(DBConnector dbConnector, string select, string from, string where, string orderBy, string startRow, string pageSize, bool getCount, bool useSecurity, double duration, string startLevel, string endLevel, int contentId, int uid, int gid)
+            : this(dbConnector, select, from, where, orderBy, startRow, pageSize)
         {
             GetCount = getCount;
             UseSecurity = useSecurity;
@@ -101,11 +101,10 @@ namespace Quantumart.QPublishing.Info
                 cmd.Parameters.Add(new SqlParameter { ParameterName = "@insert_key", DbType = DbType.String, Value = InsertKey });
             }
 
-
             cmd.Parameters.Add(new SqlParameter { ParameterName = "@Select", DbType = DbType.String, Value = Select });
             cmd.Parameters.Add(new SqlParameter { ParameterName = "@From", DbType = DbType.String, Value = From });
-            cmd.Parameters.Add(new SqlParameter { ParameterName = "@Where", DbType = DbType.String, Value = QPageEssential.CleanSql(Where) });
-            cmd.Parameters.Add(new SqlParameter { ParameterName = "@OrderBy", DbType = DbType.String, Value = QPageEssential.CleanSql(OrderBy) });
+            cmd.Parameters.Add(new SqlParameter { ParameterName = "@Where", DbType = DbType.String, Value = Utils.CleanSql(Where) });
+            cmd.Parameters.Add(new SqlParameter { ParameterName = "@OrderBy", DbType = DbType.String, Value = Utils.CleanSql(OrderBy) });
             cmd.Parameters.Add(new SqlParameter { ParameterName = "@StartRow", DbType = DbType.Int32, Value = StartRow });
             cmd.Parameters.Add(new SqlParameter { ParameterName = "@PageSize", DbType = DbType.Int32, Value = PageSize });
 
@@ -115,19 +114,10 @@ namespace Quantumart.QPublishing.Info
             return cmd;
         }
 
-        public string GetKey(string prefix)
-        {
-            return $"{prefix}GetContainer.::{Select}::{From}::{Where}::{OrderBy}::{StartRow}::{PageSize}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}";
-        }
+        public string GetKey(string prefix) => $"{prefix}GetContainer.::{Select}::{From}::{Where}::{OrderBy}::{StartRow}::{PageSize}::{UserId}::{GroupId}::{StartLevel}::{EndLevel}";
 
         public string OutputParamName => "@TotalRecords";
 
-        public string CountSql
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public string CountSql => throw new NotImplementedException();
     }
 }

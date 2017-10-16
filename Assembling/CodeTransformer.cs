@@ -1,9 +1,10 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QP8.Assembling.Info;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
 {
     public class CodeTransformer
@@ -61,10 +62,7 @@ namespace Quantumart.QP8.Assembling
             return code;
         }
 
-        private static string AppendOnScreenHead(string head, string result)
-        {
-            return Regex.Replace(result, "</head>", string.Format(CultureInfo.InvariantCulture, "{0}$0", head), StandardRegexOptions);
-        }
+        private static string AppendOnScreenHead(string head, string result) => Regex.Replace(result, "</head>", string.Format(CultureInfo.InvariantCulture, "{0}$0", head), StandardRegexOptions);
 
         public static string GetProcessedPresentation(ControlInfo control)
         {
@@ -82,28 +80,18 @@ namespace Quantumart.QP8.Assembling
             return code;
         }
 
-        public static string GetProcessedCodeBehind(ControlInfo control)
-        {
-            return control.CodeBehind;
-        }
+        public static string GetProcessedCodeBehind(ControlInfo control) => control.CodeBehind;
 
-        public static string EliminateIndent(string code)
-        {
-            return code.Replace("\n\t\t", "\n");
-        }
+        public static string EliminateIndent(string code) => code.Replace("\n\t\t", "\n");
 
-        public static string AppendIndent(string code)
-        {
-            return code.Replace("\n", "\n\t\t");
-        }
+        public static string AppendIndent(string code) => code.Replace("\n", "\n\t\t");
 
         public static string GetInitialCodeBehind(string code)
         {
             var sb = new StringBuilder();
             var result = code;
-            bool isCSharp;
 
-            var userNameSpaces = CutNamespaceDefinitionsFromCode(ref result, out isCSharp);
+            var userNameSpaces = CutNamespaceDefinitionsFromCode(ref result, out var isCSharp);
             var pattern = !isCSharp ? @"[^\w]class[^\w][^\n]+\n" : @"[^\w]class[^\w][^{]+{[^\n]*\n";
             var m = Regex.Match(result, pattern, StandardRegexOptions);
             if (m.Success)
@@ -134,11 +122,7 @@ namespace Quantumart.QP8.Assembling
             return code;
         }
 
-        internal static Hashtable CutNamespaceDefinitionsFromCode(ref string text)
-        {
-            bool isCSharp;
-            return CutNamespaceDefinitionsFromCode(ref text, out isCSharp);
-        }
+        internal static Hashtable CutNamespaceDefinitionsFromCode(ref string text) => CutNamespaceDefinitionsFromCode(ref text, out var _);
 
         internal static Hashtable CutNamespaceDefinitionsFromCode(ref string text, out bool isCSharp)
         {

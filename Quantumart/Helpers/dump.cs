@@ -5,6 +5,7 @@ using System.IO;
 using System.Xml;
 using Quantumart.QPublishing.Database;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class Dump
@@ -30,20 +31,21 @@ namespace Quantumart.QPublishing.Helpers
                         _tempDirectory = @"c:\temp";
                     }
                 }
+
                 return _tempDirectory;
             }
         }
 
         public static void DumpHashTable(Hashtable ht, string inKey)
         {
-            string fileName = $@"{TempDirectory}\ht{DateTime.Now.Ticks}.txt";
+            var fileName = $@"{TempDirectory}\ht{DateTime.Now.Ticks}.txt";
             if (Directory.Exists(TempDirectory))
             {
                 lock (HashLocker)
                 {
                     var sw = File.AppendText(fileName);
-
                     sw.WriteLine($"key: {inKey}");
+
                     foreach (string key in ht.Keys)
                     {
                         sw.WriteLine($"{key} - {ht[key]}");
@@ -52,12 +54,11 @@ namespace Quantumart.QPublishing.Helpers
                     sw.Close();
                 }
             }
-
         }
 
         public static void DumpDataTable(DataTable dt, string name)
         {
-            string fileName = $@"{TempDirectory}\db{DateTime.Now.Ticks}.txt";
+            var fileName = $@"{TempDirectory}\db{DateTime.Now.Ticks}.txt";
             if (Directory.Exists(TempDirectory) && !File.Exists(fileName))
             {
                 lock (DataLocker)
@@ -67,19 +68,19 @@ namespace Quantumart.QPublishing.Helpers
                         Indent = true,
                         IndentChars = " "
                     };
+
                     using (var writer = XmlWriter.Create(fileName, settings))
                     {
                         if (dt != null)
                         {
-                            // Write XML data.
                             dt.TableName = name;
                             dt.WriteXml(writer);
                         }
+
                         writer.Close();
                     }
                 }
             }
-
         }
 
         public static void DumpDataTable(DataTable dt)

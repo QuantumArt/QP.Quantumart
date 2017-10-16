@@ -1,18 +1,14 @@
 using System;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Pages
 {
     public class ObjectCall
     {
         public ObjectCall(string call, QPageEssential page)
         {
-            if (page == null)
-            {
-                throw new ArgumentException("Argument cannnot be null");
-            }
-
-            TemplateName = page.TemplateName;
+            TemplateName = page?.TemplateName ?? throw new ArgumentException("Argument cannnot be null");
             FormatName = string.Empty;
 
             char[] splitParams = { '.' };

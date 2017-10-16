@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.Text;
 
+// ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling.Info
 {
     public class ControlSetInfo
@@ -119,6 +120,7 @@ namespace Quantumart.QP8.Assembling.Info
         {
             var sb = new StringBuilder();
             sb.AppendFormat("[template_name] = '{0}' and [object_name] = '{1}' ", call.TemplateName, call.ObjectName);
+
             if (call.TypeCode == "TOF" || call.TypeCode == "OF")
             {
                 sb.AppendFormat(" and [format_name] = '{0}' ", call.FormatName);
@@ -131,6 +133,7 @@ namespace Quantumart.QP8.Assembling.Info
             {
                 throw new ArgumentException("Unknown call type - " + call.TypeCode);
             }
+
             return sb.ToString();
         }
 
@@ -160,6 +163,7 @@ namespace Quantumart.QP8.Assembling.Info
             {
                 dvLoadedObjects.RowFilter = dvLoadedObjects.RowFilter + GetAdditionalCallFilter(call);
             }
+
             var result = dvLoadedObjects.Count;
             dvObjects.Dispose();
             dvLoadedObjects.Dispose();
@@ -168,14 +172,12 @@ namespace Quantumart.QP8.Assembling.Info
 
         internal void Load(ObjectCall call)
         {
-
             var sb = new StringBuilder(SiteObjectsSql);
             if ((call.TypeCode == "OF" || call.TypeCode == "O") && !string.IsNullOrEmpty(Info.PageId))
             {
                 sb.Append(" and lower(obj.object_name) = N'");
                 sb.Append(call.ObjectName);
                 sb.Append("'");
-
                 sb.Append(" and (obj.page_id = ");
                 sb.Append(Info.PageId);
                 sb.Append(" or obj.page_id is null and lower(pt.template_name) = N'");
@@ -190,13 +192,12 @@ namespace Quantumart.QP8.Assembling.Info
                 sb.Append(" and lower(obj.object_name) = N'");
                 sb.Append(call.ObjectName);
                 sb.Append("'");
-
                 sb.Append(" and obj.page_id is null");
-
                 sb.Append(" and lower(pt.template_name) = N'");
                 sb.Append(call.TemplateName);
                 sb.Append("'");
             }
+
             Info.Controller.Cnn.GetData(sb.ToString(), Data);
         }
     }

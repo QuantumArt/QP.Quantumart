@@ -1,4 +1,4 @@
-﻿namespace Quantumart.QPublishing.FileSystem
+namespace Quantumart.QPublishing.FileSystem
 {
     public interface IFileSystem
     {
