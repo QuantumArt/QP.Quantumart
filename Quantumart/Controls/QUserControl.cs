@@ -10,9 +10,9 @@ namespace Quantumart.QPublishing.Controls
 {
     public class QUserControl : QUserControlBase, IQUserControl
     {
-        public QUserControl()
+        public QUserControl(DBConnector dbConnector)
         {
-            QUserControlEssential = new QUserControlEssential(this);
+            QUserControlEssential = new QUserControlEssential(this, dbConnector);
         }
 
         public QUserControlEssential QUserControlEssential { get; set; }
@@ -187,11 +187,12 @@ namespace Quantumart.QPublishing.Controls
             ShowControl(name, sender, parameters);
         }
 
-        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) => QPage.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive);
+        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, out long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) =>
+            QPage.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, out totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive);
 
-        public DBConnector Cnn => QPage.Cnn;
+        public DBConnector Cnn => QPage.DbConnector;
 
-        public DataTable GetData(string queryString) => QPage.Cnn.GetData(queryString);
+        public DataTable GetData(string queryString) => QPage.DbConnector.GetData(queryString);
 
         public int site_id => QPage.site_id;
 

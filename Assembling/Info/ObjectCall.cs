@@ -8,7 +8,7 @@ namespace Quantumart.QP8.Assembling.Info
         public ObjectCall(string call, AssembleInfo info)
         {
             TemplateName = info.TemplateName;
-            FormatName = "";
+            FormatName = string.Empty;
 
             char[] splitParams = { '.' };
             var callParams = call.Split(splitParams);

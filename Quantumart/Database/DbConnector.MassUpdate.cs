@@ -7,9 +7,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
-using Microsoft.VisualBasic;
 using Quantumart.QPublishing.Info;
+
+#if !ASPNETCORE && NET4
 using Quantumart.QPublishing.Resizer;
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -65,9 +67,11 @@ namespace Quantumart.QPublishing.Database
                 var fullAttrs = GetContentAttributeObjects(contentId).Where(n => n.Type != AttributeType.M2ORelation).ToArray();
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
+#if !ASPNETCORE && NET4
                 CreateDynamicImages(arrValues, fullAttrs);
-
+#endif
                 ValidateConstraints(arrValues, fullAttrs, content, options.ReplaceUrls);
+
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
                 ImportContentData(dataDoc);
 
@@ -161,7 +165,7 @@ namespace Quantumart.QPublishing.Database
 
             var arrModified = GetRealData(cmd)
                 .Select()
-                .ToDictionary(kRow => Convert.ToInt32(kRow["content_item_id"]), vRow => DateTime.Parse(vRow["modified"].ToString()));
+                .ToDictionary(kRow => Convert.ToInt32(kRow["content_item_id"]), vRow => Convert.ToDateTime(vRow["modified"]));
 
             var newHash = new HashSet<int>(newIds);
             foreach (var value in arrValues)
@@ -197,6 +201,7 @@ namespace Quantumart.QPublishing.Database
             return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
         }
 
+#if !ASPNETCORE && NET4
         private void CreateDynamicImages(Dictionary<string, string>[] arrValues, ContentAttribute[] fullAttrs)
         {
             foreach (var dynImageAttr in fullAttrs.Where(n => n.RelatedImageId.HasValue))
@@ -226,19 +231,21 @@ namespace Quantumart.QPublishing.Database
                             MaxSize = dynImageAttr.DynamicImage.MaxSize
                         };
 
+
                         DynamicImageCreator.CreateDynamicImage(info);
                         article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info.ImageName, info.AttrId, info.FileType);
                     }
                 }
             }
         }
+#endif
 
         private void CreateFilesVersions(IEnumerable<Dictionary<string, string>> values, int[] ids, int contentId)
         {
             var fileAttrs = GetFilesAttributesForVersionControl(contentId).ToArray();
             if (fileAttrs.Any())
             {
-                var newVersionIds = GetLatestVersionIds(ids);
+                var newVersionIds = GetLatestVersionIds(ids).ToList();
                 var fileAttrIds = fileAttrs.Select(n => n.Id).ToArray();
                 var fileAttrDirs = fileAttrs.ToDictionary(n => n.Name, m => GetDirectoryForFileAttribute(m.Id));
                 var currentVersionFolder = GetCurrentVersionFolderForContent(contentId);
@@ -262,6 +269,7 @@ namespace Quantumart.QPublishing.Database
 
                     CopyArticleFiles(files);
                 }
+
                 var strIds = new HashSet<string>(ids.Select(n => n.ToString()));
                 var newFiles = values
                     .Where(n => strIds.Contains(n[SystemColumnNames.Id]))
@@ -269,12 +277,11 @@ namespace Quantumart.QPublishing.Database
                     .Where(n => fileAttrDirs.ContainsKey(n.Key) && !string.IsNullOrEmpty(n.Value))
                     .Distinct()
                     .Select(n => new FileToCopy
-                        {
-                            Name = n.Value,
-                            Folder = fileAttrDirs[n.Key],
-                            ToFolder = currentVersionFolder
-                        }
-                    ).ToArray();
+                    {
+                        Name = n.Value,
+                        Folder = fileAttrDirs[n.Key],
+                        ToFolder = currentVersionFolder
+                    }).ToArray();
 
                 CopyArticleFiles(newFiles);
             }
@@ -471,23 +478,27 @@ namespace Quantumart.QPublishing.Database
 
         private string FormatResult(ContentAttribute attr, string result, string longUploadUrl, string longSiteStageUrl, string longSiteLiveUrl, bool replaceUrls)
         {
-            if (attr.DbTypeName == "DATETIME" && Information.IsDate(result))
+            switch (attr.DbTypeName)
             {
-                result = DateTime.Parse(result).ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            else if (attr.DbTypeName == "NUMERIC")
-            {
-                result = result.Replace(",", ".");
-            }
-            else if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
-            {
-                if (replaceUrls)
-                {
-                    result = result
-                        .Replace(longUploadUrl, UploadPlaceHolder)
-                        .Replace(longSiteStageUrl, SitePlaceHolder)
-                        .Replace(longSiteLiveUrl, SitePlaceHolder);
-                }
+                case "DATETIME" when DateTime.TryParse(result, out DateTime _):
+                    result = DateTime.Parse(result).ToString("yyyy-MM-dd HH:mm:ss");
+                    break;
+                case "NUMERIC":
+                    result = result.Replace(",", ".");
+                    break;
+                default:
+                    if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
+                    {
+                        if (replaceUrls)
+                        {
+                            result = result
+                                .Replace(longUploadUrl, UploadPlaceHolder)
+                                .Replace(longSiteStageUrl, SitePlaceHolder)
+                                .Replace(longSiteLiveUrl, SitePlaceHolder);
+                        }
+                    }
+
+                    break;
             }
 
             return result;
@@ -497,7 +508,7 @@ namespace Quantumart.QPublishing.Database
         {
             var createVersionsString = createVersions
                 ? "exec qp_create_content_item_versions @OldIds, @lastModifiedBy"
-                : "";
+                : string.Empty;
 
             var insertInto = $@"
                 DECLARE @Articles TABLE

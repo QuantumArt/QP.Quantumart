@@ -42,7 +42,7 @@ namespace Quantumart.QP8.Assembling.Info
             return result;
         }
 
-        public string GetString(string fieldName) => FirstDataRow.Table.Columns[fieldName] != null ? FirstDataRow[fieldName].ToString() : "";
+        public string GetString(string fieldName) => FirstDataRow.Table.Columns[fieldName] != null ? FirstDataRow[fieldName].ToString() : string.Empty;
 
         public bool GetBoolean(string fieldName)
         {

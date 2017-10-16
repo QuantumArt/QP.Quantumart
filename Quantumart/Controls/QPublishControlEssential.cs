@@ -16,10 +16,12 @@ namespace Quantumart.QPublishing.Controls
 
         private Hashtable _fieldInfoDictionary;
         private readonly IQUserControl _currentControl;
+        private readonly DBConnector _dbConnector;
 
-        public QPublishControlEssential(IQUserControl control)
+        public QPublishControlEssential(IQUserControl control, DBConnector dbConnector)
         {
             _currentControl = control;
+            _dbConnector = dbConnector;
         }
 
         public IQPage Page => _currentControl.QPage;
@@ -80,7 +82,7 @@ namespace Quantumart.QPublishing.Controls
             {
                 if (string.IsNullOrEmpty(_contentName))
                 {
-                    _contentName = Page.Cnn.GetContentName(Convert.ToInt32(ContentId));
+                    _contentName = Page.DbConnector.GetContentName(Convert.ToInt32(ContentId));
                 }
 
                 return _contentName;
@@ -100,7 +102,7 @@ namespace Quantumart.QPublishing.Controls
             {
                 if (string.IsNullOrEmpty(_contentUploadUrl))
                 {
-                    _contentUploadUrl = Page.Cnn.GetContentUploadUrlByID(ExtSiteId, ContentId);
+                    _contentUploadUrl = Page.DbConnector.GetContentUploadUrlByID(ExtSiteId, ContentId);
                 }
                 return _contentUploadUrl;
             }
@@ -156,7 +158,7 @@ namespace Quantumart.QPublishing.Controls
             var extSiteId = Page.site_id;
             if (!string.IsNullOrEmpty(DynamicVariable))
             {
-                ContentId = Page.Cnn.GetDynamicContentId(Page.InternalStrValue(DynamicVariable), ContentId, Page.site_id, ref extSiteId);
+                ContentId = Page.DbConnector.GetDynamicContentId(Page.InternalStrValue(DynamicVariable), ContentId, Page.site_id, out extSiteId);
             }
 
             ExtSiteId = extSiteId;
@@ -164,7 +166,7 @@ namespace Quantumart.QPublishing.Controls
 
         public string GetBackendUrlForNotification(string defaultBackendUrl)
         {
-            var backendUrl = DBConnector.AppSettings["BackendUrlForNotification"] ?? "http://" + defaultBackendUrl;
+            var backendUrl = _dbConnector.AppSettings["BackendUrlForNotification"] ?? "http://" + defaultBackendUrl;
             return backendUrl;
         }
 
@@ -203,7 +205,7 @@ namespace Quantumart.QPublishing.Controls
         protected long[] GetIds(string from, string where)
         {
             // ReSharper disable once PossibleLossOfFraction
-            var dt = Page.Cnn.GetCachedData($"select content_item_id as id from {from} where {where}", Duration / 60);
+            var dt = Page.DbConnector.GetCachedData($"select content_item_id as id from {from} where {where}", Duration / 60);
             var result = new long[dt.Rows.Count];
             for (var i = 0; i <= dt.Rows.Count - 1; i++)
             {
@@ -246,10 +248,10 @@ namespace Quantumart.QPublishing.Controls
 
             var uid = int.Parse(GetSessionVariable("@qp_UID", "0"));
             var gid = int.Parse(GetSessionVariable("@qp_GID", "0"));
-            var queryObj = new ContainerQueryObject(Page.Cnn, select, from, where, orderBy, StartRow, PageSize, !RotateContent && PageSize != "0", UseSecurity, Duration, StartLevel, EndLevel, ContentId, uid, gid);
+            var queryObj = new ContainerQueryObject(Page.DbConnector, select, from, where, orderBy, StartRow, PageSize, !RotateContent && PageSize != "0", UseSecurity, Duration, StartLevel, EndLevel, ContentId, uid, gid);
             if (!RotateContent)
             {
-                Data = Page.Cnn.GetContainerQueryResultTable(queryObj, out totalRecords);
+                Data = Page.DbConnector.GetContainerQueryResultTable(queryObj, out totalRecords);
                 AbsoluteTotalRecords = totalRecords;
             }
             else
@@ -262,12 +264,12 @@ namespace Quantumart.QPublishing.Controls
                 if (ids.Length == 0)
                 {
                     queryObj.Where = "c.content_item_id = 0";
-                    Data = Page.Cnn.GetContainerQueryResultTable(queryObj, out totalRecords);
+                    Data = Page.DbConnector.GetContainerQueryResultTable(queryObj, out totalRecords);
                 }
                 for (var i = 0; i <= ids.Length - 1; i++)
                 {
                     queryObj.Where = $"c.content_item_id = {ids[i]}";
-                    var dt = Page.Cnn.GetContainerQueryResultTable(queryObj, out totalRecords);
+                    var dt = Page.DbConnector.GetContainerQueryResultTable(queryObj, out totalRecords);
                     if (Data == null)
                     {
                         Data = dt;

@@ -2,15 +2,24 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using System.Web;
-using Microsoft.VisualBasic;
 using Quantumart.QPublishing.Database;
+#if !ASPNETCORE
+using System.Web;
+
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class QpTrace
     {
+        private readonly DBConnector _dbConnector;
+
+        public QpTrace(DBConnector dbConnector)
+        {
+            _dbConnector = dbConnector;
+        }
+
         public string TraceString { get; set; }
 
         public int TraceId { get; set; }
@@ -22,23 +31,25 @@ namespace Quantumart.QPublishing.Helpers
         public int InitTrace(int pageId)
         {
             int functionReturnValue;
+#if ASPNETCORE
+            var query = _dbConnector.HttpContext.Request.QueryString.Value.Replace("'", "''");
+#else
             var query = HttpContext.Current.Request.ServerVariables["QUERY_STRING"].Replace("'", "''");
-            var traceSql = "select * from page_trace where query_string = '" + query + "' and page_id = " + pageId;
-            var conn = new DBConnector();
-            var dt = conn.GetRealData(traceSql);
-
+#endif
+            var traceSql = $"select * from page_trace where query_string = \'{query}\' and page_id = {pageId}";
+            var dt = _dbConnector.GetRealData(traceSql);
             if (dt.Rows.Count == 0)
             {
-                traceSql = "insert into page_trace(query_string, page_id, traced) values ('" + query + "', " + pageId + ", '" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "')";
-                functionReturnValue = conn.InsertDataWithIdentity(traceSql);
+                traceSql = $"insert into page_trace(query_string, page_id, traced) values (\'{query}\', {pageId}, \'{DateTime.Now:yyyy-MM-dd HH:mm:ss}\')";
+                functionReturnValue = _dbConnector.InsertDataWithIdentity(traceSql);
             }
             else
             {
-                traceSql = "update page_trace set query_string = '" + query + "', page_id = " + pageId + ", traced = '" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "' where page_id = " + pageId;
-                conn.ProcessData(traceSql);
+                traceSql = $"update page_trace set query_string = \'{query}\', page_id = {pageId}, traced = \'{DateTime.Now:yyyy-MM-dd HH:mm:ss}\' where page_id = {pageId}";
+                _dbConnector.ProcessData(traceSql);
 
-                traceSql = "select trace_id from page_trace where query_string = '" + query + "' and page_id = " + pageId;
-                dt = conn.GetRealData(traceSql);
+                traceSql = $"select trace_id from page_trace where query_string = \'{query}\' and page_id = {pageId}";
+                dt = _dbConnector.GetRealData(traceSql);
                 functionReturnValue = dt.Rows.Count != 0 ? DBConnector.GetNumInt(dt.Rows[0]["trace_id"]) : 0;
             }
 
@@ -47,22 +58,21 @@ namespace Quantumart.QPublishing.Helpers
 
         public void DoneTrace(TimeSpan duration, bool allowUserSessions, Hashtable values)
         {
+#if ASPNETCORE
+            var dp = new DebugPrint(_dbConnector);
+#else
             var dp = new DebugPrint();
+#endif
             var traceSession = allowUserSessions ? string.Empty : dp.GetSessionString();
-
             var traceCookies = dp.GetCookiesString();
             var traceValues = dp.GetSimpleDictionaryString(ref values);
-
             var traceSql = "update page_trace set SESSION = '" + traceSession.Replace("'", "''") + "', COOKIES = '" + traceCookies.Replace("'", "''") + "', [VALUES] = '" + traceValues.Replace("'", "''") + "', DURATION = " + Math.Round(duration.TotalMilliseconds).ToString(CultureInfo.InvariantCulture) + " where TRACE_ID = " + TraceId;
-            var conn = new DBConnector();
-
-            conn.ProcessData(traceSql);
+            _dbConnector.ProcessData(traceSql);
         }
 
         public void SaveTraceToDb(string trace, int traceId)
         {
-            var conn = new DBConnector();
-            conn.ProcessData("delete from page_trace_format where trace_id = " + TraceId);
+            _dbConnector.ProcessData("delete from page_trace_format where trace_id = " + TraceId);
         }
 
         public void ExtractFirstLine(ref string traceString, ref string trace)
@@ -71,8 +81,8 @@ namespace Quantumart.QPublishing.Helpers
             if (trace.IndexOf(divider, StringComparison.Ordinal) > 0)
             {
                 var substrLength = trace.IndexOf(divider, StringComparison.Ordinal) + divider.Length;
-                traceString = Strings.Mid(trace, 1, substrLength);
-                trace = Strings.Mid(trace, substrLength + 1, Strings.Len(trace) - substrLength);
+                traceString = trace.Substring(1, substrLength);
+                trace = trace.Substring(substrLength + 1, trace.Length - substrLength);
             }
             else
             {
@@ -105,10 +115,9 @@ namespace Quantumart.QPublishing.Helpers
 
         public int SaveLine(int traceId, int formatId, int parentId, int order, int traced, string defValuesString, string undefValuesString)
         {
-            var conn = new DBConnector();
             var parent = parentId == 0 ? "NULL" : parentId.ToString();
             var traceSql = "insert into page_trace_format(parent_trace_format_id, format_id, number, duration, trace_id) values (" + parent + ", " + formatId + ", " + order + ", " + traced + ", " + traceId + ")";
-            var id = conn.InsertDataWithIdentity(traceSql);
+            var id = _dbConnector.InsertDataWithIdentity(traceSql);
             var functionReturnValue = id;
 
             SaveDefValues(defValuesString, id);
@@ -170,7 +179,6 @@ namespace Quantumart.QPublishing.Helpers
         public void SaveDefValues(string defValuesString, int traceFormatId)
         {
             MatchesLine(defValuesString, "Value\\((?<key>.*?)\\)=(?<value>.*?);", out var matches);
-            var conn = new DBConnector();
             foreach (Match match in matches)
             {
                 var key = match.Groups["key"].ToString().Replace("'", "''");
@@ -179,7 +187,7 @@ namespace Quantumart.QPublishing.Helpers
                 {
                     var strSql = " INSERT INTO PAGE_TRACE_FORMAT_VALUES(trace_format_id, name, value, defined) ";
                     strSql = strSql + " VALUES(" + traceFormatId + ",'" + key + "', '" + value + "', " + 1 + ") ";
-                    conn.ProcessData(strSql);
+                    _dbConnector.ProcessData(strSql);
                 }
             }
         }
@@ -187,7 +195,6 @@ namespace Quantumart.QPublishing.Helpers
         public void SaveUndefValues(string undefValuesString, int traceFormatId)
         {
             MatchesLine(undefValuesString, "Value\\((?<key>.*?)\\);", out var matches);
-            var conn = new DBConnector();
             foreach (Match match in matches)
             {
                 var key = match.Groups["key"].ToString().Replace("'", "''");
@@ -195,7 +202,7 @@ namespace Quantumart.QPublishing.Helpers
                 {
                     var strSql = " INSERT INTO PAGE_TRACE_FORMAT_VALUES(trace_format_id, name, value, defined) ";
                     strSql = strSql + " VALUES(" + traceFormatId + ", '" + key + "', NULL , " + 0 + ") ";
-                    conn.ProcessData(strSql);
+                    _dbConnector.ProcessData(strSql);
                 }
             }
         }

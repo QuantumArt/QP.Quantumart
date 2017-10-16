@@ -3,7 +3,7 @@
 // This source code is made available under the terms of the Microsoft Public License (MS-PL)
 #><#@ template language="C#" hostspecific="True"
 #><#@ include file="L2ST4.ttinclude"
-#><#@ output extension=".cs"
+#><#@ output extension=".generated.cs"
 #><# // Set options here
 var options = new {
     DbmlFileName = DbmlPath ?? Host.TemplateFile.Replace(".tt",".dbml"), // Which DBML file to operate on (same filename as template)

@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
 using System.Web.UI;
-using Microsoft.VisualBasic;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Pages
@@ -27,7 +26,7 @@ namespace Quantumart.QPublishing.Pages
         private int _uniqueIdentifier;
         private bool _writeDebugFile;
 
-        private string _GetFooterHtml() => "<br/><p class=\"heading3\"><a href=\"http://www.thycotic.com/dotnet_remotescripting.html\">Thycotic.Web.RemoteScripting " + Version + "</a><br/>Developed by Jonathan Cogley</p><br/><br/><p>Example code to create a Remote Scripting Method:</p> <div><pre>[RemoteScriptingMethod(Description=\"Converts text to uppercase.\")]" + Constants.vbLf + "public virtual string ToUpperCase(string s) " + Constants.vbLf + "{" + Constants.vbLf + Constants.vbTab + "return s.ToUpperInvariant();" + Constants.vbLf + "}" + Constants.vbLf + "</pre></div></body></html>";
+        private string _GetFooterHtml() => $"<br/><p class=\"heading3\"><a href=\"http://www.thycotic.com/dotnet_remotescripting.html\">Thycotic.Web.RemoteScripting {Version}</a><br/>Developed by Jonathan Cogley</p><br/><br/><p>Example code to create a Remote Scripting Method:</p> <div><pre>[RemoteScriptingMethod(Description=\"Converts text to uppercase.\")]{Environment.NewLine}public virtual string ToUpperCase(string s) {Environment.NewLine}{{{Environment.NewLine} return s.ToUpperInvariant();{Environment.NewLine}}}{Environment.NewLine}</pre></div></body></html>";
 
         private string _GetHeaderHtml()
         {
@@ -55,6 +54,7 @@ namespace Quantumart.QPublishing.Pages
                     builder.Append(str2);
                     builder.Append("</font>");
                 }
+
                 builder.Append("</li>");
             }
 
@@ -79,16 +79,16 @@ namespace Quantumart.QPublishing.Pages
         {
             var builder = new StringBuilder();
             builder.Append("<html><body TOPMARGIN=\"0\" LEFTMARGIN=\"0\">");
-            builder.Append("<style>" + Constants.vbLf);
-            builder.Append("BODY { background-color: #aa0000; color: #ffffff; font-family: verdana; font-size: 10pt; } " + Constants.vbLf);
-            builder.Append(".xheading { font-family: verdana; font-size: 10pt; color: #FFFFFF; background-color: #DB1D28; font-weight: bolder; padding-left: 10px; padding-right: 5px; padding-top: 5px; padding-bottom: 5px; } " + Constants.vbLf);
-            builder.Append(".xtable { padding-left: 2px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; border: 0.5pt solid #999999; background-color: #EFEFEF; font-family: verdana; font-size: 10pt; color: #000000; width: 100%; }" + Constants.vbLf);
-            builder.Append(".xdiv { padding-left: 20px; } " + Constants.vbLf);
-            builder.Append(".xrowodd { background-color: #E2E2E2; } " + Constants.vbLf);
-            builder.Append(".xroweven { background-color: #F2F2F2; } " + Constants.vbLf);
-            builder.Append(".xkey { padding-left: 10px; font-weight: bolder; } " + Constants.vbLf);
-            builder.Append(".xvalue { padding-left: 10px; font-size: 8pt; } " + Constants.vbLf);
-            builder.Append("</style>" + Constants.vbLf);
+            builder.Append($"<style>{Environment.NewLine}");
+            builder.Append($"BODY {{ background-color: #aa0000; color: #ffffff; font-family: verdana; font-size: 10pt; }} {Environment.NewLine}");
+            builder.Append($".xheading {{ font-family: verdana; font-size: 10pt; color: #FFFFFF; background-color: #DB1D28; font-weight: bolder; padding-left: 10px; padding-right: 5px; padding-top: 5px; padding-bottom: 5px; }} {Environment.NewLine}");
+            builder.Append($".xtable {{ padding-left: 2px; padding-right: 2px; padding-top: 2px; padding-bottom: 2px; border: 0.5pt solid #999999; background-color: #EFEFEF; font-family: verdana; font-size: 10pt; color: #000000; width: 100%; }}{Environment.NewLine}");
+            builder.Append($".xdiv {{ padding-left: 20px; }} {Environment.NewLine}");
+            builder.Append($".xrowodd {{ background-color: #E2E2E2; }} {Environment.NewLine}");
+            builder.Append($".xroweven {{ background-color: #F2F2F2; }} {Environment.NewLine}");
+            builder.Append($".xkey {{ padding-left: 10px; font-weight: bolder; }} {Environment.NewLine}");
+            builder.Append($".xvalue {{ padding-left: 10px; font-size: 8pt; }} {Environment.NewLine}");
+            builder.Append($"</style>{Environment.NewLine}");
             builder.Append("<table WIDTH=\"100%\" CELLPADDING=\"0\" CELLSPACING=\"0\"><tr><td>");
             builder.Append("<table CLASS=\"xtable\" CELLSPACING=\"0\">");
             builder.Append("<tr><td CLASS=\"xheading\"><a NAME=\"Params\">RemoteScriptingPage</td></tr>");
@@ -266,8 +266,7 @@ namespace Quantumart.QPublishing.Pages
                     var description = "";
                     for (var k = 0; k <= customAttributes.Length - 1; k++)
                     {
-                        var attribute = customAttributes[k] as RemoteScriptingMethodAttribute;
-                        if (attribute != null)
+                        if (customAttributes[k] is RemoteScriptingMethodAttribute attribute)
                         {
                             description = attribute.Description;
                             flag = true;
@@ -347,7 +346,7 @@ namespace Quantumart.QPublishing.Pages
 
         private void _HandleException(string message, Exception e)
         {
-            Response.Write("<METHOD VERSION=\"" + RsVersion + "\"><RETURN_VALUE TYPE=ERROR>" + message + Constants.vbLf);
+            Response.Write("<METHOD VERSION=\"" + RsVersion + "\"><RETURN_VALUE TYPE=ERROR>" + message + Environment.NewLine);
             if (e != null)
             {
                 Response.Write(e.ToString());
@@ -613,8 +612,7 @@ namespace Quantumart.QPublishing.Pages
                 return o.ToString();
             }
 
-            var array1 = o as Array;
-            if (array1 != null)
+            if (o is Array array1)
             {
                 var array = array1;
                 var builder = new StringBuilder();
@@ -633,11 +631,10 @@ namespace Quantumart.QPublishing.Pages
                 return builder.ToString();
             }
 
-            if (o is DateTime)
+            if (o is DateTime time)
             {
                 var builder2 = new StringBuilder();
                 builder2.Append("new Date(Date.parse(\"");
-                var time = (DateTime)o;
                 builder2.Append(GetShortenedDayOfWeek(time.DayOfWeek));
                 builder2.Append(' ');
                 builder2.Append(_months[time.Month]);

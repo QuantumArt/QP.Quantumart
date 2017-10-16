@@ -6,11 +6,14 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Web;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
+#if !ASPNETCORE
+using System.Web;
+
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
@@ -84,7 +87,7 @@ namespace Quantumart.QPublishing.Info
 
         public bool StatusChanged { get; private set; }
 
-        internal DBConnector Cnn { get; set; }
+        private readonly DBConnector _dbConnector;
 
         public Dictionary<string, ContentItemValue> FieldValues { get; } = new Dictionary<string, ContentItemValue>();
 
@@ -94,7 +97,7 @@ namespace Quantumart.QPublishing.Info
 
         public bool IsNew => Id == 0;
 
-        private ContentItem()
+        private ContentItem(DBConnector dbConnector)
         {
             Id = 0;
             ContentId = 0;
@@ -104,25 +107,25 @@ namespace Quantumart.QPublishing.Info
             LastModifiedBy = 1;
             _statusName = "Published";
             StatusChanged = false;
+            _dbConnector = dbConnector;
             LoadLastModifiedFromCustomTab();
         }
 
-        public static ContentItem New(int contentId, DBConnector cnn)
+        public static ContentItem New(int contentId, DBConnector dbConnector)
         {
             if (contentId <= 0)
             {
                 throw new ArgumentException("contentId");
             }
 
-            var item = new ContentItem
+            var item = new ContentItem(dbConnector)
             {
                 Id = 0,
-                ContentId = contentId,
-                Cnn = cnn
+                ContentId = contentId
             };
 
             item.InitFieldValues();
-            if (cnn.GetContentObject(contentId).IsWorkflowAssigned)
+            if (dbConnector.GetContentObject(contentId).IsWorkflowAssigned)
             {
                 item._statusName = "None";
             }
@@ -130,34 +133,32 @@ namespace Quantumart.QPublishing.Info
             return item;
         }
 
-        public static ContentItem Read(int id, DBConnector cnn)
+        public static ContentItem Read(int id, DBConnector dbConnector)
         {
             if (id <= 0)
             {
                 throw new ArgumentException("id");
             }
 
-            var item = new ContentItem
+            var item = new ContentItem(dbConnector)
             {
-                Id = id,
-                Cnn = cnn
+                Id = id
             };
 
             item.Load();
             return item;
         }
 
-        public static ContentItem ReadLastVersion(int id, DBConnector cnn)
+        public static ContentItem ReadLastVersion(int id, DBConnector dbConnector)
         {
             if (id <= 0)
             {
                 throw new ArgumentException("id");
             }
 
-            var item = new ContentItem
+            var item = new ContentItem(dbConnector)
             {
-                Id = id,
-                Cnn = cnn
+                Id = id
             };
 
             item.LoadLastVersion();
@@ -178,7 +179,7 @@ namespace Quantumart.QPublishing.Info
             sb.AppendLine("inner join status_type st on ci.status_type_id = st.status_type_id ");
             sb.AppendLine("where content_item_id = @id");
             sb.AppendFormat("', N'@id NUMERIC', @id = {0}", Id);
-            var dt = Cnn.GetRealData(sb.ToString());
+            var dt = _dbConnector.GetRealData(sb.ToString());
 
             if (dt.Rows.Count == 0)
             {
@@ -200,8 +201,7 @@ namespace Quantumart.QPublishing.Info
 
         private void LoadLastVersion()
         {
-            var statusRow = Status.GetPreviousStatusHistoryRecord(Id, Cnn);
-
+            var statusRow = Status.GetPreviousStatusHistoryRecord(Id, _dbConnector);
             if (statusRow == null)
             {
                 throw new Exception($"Status row is not found for article (ID = {Id}) ");
@@ -215,7 +215,7 @@ namespace Quantumart.QPublishing.Info
             sb.AppendLine("where civ.content_item_id = @id order by content_item_version_id desc");
             sb.AppendFormat("', N'@id NUMERIC', @id = {0}", Id);
 
-            var dt = Cnn.GetRealData(sb.ToString());
+            var dt = _dbConnector.GetRealData(sb.ToString());
             if (dt.Rows.Count == 0)
             {
                 throw new VersionNotFoundException($"Version is not found for article (ID = {Id}) ");
@@ -237,14 +237,14 @@ namespace Quantumart.QPublishing.Info
         {
             var linkTable = Splitted ? "item_link_united" : "item_link";
             var sql = string.Format("EXEC sp_executesql N'SELECT linked_item_id FROM {2} WHERE item_id = @itemId AND link_id = @linkId', N'@itemId NUMERIC, @linkId NUMERIC', @itemId = {0}, @linkId = {1};", Id, linkId, linkTable);
-            var items = Cnn.GetRealData(sql).Select().Select(row => Convert.ToInt32(row["linked_item_id"]));
+            var items = _dbConnector.GetRealData(sql).Select().Select(row => Convert.ToInt32(row["linked_item_id"]));
             return items;
         }
 
         private IEnumerable<int> GetVersionLinkedItems(int attrId)
         {
             var sql = $"EXEC sp_executesql N'SELECT linked_item_id FROM item_to_item_version WHERE content_item_version_id = @itemId AND attribute_id = @attrId', N'@itemId NUMERIC, @attrId NUMERIC', @itemId = {VersionId}, @attrId = {attrId};";
-            var items = Cnn.GetRealData(sql).Select().Select(n => (int)(decimal)n["linked_item_id"]);
+            var items = _dbConnector.GetRealData(sql).Select().Select(n => (int)(decimal)n["linked_item_id"]);
             return items;
         }
 
@@ -259,12 +259,12 @@ namespace Quantumart.QPublishing.Info
             cmd.Parameters.AddWithValue("@contentId", contentId);
             cmd.Parameters.AddWithValue("@fieldName", fieldName);
             cmd.Parameters.AddWithValue("@id", Id);
-            return Cnn.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
+            return _dbConnector.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
         }
 
         private void InitFieldValues()
         {
-            var attrs = Cnn.GetContentAttributeObjects(ContentId).ToArray();
+            var attrs = _dbConnector.GetContentAttributeObjects(ContentId).ToArray();
             foreach (var attr in attrs)
             {
                 FieldValues.Add(attr.Name, new ContentItemValue());
@@ -284,16 +284,15 @@ namespace Quantumart.QPublishing.Info
             }
 
             InitFieldValues();
-
             var classifierIds = new List<int>();
             var typeIds = new List<int>();
-            var dt = Cnn.GetRealData(VersionId != 0
+            var dt = _dbConnector.GetRealData(VersionId != 0
                 ? $"sp_executesql N'select cd.attribute_id, case when ca.attribute_type_id in (9, 10) then cd.blob_data else cd.data end as data from version_content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_version_id = @id', N'@id NUMERIC', @id = {VersionId}"
                 : $"sp_executesql N'select cd.attribute_id, case when ca.attribute_type_id in (9, 10) then cd.blob_data else cd.data end as data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_id = @id', N'@id NUMERIC', @id = {Id}");
 
             foreach (DataRow dr in dt.Rows)
             {
-                var attr = Cnn.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
+                var attr = _dbConnector.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
                 if (FieldValues.ContainsKey(attr.Name))
                 {
                     var value = FieldValues[attr.Name];
@@ -307,9 +306,7 @@ namespace Quantumart.QPublishing.Info
 
                     if (attr.Type == AttributeType.String || attr.Type == AttributeType.VisualEdit || attr.Type == AttributeType.Textbox)
                     {
-                        value.Data = value.Data
-                            .Replace(Cnn.UploadPlaceHolder, Cnn.GetImagesUploadUrl(SiteId))
-                            .Replace(Cnn.SitePlaceHolder, Cnn.GetSiteUrl(SiteId, true));
+                        value.Data = value.Data.Replace(_dbConnector.UploadPlaceHolder, _dbConnector.GetImagesUploadUrl(SiteId)).Replace(_dbConnector.SitePlaceHolder, _dbConnector.GetSiteUrl(SiteId, true));
                     }
 
                     if (attr.Type == AttributeType.Numeric && attr.IsClassifier)
@@ -337,9 +334,8 @@ namespace Quantumart.QPublishing.Info
                 {
                     foreach (var id in typeIds)
                     {
-                        var ci = new ContentItem
+                        var ci = new ContentItem(_dbConnector)
                         {
-                            Cnn = Cnn,
                             ContentId = id,
                             Id = Id,
                             VersionId = VersionId
@@ -352,7 +348,7 @@ namespace Quantumart.QPublishing.Info
                 else
                 {
                     var aggrIds = GetAggregatedArticlesIDs(classifierIds.ToArray(), typeIds.ToArray());
-                    foreach (var ci in aggrIds.Select(id => Read(id, Cnn)))
+                    foreach (var ci in aggrIds.Select(id => Read(id, _dbConnector)))
                     {
                         AggregatedItems.Add(ci);
                     }
@@ -360,11 +356,11 @@ namespace Quantumart.QPublishing.Info
             }
         }
 
-        public int SiteId => Cnn.GetSiteIdByContentId(ContentId);
+        public int SiteId => _dbConnector.GetSiteIdByContentId(ContentId);
 
         public void Save()
         {
-            var attrs = Cnn.GetContentAttributeObjects(ContentId).ToDictionary(n => n.Name.ToLowerInvariant(), n => n);
+            var attrs = _dbConnector.GetContentAttributeObjects(ContentId).ToDictionary(n => n.Name.ToLowerInvariant(), n => n);
             var values = new Hashtable();
             var restAttrs = attrs.Values.Where(n => n.IsClassifier || n.Aggregated).ToDictionary(n => n.Name.ToLowerInvariant(), n => n);
             foreach (var fieldValue in FieldValues)
@@ -399,25 +395,31 @@ namespace Quantumart.QPublishing.Info
                     value = fieldValue.Value.Data;
                 }
 
-                values.Add(Cnn.FieldName(attr.Id), value);
+                values.Add(_dbConnector.FieldName(attr.Id), value);
             }
 
+#if !ASPNETCORE
             HttpFileCollection files = null;
+#endif
             var modified = DateTime.MinValue;
-
             var notificationEvent = IsNew ? NotificationEvent.Create : NotificationEvent.Modify;
-            Id = Cnn.AddFormToContent(SiteId, ContentId, StatusName, ref values, ref files, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
-            Cnn.SendNotification(Id, notificationEvent);
+#if ASPNETCORE
+            Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
+#else
+            Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, ref files, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
+#endif
 
+            _dbConnector.SendNotification(Id, notificationEvent);
             if (!IsNew && StatusChanged)
             {
-                Cnn.SendNotification(Id, NotificationEvent.StatusChanged);
+                _dbConnector.SendNotification(Id, NotificationEvent.StatusChanged);
             }
         }
 
         public void LoadLastModifiedFromCustomTab()
         {
-            var id = QScreen.GetCustomTabUserId();
+            var qscreen = new QScreen(_dbConnector);
+            var id = qscreen.GetCustomTabUserId();
             if (id != 0)
             {
                 LastModifiedBy = id;
@@ -439,6 +441,7 @@ namespace Quantumart.QPublishing.Info
                 newDoc.Root.Add(new XElement("statusName", StatusName));
                 newDoc.Root.Add(new XElement("lastModifiedBy", LastModifiedBy));
                 newDoc.Root.Add(GetFieldValuesElement());
+
                 var extRoot = new XElement("extensions");
                 foreach (var item in AggregatedItems)
                 {
@@ -455,7 +458,7 @@ namespace Quantumart.QPublishing.Info
         private XElement GetFieldValuesElement()
         {
             var fields = new XElement("customFields");
-            var attrs = Cnn.GetContentAttributeObjects(ContentId).ToDictionary(n => n.Name.ToLowerInvariant(), n => n);
+            var attrs = _dbConnector.GetContentAttributeObjects(ContentId).ToDictionary(n => n.Name.ToLowerInvariant(), n => n);
             foreach (var fieldValue in FieldValues)
             {
                 var attrKey = fieldValue.Key.ToLowerInvariant();
@@ -503,7 +506,7 @@ namespace Quantumart.QPublishing.Info
                 cmd.Parameters.AddWithValue("@article_id", Id);
                 cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(classfierFields) });
                 cmd.Parameters.Add(new SqlParameter("@cids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(types) });
-                result.AddRange(Cnn.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row[0])));
+                result.AddRange(_dbConnector.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row[0])));
             }
 
             return result;

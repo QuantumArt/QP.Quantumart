@@ -274,11 +274,11 @@ namespace Quantumart.QP8.Assembling
         private static Stream GetResourceStream(string folder, string resourceName)
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var fullResourceName = $"Quantumart.QP8.Assembling.{folder}.{resourceName}";
+            var fullResourceName = $"{assembly.GetName().Name}.{folder}.{resourceName}";
             return assembly.GetManifestResourceStream(fullResourceName);
         }
 
-        private static XmlWriter GetXmlWriter(XmlDocument doc) => doc.CreateNavigator().AppendChild();
+        private static XmlWriter GetXmlWriter(IXPathNavigable doc) => doc.CreateNavigator()?.AppendChild();
 
         private IXPathNavigable GetMappingResultNavigator() => XmlPreprocessor.MappingResultXml.CreateNavigator();
 

@@ -1,4 +1,3 @@
-// ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
     public class DynamicImageInfo

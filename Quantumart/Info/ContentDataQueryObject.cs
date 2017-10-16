@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -13,7 +12,7 @@ namespace Quantumart.QPublishing.Info
 {
     public class ContentDataQueryObject : IQueryObject
     {
-        public DBConnector Cnn { get; set; }
+        public DBConnector DbConnector { get; set; }
 
         public bool GetCount { get; set; }
 
@@ -86,24 +85,24 @@ namespace Quantumart.QPublishing.Info
 
         public bool IsFirstPage => StartRowExpression <= 1;
 
-        public ContentDataQueryObject(DBConnector cnn, int contentId, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
-            : this(cnn, string.Empty, string.Empty, fields, whereExpression, orderExpression, startRow, pageSize, useSchedule, statusName, showSplittedArticle, includeArchive, cacheResult, cacheInterval, useClientSelection, withReset)
+        public ContentDataQueryObject(DBConnector dbConnector, int contentId, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
+            : this(dbConnector, string.Empty, string.Empty, fields, whereExpression, orderExpression, startRow, pageSize, useSchedule, statusName, showSplittedArticle, includeArchive, cacheResult, cacheInterval, useClientSelection, withReset)
         {
             ContentId = contentId;
         }
 
-        public ContentDataQueryObject(DBConnector cnn, int contentId, string fields, string whereExpression, string orderExpression, long startRow, long pageSize)
-            : this(cnn, string.Empty, string.Empty, fields, whereExpression, orderExpression, startRow, pageSize)
+        public ContentDataQueryObject(DBConnector dbConnector, int contentId, string fields, string whereExpression, string orderExpression, long startRow, long pageSize)
+            : this(dbConnector, string.Empty, string.Empty, fields, whereExpression, orderExpression, startRow, pageSize)
         {
             ContentId = contentId;
         }
 
-        public ContentDataQueryObject(DBConnector cnn, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize)
-            : this(cnn, siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, 1, DefaultStatusName, 0, 0, false, 0, false, false)
+        public ContentDataQueryObject(DBConnector dbConnector, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize)
+            : this(dbConnector, siteName, contentName, fields, whereExpression, orderExpression, startRow, pageSize, 1, DefaultStatusName, 0, 0, false, 0, false, false)
         {
         }
 
-        public ContentDataQueryObject(DBConnector cnn, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
+        public ContentDataQueryObject(DBConnector dbConnector, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
         {
             Parameters = new List<SqlParameter>();
             SiteName = siteName;
@@ -117,7 +116,7 @@ namespace Quantumart.QPublishing.Info
             StatusName = statusName;
             ShowSplittedArticle = showSplittedArticle;
             IncludeArchive = includeArchive;
-            Cnn = cnn;
+            DbConnector = dbConnector;
             UseClientSelection = useClientSelection;
             CacheResult = cacheResult;
             CacheInterval = cacheInterval;
@@ -135,13 +134,13 @@ namespace Quantumart.QPublishing.Info
             }
             else
             {
-                siteId = Cnn.GetSiteId(SiteName);
+                siteId = DbConnector.GetSiteId(SiteName);
                 if (siteId == 0)
                 {
                     throw new ApplicationException($"Site '{SiteName}' is not found");
                 }
 
-                contentId = Cnn.GetContentId(Cnn.GetSiteId(SiteName), ContentName);
+                contentId = DbConnector.GetContentId(DbConnector.GetSiteId(SiteName), ContentName);
                 if (contentId == 0)
                 {
                     throw new ApplicationException($"Content '{SiteName}.{ContentName}' is not found");
@@ -152,22 +151,25 @@ namespace Quantumart.QPublishing.Info
             var from = GetSqlCommandFrom(contentId);
             if (UseSecurity)
             {
-                from = from.Replace(InsertKey, Cnn.GetSecuritySql(contentId, UserId, GroupId, StartLevel, EndLevel));
+                from = from.Replace(InsertKey, DbConnector.GetSecuritySql(contentId, UserId, GroupId, StartLevel, EndLevel));
             }
+
             var where = GetSqlCommandWhere(siteId);
             var orderBy = GetSqlCommandOrderBy();
             var startRow = StartRowExpression <= 0 ? 1 : StartRowExpression;
             var endRow = new long[] { 0, int.MaxValue, int.MaxValue - 1 }.Contains(PageSizeExpression) ? 0 : startRow + PageSizeExpression - 1;
-
             CountSql = $"SELECT cast(COUNT(*) as bigint) FROM {from} WHERE {where}";
 
             var sb = new StringBuilder();
-            if (string.IsNullOrEmpty(ConfigurationManager.AppSettings["Quantumart.dll_SQL2012Mode"]) || GetCount)
+#if ASPNETCORE
+            if (string.IsNullOrEmpty(DbConnector.DbConnectorSettings.Sql2012ModeDll) || GetCount)
+#else
+            if (string.IsNullOrEmpty(DbConnector.AppSettings["Sql2012ModeDll"]) || GetCount)
+#endif
             {
                 sb.AppendLine("WITH PAGED_DATA_CTE AS");
                 sb.AppendLine("(");
-                sb.AppendLine(
-                    $"	SELECT c.*, ROW_NUMBER() OVER (ORDER BY {orderBy}) AS ROW_NUMBER, {(GetCount ? "COUNT(*) OVER()" : "0")} AS ROWS_COUNT");
+                sb.AppendLine($"	SELECT c.*, ROW_NUMBER() OVER (ORDER BY {orderBy}) AS ROW_NUMBER, {(GetCount ? "COUNT(*) OVER()" : "0")} AS ROWS_COUNT");
                 sb.AppendLine($"	FROM ( SELECT {select} FROM {from} WHERE {where} ) AS c");
                 sb.AppendLine(")");
                 sb.AppendLine("SELECT * FROM PAGED_DATA_CTE");
@@ -266,6 +268,7 @@ namespace Quantumart.QPublishing.Info
             {
                 whereBuilder.Append(" and c.archive = 0");
             }
+
             whereBuilder.AppendFormat(" and c.status_type_id in ({0})", GetSqlCommandStatusString(siteId));
             return whereBuilder.ToString();
         }
@@ -275,15 +278,15 @@ namespace Quantumart.QPublishing.Info
             string statusString;
             if (string.IsNullOrEmpty(StatusName) && siteId != 0)
             {
-                statusString = Cnn.GetMaximumWeightStatusTypeId(siteId).ToString();
+                statusString = DbConnector.GetMaximumWeightStatusTypeId(siteId).ToString();
             }
             else
             {
                 var statusName = !string.IsNullOrEmpty(StatusName) ? StatusName : DefaultStatusName;
-                var filterStatuses = siteId != 0 && statusName.ToLowerInvariant() != DefaultStatusName.ToLowerInvariant();
+                var filterStatuses = siteId != 0 && !string.Equals(statusName, DefaultStatusName, StringComparison.InvariantCultureIgnoreCase);
                 var statuses = !filterStatuses
                     ? null
-                    : new HashSet<string>(Cnn.GetStatuses("").OfType<DataRowView>().Select(rowView => Convert.ToString(rowView.Row["STATUS_TYPE_NAME"]).ToLowerInvariant()));
+                    : new HashSet<string>(DbConnector.GetStatuses(string.Empty).OfType<DataRowView>().Select(rowView => Convert.ToString(rowView.Row["STATUS_TYPE_NAME"]).ToLowerInvariant()));
 
                 bool Lambda(string n) => statuses == null || statuses.Contains(n.ToLowerInvariant());
                 var resultStatuses = statusName.Split(',').Select(n => n.Trim()).Where(Lambda).ToArray();
@@ -323,7 +326,7 @@ namespace Quantumart.QPublishing.Info
                         .ToArray();
 
                 var attrs = new HashSet<string>(
-                    Cnn.GetContentAttributeObjects(contentId)
+                    DbConnector.GetContentAttributeObjects(contentId)
                         .Select(n => n.Name.ToLowerInvariant())
                         .Union(new[] { "content_item_id", "archive", "visible", "created", "modified", "last_modified_by" })
                 );

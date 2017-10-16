@@ -6,7 +6,7 @@ namespace Quantumart.QPublishing.Info
 {
     public interface IQueryObject
     {
-        DBConnector Cnn { get; set; }
+        DBConnector DbConnector { get; set; }
 
         bool CacheResult { get; set; }
 

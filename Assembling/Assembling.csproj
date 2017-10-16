@@ -1,14 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net47;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net47</TargetFrameworks>
+    <Configurations>Debug;Release</Configurations>
+    <AssemblyName>Quantumart.QP8.Assembling</AssemblyName>
+    <RootNamespace>Quantumart.QP8.Assembling</RootNamespace>
   </PropertyGroup>
-
+  
   <ItemGroup>
+    <None Remove="T4\LinqToSqlGenerator.tt" />
     <None Remove="xslt\Extensions.xslt" />
     <None Remove="xslt\Many.xslt" />
     <None Remove="xslt\Mapping.xslt" />
     <None Remove="xslt\Modifications.xslt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="T4\LinqToSqlGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -29,24 +39,4 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data.Linq" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="T4\LinqToSqlGenerator.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>LinqToSqlGenerator.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="T4\LinqToSqlGenerator.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>LinqToSqlGenerator.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-
-</Project>
+ </Project>

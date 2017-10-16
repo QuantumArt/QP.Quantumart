@@ -1,5 +1,6 @@
 using System.Web.UI;
 using NUnit.Framework;
+using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Pages;
 
 namespace Quantumart.Tests
@@ -10,7 +11,8 @@ namespace Quantumart.Tests
         [Test]
         public void AddValue_WithNullValue()
         {
-            var page = new QPageEssential(new Page());
+            var dbConnector = new DBConnector(Global.ConnectionString);
+            var page = new QPageEssential(new Page(), dbConnector);
             page.FillValues();
             page.AddValue("key", null);
 

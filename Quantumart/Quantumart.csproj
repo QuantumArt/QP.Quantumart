@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net47;netcoreapp2.0</TargetFrameworks>
-    <Version>2.2.0</Version>
+    <TargetFrameworks>NET47;netcoreapp2.0</TargetFrameworks>
+    <Version>3.0.0-beta</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -14,20 +14,75 @@
     <RepositoryUrl>https://github.com/QuantumArt/QP.Quantumart</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>QP</PackageTags>
-    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
+    <RootNamespace>Quantumart.QPublishing</RootNamespace>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeNugetAssets</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PackageId>Quantumart</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
+    <PackageId>Quantumart.AspNetCore</PackageId>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
+    <IncludeSource>True</IncludeSource>
+    <IncludeSymbols>True</IncludeSymbols>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Assembling\Assembling.csproj" />
+  <Target Name="IncludeNugetAssets">
+    <ItemGroup Condition="'$(TargetFramework)'=='NET47'">
+      <BuildOutputInPackage Include="$(OutputPath)Quantumart.QP8.Assembling.dll" />
+    </ItemGroup>
+  </Target>
+  
+  <ItemGroup Condition="'$(TargetFramework)'=='NET47'">
+    <ProjectReference Include="..\Assembling\Assembling.csproj" PrivateAssets="All" />
   </ItemGroup>
+  
+  <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
+    <DefineConstants>NET4</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
+    <DefineConstants>ASPNETCORE;NET4</DefineConstants>
+  </PropertyGroup>
 
-  <ItemGroup>
-    <Reference Include="Microsoft.VisualBasic" />
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|netcoreapp2.0'">
+    <DefineConstants>ASPNETCORE;NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mobile" />
+    <Compile Remove="Database\DbConnectorSettings.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.0.0" />
+    <PackageReference Include="System.Collections" Version="4.3.0" />
+    <Compile Remove="Controls\QMobileUserControlBase.cs" />
+    <Compile Remove="Controls\**" />
+    <Compile Remove="Pages\**" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
+    <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />
+    <Compile Remove="Resizer\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp2.0'">
+    <Compile Remove="**" />
+  </ItemGroup>
 </Project>

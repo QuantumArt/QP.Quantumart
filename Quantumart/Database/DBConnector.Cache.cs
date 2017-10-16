@@ -9,6 +9,22 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
+        private static string AppendFilter(string rowFilter, string key, int value)
+        {
+            var sb = new StringBuilder(rowFilter);
+            if (!string.IsNullOrEmpty(rowFilter))
+            {
+                sb.Append(" AND ");
+            }
+
+            sb.Append($"{key} = {value}");
+            return sb.ToString();
+        }
+
+#if !ASPNETCORE
+        internal DataView GetPageObjects(string rowFilter) => GetDataView(CacheManager.PageObjectKey, rowFilter);
+#endif
+
         public DataTable GetDataTable(string key) => CacheManager.GetDataTable(key);
 
         public DataView GetDataView(string key, string rowFilter) => CacheManager.GetDataView(key, rowFilter);
@@ -35,23 +51,17 @@ namespace Quantumart.QPublishing.Database
 
         internal DataView GetTemplateObjects(string rowFilter) => GetDataView(CacheManager.TemplateObjectKey, rowFilter);
 
-        internal DataView GetPageObjects(string rowFilter) => GetDataView(CacheManager.PageObjectKey, rowFilter);
-
         internal DataView GetTemplateMapping(string rowFilter) => GetDataView(CacheManager.TemplateMappingKey, rowFilter);
 
         internal DataView GetPageMapping(string rowFilter) => GetDataView(CacheManager.PageMappingKey, rowFilter);
 
-        private static string AppendFilter(string rowFilter, string key, int value)
-        {
-            var sb = new StringBuilder(rowFilter);
-            if (!string.IsNullOrEmpty(rowFilter))
-            {
-                sb.Append(" AND ");
-            }
+#if !ASPNETCORE
+        internal Hashtable GetPageMappingHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageMappingHashKey);
 
-            sb.AppendFormat("{0} = {1}", key, value);
-            return sb.ToString();
-        }
+        internal Hashtable GetTemplateObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.TemplateObjectHashKey);
+
+        internal Hashtable GetPageObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageObjectHashKey);
+#endif
 
         internal Hashtable GetContentHashTable() => CacheManager.GetCachedDualHashTable(CacheManager.ContentHashKey).Items;
 
@@ -64,12 +74,6 @@ namespace Quantumart.QPublishing.Database
         internal Hashtable GetPageHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageHashKey);
 
         internal Hashtable GetTemplateMappingHashTable() => CacheManager.GetCachedHashTable(CacheManager.TemplateMappingHashKey);
-
-        internal Hashtable GetPageMappingHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageMappingHashKey);
-
-        internal Hashtable GetTemplateObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.TemplateObjectHashKey);
-
-        internal Hashtable GetPageObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageObjectHashKey);
 
         internal Hashtable GetLinkHashTable() => CacheManager.GetCachedHashTable(CacheManager.LinkHashKey);
 

@@ -22,7 +22,15 @@ namespace Quantumart.QPublishing.Database
             return sb.ToString();
         }
 
-        #region GetImagesUploadUrl
+        private static string ConvertUrlToSchemaInvariant(string prefix)
+        {
+            if (prefix.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return "//" + prefix.Substring(7);
+            }
+
+            return prefix;
+        }
 
         public string GetImagesUploadUrlRel(int siteId) => GetUploadUrlRel(siteId) + "images";
 
@@ -32,19 +40,11 @@ namespace Quantumart.QPublishing.Database
 
         public string GetImagesUploadUrl(int siteId, bool asShortAsPossible, bool removeSchema) => GetUploadUrl(siteId, asShortAsPossible, removeSchema) + "images";
 
-        #endregion
-
-        #region GetUploadDir
-
         public string GetUploadDir(int siteId)
         {
             var site = GetSite(siteId);
             return site == null ? string.Empty : site.UploadDir;
         }
-
-        #endregion
-
-        #region GetUploadUrl
 
         public string GetUploadUrl(int siteId) => GetUploadUrl(siteId, false);
 
@@ -81,18 +81,11 @@ namespace Quantumart.QPublishing.Database
                         sb.Append(GetDns(siteId, true));
                     }
                 }
+
                 sb.Append(GetUploadUrlRel(siteId));
             }
-            return sb.ToString();
-        }
 
-        private static string ConvertUrlToSchemaInvariant(string prefix)
-        {
-            if (prefix.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
-            {
-                prefix = "//" + prefix.Substring(7);
-            }
-            return prefix;
+            return sb.ToString();
         }
 
         public string GetUploadUrlPrefix(int siteId)
@@ -100,10 +93,6 @@ namespace Quantumart.QPublishing.Database
             var site = GetSite(siteId);
             return site != null && site.UseAbsoluteUploadUrl ? site.UploadUrlPrefix : string.Empty;
         }
-
-        #endregion
-
-        #region GetSiteUrl
 
         public string GetActualSiteUrl(int siteId) => GetSiteUrl(siteId, IsLive(siteId));
 
@@ -117,6 +106,7 @@ namespace Quantumart.QPublishing.Database
                 sb.Append(GetDns(siteId, isLive));
                 sb.Append(GetSiteUrlRel(siteId, isLive));
             }
+
             return sb.ToString();
         }
 
@@ -126,10 +116,6 @@ namespace Quantumart.QPublishing.Database
             return site == null ? string.Empty : (isLive ? site.LiveVirtualRoot : site.StageVirtualRoot);
         }
 
-        #endregion
-
-        #region GetDns
-
         public string GetActualDns(int siteId) => GetDns(siteId, IsLive(siteId));
 
         public string GetDns(int siteId, bool isLive)
@@ -138,15 +124,7 @@ namespace Quantumart.QPublishing.Database
             return site == null ? string.Empty : (isLive || string.IsNullOrEmpty(site.StageDns) ? site.Dns : site.StageDns);
         }
 
-        #endregion
-
-        #region GetSiteLibraryDirectory
-
         public string GetSiteLibraryDirectory(int siteId) => GetUploadDir(siteId) + "\\images";
-
-        #endregion
-
-        #region GetSiteDirectory
 
         public string GetSiteDirectory(int siteId, bool isLive) => GetSiteDirectory(siteId, isLive, false);
 
@@ -163,36 +141,23 @@ namespace Quantumart.QPublishing.Database
                 return string.IsNullOrEmpty(site.TestDirectory) ? site.TestDirectory : string.Empty;
             }
 
-            if (isLive)
-            {
-                return site.LiveDirectory;
-            }
-
-            return site.StageDirectory;
+            return isLive ? site.LiveDirectory : site.StageDirectory;
         }
 
         public string GetSiteLiveDirectory(int siteId) => GetSiteDirectory(siteId, true);
-
-        #endregion
-
-        #region Content Library
 
         public string GetContentLibraryDirectory(int siteId, int contentId) => GetUploadDir(siteId) + "\\contents\\" + contentId;
 
         public string GetContentLibraryDirectory(int contentId) => GetContentLibraryDirectory(GetSiteIdByContentId(contentId), contentId);
 
-        #endregion
-
-        #region Content URL
-
         public string GetContentUploadUrl(int siteId, string contentName)
         {
-            var targetSiteId = 0;
-            var contentId = GetDynamicContentId(contentName, 0, siteId, ref targetSiteId);
+            var contentId = GetDynamicContentId(contentName, 0, siteId, out var targetSiteId);
             if (targetSiteId == 0)
             {
                 targetSiteId = siteId;
             }
+
             return GetContentUploadUrlByID(targetSiteId, contentId);
         }
 
@@ -214,15 +179,13 @@ namespace Quantumart.QPublishing.Database
                 {
                     sb.Append("/");
                 }
+
                 sb.Append("contents/");
                 sb.Append(contentId);
             }
+
             return sb.ToString();
         }
-
-        #endregion
-
-        #region Field Directory
 
         private string GetFieldSubFolder(int attrId, bool revertSlashes)
         {
@@ -235,6 +198,7 @@ namespace Quantumart.QPublishing.Database
                     result = result.Replace(@"\", @"/");
                 }
             }
+
             return result;
         }
 
@@ -252,19 +216,11 @@ namespace Quantumart.QPublishing.Database
             return baseDir + GetFieldSubFolder(attrId);
         }
 
-        #endregion
-
-        #region Field URL
-
         public string GetFieldSubUrl(int attrId) => GetFieldSubFolder(attrId, true);
 
         public string GetFieldUploadUrl(string fieldName, int contentId) => GetFieldUploadUrl(0, fieldName, contentId);
 
-        public string GetFieldUploadUrl(int siteId, string fieldName, int contentId)
-        {
-            var fieldId = FieldId(contentId, fieldName);
-            return GetUrlForFileAttribute(fieldId);
-        }
+        public string GetFieldUploadUrl(int siteId, string fieldName, int contentId) => GetUrlForFileAttribute(FieldId(contentId, fieldName));
 
         public string GetUrlForFileAttribute(int fieldId) => GetUrlForFileAttribute(fieldId, true);
 
@@ -301,7 +257,5 @@ namespace Quantumart.QPublishing.Database
             var baseUrl = useSiteLibrary ? GetImagesUploadUrl(attr.SiteId, asShortAsPossible, removeSchema) : GetContentUploadUrlByID(attr.SiteId, sourceContentId, asShortAsPossible, removeSchema);
             return CombineWithoutDoubleSlashes(baseUrl, GetFieldSubUrl(sourceFieldId));
         }
-
-        #endregion
     }
 }

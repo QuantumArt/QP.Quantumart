@@ -30,7 +30,7 @@ namespace Quantumart.QP8.Assembling
 
         public AssembleFormatController(int formatId, AssembleMode mode, DataTable data)
         {
-            FillController(formatId, mode, "", data);
+            FillController(formatId, mode, string.Empty, data);
         }
 
         private void FillController(int formatId, AssembleMode mode)
@@ -43,6 +43,7 @@ namespace Quantumart.QP8.Assembling
                 " LEFT JOIN page AS p ON p.page_id=obj.page_id" +
                 " INNER JOIN site AS s ON pt.site_id = s.site_id" +
                 " WHERE objf.object_format_id=" + formatId;
+
             FillController(formatId, mode, sqlQuery, null);
         }
 

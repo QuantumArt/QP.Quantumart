@@ -4,6 +4,7 @@ using System.Data;
 using System.Text;
 using System.Web;
 using System.Web.UI;
+using Quantumart.Helpers;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.OnScreen;
@@ -13,9 +14,9 @@ namespace Quantumart.QPublishing.Pages
 {
     public class QPage : Page, IQPage
     {
-        public QPage()
+        public QPage(DBConnector dbConnector)
         {
-            QPageEssential = new QPageEssential(this);
+            QPageEssential = new QPageEssential(this, dbConnector);
         }
 
         public QPageEssential QPageEssential { get; set; }
@@ -174,14 +175,14 @@ namespace Quantumart.QPublishing.Pages
             AddLastModfiedHeader();
         }
 
-        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) => QPageEssential.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
-            includeArchive);
+        public DataTable GetContentData(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, out long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive) =>
+            QPageEssential.GetContentData(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, out totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive);
 
-        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel) => QPageEssential.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
-            includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel);
+        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, out long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel) =>
+            QPageEssential.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, out totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel);
 
-        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, ref long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords) => QPageEssential.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, ref totalRecords, useSchedule, statusName, showSplittedArticle,
-            includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel, blnFilterRecords);
+        public DataTable GetContentDataWithSecurity(string siteName, string contentName, string whereExpression, string orderExpression, long startRow, long pageSize, out long totalRecords, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, long lngUserId, long lngGroupId, int intStartLevel, int intEndLevel, bool blnFilterRecords) =>
+            QPageEssential.GetContentDataWithSecurity(siteName, contentName, whereExpression, orderExpression, startRow, pageSize, out totalRecords, useSchedule, statusName, showSplittedArticle, includeArchive, lngUserId, lngGroupId, intStartLevel, intEndLevel, blnFilterRecords);
 
         #region "Functions for loading controls"
 
@@ -247,7 +248,7 @@ namespace Quantumart.QPublishing.Pages
 
         #endregion
 
-        public DBConnector Cnn => QPageEssential.Cnn;
+        public DBConnector DbConnector => QPageEssential.DbConnector;
 
         public int site_id
         {
@@ -413,7 +414,7 @@ namespace Quantumart.QPublishing.Pages
 
         public bool IsOrderSqlValid(string orderSql) => QPageEssential.IsOrderSqlValid(orderSql);
 
-        public string CleanSQL(string text) => QPageEssential.CleanSql(text);
+        public string CleanSQL(string text) => Utils.CleanSql(text);
 
         public string Field(string key) => QPageEssential.Field(key);
 

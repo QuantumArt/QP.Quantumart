@@ -36,8 +36,7 @@ namespace Quantumart.QPublishing.Helpers
             get
             {
                 var sb = new StringBuilder();
-                var selectSql =
-                    $"insert into {OldIdTableName} select linked_item_id from {{0}} where link_id = {LinkParamName} and item_id = {ItemParamName}";
+                var selectSql = $"insert into {OldIdTableName} select linked_item_id from {{0}} where link_id = {LinkParamName} and item_id = {ItemParamName}";
                 sb.AppendFormatLine(IdTableSql, OldIdTableName);
                 sb.AppendFormatLine("IF {0} = 1", SplittedParamName);
                 sb.AppendFormatLine(selectSql, AsyncLinkTable);

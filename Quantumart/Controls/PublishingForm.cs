@@ -7,6 +7,11 @@ namespace Quantumart.QPublishing.Controls
 {
     public class PublishingForm : QPublishControl
     {
+        protected PublishingForm(DBConnector dbConnector)
+            : base(dbConnector)
+        {
+        }
+
         public string ThankYouPage { get; set; }
 
         public string PublishedStatusName { get; set; }

@@ -1,9 +1,14 @@
-// ReSharper disable once CheckNamespace
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
 namespace Quantumart.QP8.Assembling.T4
 {
     public partial class LinqToSqlGenerator
     {
-        public LinqToSqlGenerator(string dbmlPath, string ns, bool generateDbAttributes)
+        public LinqToSqlGenerator(string dbmlPath, string ns, bool generateDbAttributes )
         {
             DbmlPath = dbmlPath;
             Namespace = ns;
@@ -15,5 +20,6 @@ namespace Quantumart.QP8.Assembling.T4
         public string Namespace { get; set; }
 
         public bool GenerateDbAttributes { get; set; }
+
     }
 }

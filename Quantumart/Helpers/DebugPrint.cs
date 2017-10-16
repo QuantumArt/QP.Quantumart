@@ -1,16 +1,40 @@
-using System;
 using System.Collections;
-using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Text;
+#if ASPNETCORE
+using Microsoft.AspNetCore.Http;
+using Quantumart.QPublishing.Database;
+#else
+using System.Collections.Specialized;
 using System.Web;
-using Microsoft.VisualBasic;
+
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class DebugPrint
     {
+#if ASPNETCORE
+        private readonly DBConnector _dbConnector;
+
+        public DebugPrint(DBConnector dbConnector)
+        {
+            _dbConnector = dbConnector;
+        }
+#endif
+
+#if ASPNETCORE
+        public string GetSessionString()
+        {
+            var result = new StringBuilder();
+            foreach (var key in _dbConnector.HttpContext.Session.Keys)
+            {
+                result.Append(GetElementString(key, _dbConnector.HttpContext.Session.Get(key)));
+            }
+
+            return result.ToString();
+        }
+#else
         public string GetSessionString()
         {
             var result = new StringBuilder();
@@ -22,64 +46,47 @@ namespace Quantumart.QPublishing.Helpers
             return result.ToString();
         }
 
-        public string GetElementString(string key, object value)
+#endif
+
+        public string GetElementString(string key, object value) => key + "=" + value.GetType().FullName + "; ";
+
+#if ASPNETCORE
+        public string GetCookiesString()
         {
-            var name = string.Empty;
-            var typeIndex = (int)Information.VarType(value);
-            var result = key + "=";
-            if (typeIndex >= 0 && typeIndex <= 8 || typeIndex == 11)
+            var result = new StringBuilder();
+            foreach (var key in _dbConnector.HttpContext.Request.Cookies.Keys)
             {
-                result = result + value;
-            }
-            else
-            {
-                try
+                result.Append(key + ": ");
+                var cookie = _dbConnector.HttpContext.Request.Cookies[key];
+                if (cookie != null)
                 {
-                    name = Information.TypeName(value);
+                    result.Append($"{key}={cookie};<br>");
                 }
-                catch (Exception ex)
-                {
-                    var errorMessage = $"DebugPrint.cs, GetElementString(string key, object value), MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
-                    EventLog.WriteEntry("Application", errorMessage);
-                }
-
-                if (string.IsNullOrEmpty(name))
-                {
-                    name = "Object";
-                }
-
-                result = result + "{" + name + "}";
             }
 
-            result = result + "; ";
-            return result;
+            return result.ToString();
         }
-
+#else
         public string GetCookiesString()
         {
             var result = new StringBuilder();
             foreach (string key in HttpContext.Current.Request.Cookies)
             {
                 result.Append(key + ": ");
-                var httpCookie = HttpContext.Current.Request.Cookies[key];
-                if (httpCookie != null && httpCookie.HasKeys)
+                var cookie = HttpContext.Current.Request.Cookies[key];
+                if (cookie != null)
                 {
-                    var cookie = HttpContext.Current.Request.Cookies[key];
-                    if (cookie != null)
+                    if (cookie.HasKeys)
                     {
                         var subCookieValues = new NameValueCollection(cookie.Values);
                         foreach (string subkey in subCookieValues)
                         {
                             result.Append(subkey + "=" + cookie[subkey] + "; ");
                         }
-                    }
 
-                    result.Append("<br>");
-                }
-                else
-                {
-                    var cookie = HttpContext.Current.Request.Cookies[key];
-                    if (cookie != null)
+                        result.Append("<br>");
+                    }
+                    else
                     {
                         result.Append(key + "=" + cookie.Value + ";<br>");
                     }
@@ -88,6 +95,7 @@ namespace Quantumart.QPublishing.Helpers
 
             return result.ToString();
         }
+#endif
 
         public string GetSimpleDictionaryString(ref Hashtable values)
         {

@@ -65,6 +65,7 @@ namespace Quantumart.QPublishing.Database
                     var linkDoc = GetImportItemLinkDocument(enumerable, toManyAttrs);
                     ImportItemLink(linkDoc);
                 }
+
                 CommitInternalTransaction();
             }
             finally
@@ -120,6 +121,7 @@ namespace Quantumart.QPublishing.Database
                     {
                         linkElem.Add(new XAttribute("linkId", attr.LinkId.Value));
                     }
+
                     if (value.TryGetValue(attr.Name, out var temp))
                     {
                         linkElem.Add(new XAttribute("value", temp));
@@ -131,7 +133,7 @@ namespace Quantumart.QPublishing.Database
             return linkDoc;
         }
 
-        private void ImportContentData(XDocument dataDoc)
+        private void ImportContentData(XNode dataDoc)
         {
             const string sql = @"
             WITH X (CONTENT_ITEM_ID, ATTRIBUTE_ID, DATA, BLOB_DATA)
@@ -166,6 +168,7 @@ namespace Quantumart.QPublishing.Database
             var longSiteStageUrl = GetSiteUrl(content.SiteId, false);
             var dataDoc = new XDocument();
             dataDoc.Add(new XElement("ITEMS"));
+
             var contentAttributes = attrs as ContentAttribute[] ?? attrs.ToArray();
             foreach (var value in values)
             {
@@ -281,6 +284,7 @@ namespace Quantumart.QPublishing.Database
 
                 SELECT ID FROM @NewArticles
                 ";
+
             var cmd = new SqlCommand(insertInto) { CommandType = CommandType.Text };
             cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = doc.ToString(SaveOptions.None) });
             cmd.Parameters.AddWithValue("@contentId", contentId);
@@ -309,7 +313,7 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        private static XElement GetXElementFromDictionary(Dictionary<string, string> value, string key, bool isNew, int? defaultValue)
+        private static XElement GetXElementFromDictionary(IReadOnlyDictionary<string, string> value, string key, bool isNew, int? defaultValue)
         {
             var temp = GetIntFromDictionary(value, key, isNew ? defaultValue : null);
             return temp.HasValue ? new XElement(key, temp.Value) : null;

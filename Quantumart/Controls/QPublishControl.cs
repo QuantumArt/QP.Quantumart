@@ -1,13 +1,15 @@
 using System.Data;
+using Quantumart.QPublishing.Database;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Controls
 {
     public abstract class QPublishControl : QUserControl, IQPublishControl
     {
-        protected QPublishControl()
+        protected QPublishControl(DBConnector dbConnector)
+            : base(dbConnector)
         {
-            QPublishControlEssential = new QPublishControlEssential(this);
+            QPublishControlEssential = new QPublishControlEssential(this, dbConnector);
         }
 
         public QPublishControlEssential QPublishControlEssential { get; set; }

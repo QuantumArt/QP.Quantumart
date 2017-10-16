@@ -132,7 +132,7 @@ namespace Quantumart.QPublishing.Database
 
         private int GetLatestVersionId(int articleId) => GetAggregateVersionFunction("MAX", articleId);
 
-        private int[] GetLatestVersionIds(int[] ids) => GetAggregateVersionFunction("MAX", ids);
+        private IEnumerable<int> GetLatestVersionIds(int[] ids) => GetAggregateVersionFunction("MAX", ids);
 
         private int GetVersionsCount(int articleId) => GetAggregateVersionFunction("COUNT", articleId);
 
@@ -152,7 +152,7 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private int[] GetAggregateVersionFunction(string function, int[] ids)
+        private IEnumerable<int> GetAggregateVersionFunction(string function, int[] ids)
         {
             if (!ids.Any())
             {

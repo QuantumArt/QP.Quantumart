@@ -44,8 +44,8 @@ namespace Quantumart.QPublishing.Helpers
                 lock (HashLocker)
                 {
                     var sw = File.AppendText(fileName);
-
                     sw.WriteLine($"key: {inKey}");
+
                     foreach (string key in ht.Keys)
                     {
                         sw.WriteLine($"{key} - {ht[key]}");
@@ -68,14 +68,15 @@ namespace Quantumart.QPublishing.Helpers
                         Indent = true,
                         IndentChars = " "
                     };
+
                     using (var writer = XmlWriter.Create(fileName, settings))
                     {
                         if (dt != null)
                         {
-                            // Write XML data.
                             dt.TableName = name;
                             dt.WriteXml(writer);
                         }
+
                         writer.Close();
                     }
                 }
