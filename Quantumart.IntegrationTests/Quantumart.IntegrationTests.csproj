@@ -10,21 +10,25 @@
     <PackageReference Include="NUnit" Version="3.9.0" />
     <PackageReference Include="QP8.Infrastructure" Version="2.0.1-rc1" />
   </ItemGroup>
-  
+
   <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
-    <DefineConstants>ASPNETCORE;NET4</DefineConstants>
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <DefineConstants>NETSTANDARD</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|netcoreapp2.0'">
-    <DefineConstants>ASPNETCORE;NETSTANDARD</DefineConstants>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
+    <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
   
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
     <Reference Include="System.Web" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp2.0'">
+    <Compile Remove="**" />
   </ItemGroup>
   
   <ItemGroup>

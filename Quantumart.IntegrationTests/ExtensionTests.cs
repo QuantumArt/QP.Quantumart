@@ -5,7 +5,6 @@ using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Info;
-using Quantumart.QPublishing.Resizer;
 
 namespace Quantumart.IntegrationTests
 {
@@ -48,12 +47,19 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-            DbConnector = new DBConnector(Global.ConnectionString)
+#if ASPNETCORE
+            DbConnector = new DBConnector(new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor())
             {
-                DynamicImageCreator = new FakeDynamicImage(),
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
             };
+#else
+            DbConnector = new DBConnector(Global.ConnectionString)
+            {
+                FileSystem = new FakeFileSystem(),
+                ForceLocalCache = true
+            };
+#endif
 
             Clear();
             Global.ReplayXml(@"TestData/batchupdate.xml");

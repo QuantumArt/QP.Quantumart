@@ -33,12 +33,23 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-            DbConnector = new DBConnector(Global.ConnectionString)
+
+#if ASPNETCORE
+            DbConnector = new DBConnector(new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor())
             {
-                DynamicImageCreator = new FakeDynamicImage(),
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
             };
+#else
+            DbConnector = new DBConnector(Global.ConnectionString)
+            {
+#if NET4
+                DynamicImageCreator = new FakeDynamicImage(),
+#endif
+                FileSystem = new FakeFileSystem(),
+                ForceLocalCache = true
+            };
+#endif
 
             Clear();
             Global.ReplayXml(@"TestData/files.xml");
@@ -409,6 +420,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(paths, Is.EqualTo(actualPathes), "RemoveDirectory calls");
         }
 
+#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_CreateDynamicImages_UpdateBaseImage()
         {
@@ -478,7 +490,9 @@ namespace Quantumart.IntegrationTests
             Assert.That(gifs[0], Is.EqualTo(dbGif1), "Dynamic image value for gif in article 1");
             Assert.That(gifs[1], Is.EqualTo(dbGif2), "Dynamic image value for gif in article 2");
         }
+#endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CreateDynamicImages_ContentHasDynamicImages()
         {
@@ -548,7 +562,9 @@ namespace Quantumart.IntegrationTests
             Assert.That(gifs1[0], Is.EqualTo(dbGif1), "Dynamic image value for gif in article 1");
             Assert.That(gifs2[0], Is.EqualTo(dbGif2), "Dynamic image value for gif in article 2");
         }
+#endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_DoesntCreateDynamicImages_EmptyBaseImage()
         {
@@ -567,12 +583,15 @@ namespace Quantumart.IntegrationTests
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Update");
             mockDynamicImage.Verify(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()), Times.Never(), "Shouldn't be called for empty image fields");
         }
+#endif
 
         [TearDown]
         public static void TestTearDown()
         {
             DbConnector.FileSystem = new FakeFileSystem();
+#if !ASPNETCORE && NET4
             DbConnector.DynamicImageCreator = new FakeDynamicImage();
+#endif
         }
 
         [OneTimeTearDown]
