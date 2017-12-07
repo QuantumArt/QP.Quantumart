@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>NET47;netcoreapp2.0</TargetFrameworks>
+    <Version>3.1.1</Version>
     <Version>3.0.1</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
@@ -76,6 +77,7 @@
     <Compile Remove="Controls\**" />
     <Compile Remove="Pages\**" />
   </ItemGroup>
+  
   <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />

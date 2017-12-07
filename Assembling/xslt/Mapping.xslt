@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:msxsl="urn:schemas-microsoft-com:xslt" exclude-result-prefixes="msxsl"
->
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:msxsl="urn:schemas-microsoft-com:xslt" exclude-result-prefixes="msxsl">
     <xsl:output method="xml" indent="yes"/>
 
     <xsl:template match="schema">
@@ -409,7 +407,7 @@
     <xsl:template name="GetDbType">
         <xsl:param name="type" />
         <xsl:param name="size" />
-    <xsl:param name="force_db_type" />    
+    <xsl:param name="force_db_type" />
         <xsl:variable name="end_size">
             <xsl:choose>
                 <xsl:when test="$size">
@@ -452,7 +450,7 @@
             <xsl:when test="$type='O2M'">System.Int32</xsl:when>
             <xsl:when test="$type='Numeric' and $end_size='0' and $is_long = 'true'">System.Int64</xsl:when>
             <xsl:when test="$type='Numeric' and $end_size='0'">System.Int32</xsl:when>
-            <xsl:when test="$type='Numeric' and $end_size!='0' and $is_long = 'true'">System.Decimal</xsl:when>			
+            <xsl:when test="$type='Numeric' and $end_size!='0' and $is_long = 'true'">System.Decimal</xsl:when>
             <xsl:when test="$type='Numeric' and $end_size!='0'">System.Double</xsl:when>
             <xsl:when test="$type='Boolean'">System.Boolean</xsl:when>
         </xsl:choose>

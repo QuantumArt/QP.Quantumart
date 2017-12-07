@@ -12,8 +12,6 @@ namespace Quantumart.QPublishing.Database
 
         public string ConnectionString { get; set; }
 
-        public IDictionary<string, string> ConnectionStrings { get; set; }
-
         public string PrefetchLimit { get; set; }
 
         public int CacheGetData { get; set; }
@@ -31,5 +29,7 @@ namespace Quantumart.QPublishing.Database
         public string MailPassword { get; set; }
 
         public string MailFromName { get; internal set; }
+
+        internal IDictionary<string, string> ConnectionStrings { get; set; }
     }
 }

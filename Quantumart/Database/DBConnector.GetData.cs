@@ -72,16 +72,16 @@ namespace Quantumart.QPublishing.Database
 
         public DataTable GetRealData(SqlCommand cmd) => GetRealData(cmd, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection);
 
-        public DataTable GetRealData(SqlCommand cmd, SqlConnection cnn, SqlTransaction tr, bool disposeConnection)
+        public DataTable GetRealData(SqlCommand cmd, SqlConnection cn, SqlTransaction tr, bool disposeConnection)
         {
             try
             {
-                if (cnn.State == ConnectionState.Closed)
+                if (cn.State == ConnectionState.Closed)
                 {
-                    cnn.Open();
+                    cn.Open();
                 }
 
-                cmd.Connection = cnn;
+                cmd.Connection = cn;
                 cmd.Transaction = tr;
                 var adapter = new SqlDataAdapter
                 {
@@ -94,13 +94,13 @@ namespace Quantumart.QPublishing.Database
             {
                 if (disposeConnection)
                 {
-                    cnn.Dispose();
+                    cn.Dispose();
                 }
             }
         }
 
 #if !ASPNETCORE && NET4
-        public DataTable GetRealDataWithDependency(string queryString, ref SqlCacheDependency dep)
+        public DataTable GetRealDataWithDependency(string queryString, ref SqlCacheDependency dependency)
         {
             var connection = GetActualSqlConnection();
             try
@@ -112,7 +112,7 @@ namespace Quantumart.QPublishing.Database
 
                 var adapter = new SqlDataAdapter();
                 var cmd = new SqlCommand(queryString, connection) { Transaction = GetActualSqlTransaction() };
-                dep = new SqlCacheDependency(cmd);
+                dependency = new SqlCacheDependency(cmd);
                 adapter.SelectCommand = cmd;
                 return GetFilledDataTable(adapter);
             }

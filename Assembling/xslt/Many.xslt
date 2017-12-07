@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format">
-
-    <xsl:output method="text" />
-    
+<xsl:output method="text" />
 <xsl:template match="schema">
 using System.Data.Linq;
 using System.Linq;
@@ -13,7 +11,7 @@ using System.Collections;
 using System.ComponentModel;
 
     <xsl:if test="@namespace">
-namespace <xsl:value-of select="@namespace" /> 
+namespace <xsl:value-of select="@namespace" />
 {
 </xsl:if>
 
@@ -36,7 +34,7 @@ public partial class <xsl:value-of select="@mapped_name" />
     </xsl:apply-templates>
 }
 </xsl:template>
- 
+
 <xsl:template match="attribute">
     <xsl:param name="virtual" />
       <xsl:variable name="related_content_id"><xsl:value-of select="@related_content_id" /></xsl:variable>
@@ -49,13 +47,13 @@ public partial class <xsl:value-of select="@mapped_name" />
     <xsl:choose>
         <xsl:when test="$related_content_id = $content_id"><xsl:value-of select="concat($related_class_name, '2')" /></xsl:when>
         <xsl:otherwise><xsl:value-of select="$related_class_name" /></xsl:otherwise>
-    </xsl:choose> 
+    </xsl:choose>
   </xsl:variable>
   <xsl:variable name="linked_id_member_name">
     <xsl:choose>
         <xsl:when test="$related_content_id = $content_id"><xsl:value-of select="concat($related_class_name, '_ID', '2')" /></xsl:when>
         <xsl:otherwise><xsl:value-of select="concat($related_class_name, '_ID')" /></xsl:otherwise>
-    </xsl:choose> 
+    </xsl:choose>
   </xsl:variable>
     <xsl:variable name="link_class_name" select="parent::node()/parent::node()/link[@id=$link_id]/@mapped_name" />
   <xsl:variable name="dbIndependent" select="parent::node()/parent::node()/@dbIndependent" />
@@ -63,7 +61,7 @@ public partial class <xsl:value-of select="@mapped_name" />
     <xsl:choose>
         <xsl:when test="$dbIndependent = 'true'">InternalDataContext.Cnn.GetLinkIdByNetName(InternalDataContext.SiteId, "<xsl:value-of select="$link_class_name" />")</xsl:when>
         <xsl:otherwise><xsl:value-of select="$link_id" /></xsl:otherwise>
-    </xsl:choose> 
+    </xsl:choose>
   </xsl:variable>
     <xsl:variable name="class_name" select="parent::node()/@mapped_name" />
     <xsl:if test="$related_class_name != ''">
@@ -102,7 +100,7 @@ public partial class <xsl:value-of select="@mapped_name" />
                         {
                             this.Modified = System.DateTime.Now;
                             var item = items.Single();
-                            InternalDataContext.<xsl:value-of select="$link_member_name" />.DeleteOnSubmit(item);							
+                            InternalDataContext.<xsl:value-of select="$link_member_name" />.DeleteOnSubmit(item);
                             item.RemoveWithArticle = true;
                             ods.Remove(item);
                         }
@@ -111,9 +109,9 @@ public partial class <xsl:value-of select="@mapped_name" />
                 if (this.PropertyChanging == null)
                     return result;
                 else
-                    _<xsl:value-of select="@mapped_name" /> = result;				
+                    _<xsl:value-of select="@mapped_name" /> = result;
             }
-            
+
             return _<xsl:value-of select="@mapped_name" />;
         }
     }
@@ -127,7 +125,7 @@ public partial class <xsl:value-of select="@mapped_name" />
             <xsl:if test="$dbIndependent = 'true'" >
             if (linkId == 0)
                 throw new Exception(String.Format("Junction class '{0}' is not found on the site (ID = {1})", "<xsl:value-of select="$link_class_name" />", InternalDataContext.SiteId));
-            </xsl:if>	
+            </xsl:if>
             return InternalDataContext.ExecuteQuery&lt;<xsl:value-of select="$related_class_name" />&gt;(String.Format("EXEC sp_executesql N'select c.* from content_{0} c inner join item_link i on c.content_item_id = i.linked_item_id where i.item_id = @itemId and i.link_id = @linkId', N'@linkId NUMERIC, @itemId NUMERIC', @linkId = {2}, @itemId = {1}", <xsl:value-of select="$related_content_id" />, Id, linkId)).AsQueryable();
         }
     }
@@ -140,7 +138,7 @@ public partial class <xsl:value-of select="@mapped_name" />
             return <xsl:value-of select="@mapped_name" />.Select(n => n.Id.ToString()).ToArray();
         }
     }
-    
+
     public string <xsl:value-of select="@mapped_name" />String
     {
         get
@@ -157,9 +155,9 @@ public partial class <xsl:value-of select="@mapped_name" />
         <xsl:choose>
             <xsl:when test="parent::node()/@dbIndependent = 'true'">InternalDataContext.Cnn.GetLinkIdByNetName(InternalDataContext.SiteId, "<xsl:value-of select="$name" />")</xsl:when>
             <xsl:otherwise><xsl:value-of select="@id" /></xsl:otherwise>
-        </xsl:choose> 
+        </xsl:choose>
     </xsl:variable>
-    
+
 public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
 {
     public override int Id
@@ -169,7 +167,7 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
             return _ITEM_ID;
         }
     }
-    
+
     public override int LinkedItemId
     {
         get
@@ -177,8 +175,8 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
             return _LINKED_ITEM_ID;
         }
     }
-    
-        
+
+
     [Obsolete]
     public decimal ITEM_ID
     {
@@ -187,7 +185,7 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
             return _ITEM_ID;
         }
     }
-    
+
     [Obsolete]
     public decimal LINKED_ITEM_ID
     {
@@ -196,7 +194,7 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
             return _LINKED_ITEM_ID;
         }
     }
-    
+
     public override void Detach()
     {
         if (null == PropertyChanging)
@@ -204,7 +202,7 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
 
         PropertyChanging = null;
         PropertyChanged = null;
-            
+
         <xsl:variable name="suffix" ></xsl:variable>
 
         <xsl:variable name="suffix2" >
@@ -212,12 +210,12 @@ public partial class <xsl:value-of select="$name" /> : QPLinkBase, IQPLink
                 <xsl:value-of select="2" />
             </xsl:if>
         </xsl:variable>
-        
+
         <xsl:apply-templates select="." mode="DetachJunctionLink">
             <xsl:with-param name="suffix" select="$suffix" />
             <xsl:with-param name="content_id" select ="@content_id" />
         </xsl:apply-templates>
-    
+
         <xsl:apply-templates select="." mode="DetachJunctionLink" >
             <xsl:with-param name="suffix" select="$suffix2" />
             <xsl:with-param name="content_id" select ="@linked_content_id" />

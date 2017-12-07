@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.8.1" />
+    <PackageReference Include="NUnit" Version="3.9.0" />
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
   </ItemGroup>
 
