@@ -133,7 +133,7 @@ namespace Quantumart.QPublishing.Database
 
 #if ASPNETCORE
         public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
-            : this(ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
+            : this(dbConnectorSettings.ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
         {
         }
 
@@ -157,17 +157,16 @@ namespace Quantumart.QPublishing.Database
                 dbConnectorSettings.ConnectionStrings = new Dictionary<string, string>();
             }
 
-            if (dbConnectorSettings.ConnectionStrings.ContainsKey("qp_database") && !string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionStrings["qp_database"]))
+            if (!string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionString))
             {
-                ConnectionString = dbConnectorSettings.ConnectionStrings["qp_database"];
-                dbConnectorSettings.ConnectionString = ConnectionString;
+                ConnectionString = dbConnectorSettings.ConnectionString;
             }
 
+            ThrowNotificationExceptions = true;
             ForceLocalCache = false;
-            CacheData = true;
             UpdateManyToMany = true;
             UpdateManyToOne = true;
-            ThrowNotificationExceptions = true;
+            CacheData = true;
 
             CustomConnectionString = strConnectionString;
             CacheManager = new DbCacheManager(this, cache);

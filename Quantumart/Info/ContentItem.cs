@@ -18,35 +18,6 @@ using System.Web;
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
 {
-    public class ContentItemValue
-    {
-        public string Data { get; set; }
-
-        public HashSet<int> LinkedItems { get; internal set; }
-
-        public ContentItemValue()
-        {
-            LinkedItems = new HashSet<int>();
-        }
-    }
-
-    public class VersionNotFoundException : ApplicationException
-    {
-        public VersionNotFoundException()
-        {
-        }
-
-        public VersionNotFoundException(string message)
-            : base(message)
-        {
-        }
-
-        public VersionNotFoundException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
-    }
-
     [Serializable]
     public class ContentItem
     {

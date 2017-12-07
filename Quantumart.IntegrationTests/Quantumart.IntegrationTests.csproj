@@ -1,0 +1,73 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>NET47</TargetFrameworks>
+    <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="4.7.145" />
+    <PackageReference Include="NUnit" Version="3.9.0" />
+    <PackageReference Include="QP8.Infrastructure" Version="2.0.1-rc1" />
+  </ItemGroup>
+  
+  <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
+    <DefineConstants>NET4</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
+    <DefineConstants>ASPNETCORE;NET4</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|netcoreapp2.0'">
+    <DefineConstants>ASPNETCORE;NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Caching.Memory">
+      <HintPath>..\..\..\..\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.extensions.caching.memory\2.0.0\lib\netstandard2.0\Microsoft.Extensions.Caching.Memory.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'!='Debug|NET47' AND '$(Configuration)|$(TargetFramework)'!='Release|NET47'">
+    <Compile Remove="ExtensionTests.cs" />
+    <Compile Remove="DynamicImageTests.cs" />
+    <Compile Remove="Infrastructure\DynamicImageCopyFile.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="TestData\batchupdate.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\files.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\m2m.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\m2m_nonsplitted.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\nullify.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\unique.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Tools\qpdbupdate.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Tools\qpdbupdate.exe.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+</Project>

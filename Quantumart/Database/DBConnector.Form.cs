@@ -794,7 +794,7 @@ namespace Quantumart.QPublishing.Database
             return oSb.ToString();
         }
 
-        private static string GetSqlDynamicImages(SqlCommand command, List<DynamicImageInfo> imagesList)
+        private static string GetSqlDynamicImages(SqlCommand command, IEnumerable<DynamicImageInfo> imagesList)
         {
             var i = 0;
             var sb = new StringBuilder(string.Empty);
