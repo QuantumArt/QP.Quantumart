@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>NET47</TargetFrameworks>
-    <Configurations>Debug;Release</Configurations>
+    <TargetFramework>NET47</TargetFramework>
+    <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
-  
+
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
     <Reference Include="System.Web" />
   </ItemGroup>
@@ -30,11 +30,11 @@
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp2.0'">
     <Compile Remove="**" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Caching.Memory">
       <HintPath>..\..\..\..\Program Files\dotnet\sdk\NuGetFallbackFolder\microsoft.extensions.caching.memory\2.0.0\lib\netstandard2.0\Microsoft.Extensions.Caching.Memory.dll</HintPath>
@@ -42,11 +42,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'!='Debug|NET47' AND '$(Configuration)|$(TargetFramework)'!='Release|NET47'">
-    <Compile Remove="ExtensionTests.cs" />
-    <Compile Remove="DynamicImageTests.cs" />
     <Compile Remove="Infrastructure\DynamicImageCopyFile.cs" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <None Update="TestData\batchupdate.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -73,5 +71,5 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  
+
 </Project>

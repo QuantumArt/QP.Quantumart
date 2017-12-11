@@ -735,7 +735,7 @@ namespace Quantumart.QPublishing.Database
 #if !ASPNETCORE && NET4
                             GetDynamicImagesForImage(attr.Id, contentItemId, data, dynamicImagesList);
 #else
-                            throw new NotImplementedException("There functionality to work with images at core version of quantumart.dll");
+                            throw new NotImplementedException("There no functionality to work with images at core version of quantumart.dll");
 #endif
                         }
 

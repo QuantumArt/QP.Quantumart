@@ -21,14 +21,6 @@
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeNugetAssets</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)'=='Release'">
-    <PackageId>Quantumart</PackageId>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
-    <PackageId>Quantumart.AspNetCore</PackageId>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
     <IncludeSource>True</IncludeSource>
     <IncludeSymbols>True</IncludeSymbols>
@@ -49,12 +41,12 @@
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
-    <DefineConstants>ASPNETCORE;NET4</DefineConstants>
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <DefineConstants>NETSTANDARD</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|netcoreapp2.0'">
-    <DefineConstants>ASPNETCORE;NETSTANDARD</DefineConstants>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
+    <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
@@ -76,7 +68,7 @@
     <Compile Remove="Controls\**" />
     <Compile Remove="Pages\**" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />

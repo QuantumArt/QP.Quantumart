@@ -11,6 +11,12 @@ using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
 
+#if ASPNETCORE
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
+
+#endif
+
 namespace Quantumart.IntegrationTests
 {
     [TestFixture]
@@ -33,9 +39,12 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-
 #if ASPNETCORE
-            DbConnector = new DBConnector(new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor())
+            DbConnector = new DBConnector(
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new MemoryCache(new MemoryCacheOptions()),
+                new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
+            )
             {
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
@@ -89,6 +98,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(paths, Is.SubsetOf(actualPathes), "CreateDirectory calls");
         }
 
+#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CreateVersionDirectory_ContentHasFileFields()
         {
@@ -113,6 +123,7 @@ namespace Quantumart.IntegrationTests
             var paths = Global.GetMaxVersions(DbConnector, ids).Select(n => DbConnector.GetVersionFolderForContent(ContentId, n)).ToArray();
             Assert.That(paths, Is.SubsetOf(actualPathes), "CreateDirectory calls");
         }
+#endif
 
         [Test]
         public void MassUpdate_DoesntCreateVersions_CreateVersionsFalse()
@@ -144,6 +155,7 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CreateDirectory(It.IsAny<string>()), Times.Never(), "No new folders");
         }
 
+#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_CopyFiles_ContentHasFileFields()
         {
@@ -215,7 +227,9 @@ namespace Quantumart.IntegrationTests
 
             Assert.That(list, Has.Member(file5), "Copy new file 2 to version dir without subfolders");
         }
+#endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CopyFiles_ContentHasFileFields()
         {
@@ -279,6 +293,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(list, Has.Member(file3), "Copy new file to current dir without subfolders");
             Assert.That(list, Has.Member(file4), "Copy new file to version dir without subfolders");
         }
+#endif
 
         [Test]
         public void MassUpdate_DoesntCreateVersionDirectory_EmptyFileFields()
@@ -342,6 +357,7 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
         }
 
+#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_DoesntCreateVersionDirectory_DisableVersionControlFields()
         {
@@ -363,6 +379,7 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CreateDirectory(It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
             mockFileSystem.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
         }
+#endif
 
         [Test]
         public void MassUpdate_RemoveVersionDirectory_VersionOverflow()
@@ -392,6 +409,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(paths, Is.EqualTo(actualPathes), "RemoveDirectory calls");
         }
 
+#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_RemoveVersionDirectory_VersionOverflow()
         {
@@ -419,6 +437,7 @@ namespace Quantumart.IntegrationTests
 
             Assert.That(paths, Is.EqualTo(actualPathes), "RemoveDirectory calls");
         }
+#endif
 
 #if !ASPNETCORE && NET4
         [Test]
