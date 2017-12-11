@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>NET47</TargetFramework>
+    <TargetFramework>NET471</TargetFramework>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
 
@@ -10,11 +10,11 @@
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'NET47'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'NET471'">
     <ProjectReference Include="..\Assembling\Assembling.csproj" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='NET471'">
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
@@ -26,13 +26,13 @@
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET471' OR '$(Configuration)|$(TargetFramework)'=='Release|NET471'">
     <Reference Include="System.Web" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.1" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" />
     <Compile Remove="QPageEssentialTests.cs" />
   </ItemGroup>
