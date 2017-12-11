@@ -32,17 +32,13 @@ namespace Quantumart.Tests
         }
 #endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void TestGetMappingFromQuantumart()
         {
-#if ASPNETCORE
-            var cache = new MemoryCache(new MemoryCacheOptions());
-            var dbc1 = new DBConnector(Global.ConnectionString, new DbConnectorSettings(), cache, new HttpContextAccessor()) { IsStage = false };
-            var dbc2 = new DBConnector(Global.ConnectionString, new DbConnectorSettings(), cache, new HttpContextAccessor()) { IsStage = true };
-#else
             var dbc1 = new DBConnector(Global.ConnectionString) { IsStage = false };
             var dbc2 = new DBConnector(Global.ConnectionString) { IsStage = true };
-#endif
+
             var map1 = dbc1.GetDefaultMapFileContents(Global.SiteId, "qpcontext");
             var map2 = dbc2.GetDefaultMapFileContents(Global.SiteId, "qpcontext");
 
@@ -50,6 +46,7 @@ namespace Quantumart.Tests
             Assert.That(map2, Is.Not.Null);
             Assert.That(map1, Is.Not.EqualTo(map2));
         }
+#endif
 
 #if NET4
         [Test]
@@ -60,15 +57,12 @@ namespace Quantumart.Tests
         }
 #endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void TestGetDifferentMappings()
         {
-#if ASPNETCORE
-            var cache = new MemoryCache(new MemoryCacheOptions());
-            var dbc = new DBConnector(Global.ConnectionString, new DbConnectorSettings(), cache, new HttpContextAccessor());
-#else
             var dbc = new DBConnector(Global.ConnectionString);
-#endif
+
             var map1 = dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"));
             var map2 = dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"), "qpcontext");
             var map3 = dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"));
@@ -78,17 +72,15 @@ namespace Quantumart.Tests
             Assert.That(map1, Is.Not.EqualTo(map2));
             Assert.That(map3, Is.SameAs(map1));
         }
+#endif
 
+#if !ASPNETCORE && NET4
         [Test]
         public void TestGetNonExstingMapping()
         {
-#if ASPNETCORE
-            var cache = new MemoryCache(new MemoryCacheOptions());
-            var dbc = new DBConnector(Global.ConnectionString, new DbConnectorSettings(), cache, new HttpContextAccessor());
-#else
             var dbc = new DBConnector(Global.ConnectionString);
-#endif
             Assert.That(() => { dbc.GetDefaultMapFileContents(dbc.GetSiteId("main_site"), "abc"); }, Throws.Exception.TypeOf<ApplicationException>());
         }
+#endif
     }
 }

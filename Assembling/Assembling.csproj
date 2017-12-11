@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net47</TargetFrameworks>
+    <TargetFramework>NET47</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <AssemblyName>Quantumart.QP8.Assembling</AssemblyName>
     <RootNamespace>Quantumart.QP8.Assembling</RootNamespace>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <None Remove="T4\LinqToSqlGenerator.tt" />
     <None Remove="xslt\Extensions.xslt" />

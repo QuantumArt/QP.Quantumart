@@ -1,16 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>NET47</TargetFrameworks>
+    <TargetFramework>NET47</TargetFramework>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|NET47'">
-    <DefineConstants>ASPNETCORE;NET4</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug_AspnetCore|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release_AspnetCore|netcoreapp2.0'">
-    <DefineConstants>ASPNETCORE;NETSTANDARD</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +13,18 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'NET47'">
     <ProjectReference Include="..\Assembling\Assembling.csproj" />
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
+    <DefineConstants>NET4</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+    <DefineConstants>NETSTANDARD</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
+    <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
     <Reference Include="System.Web" />

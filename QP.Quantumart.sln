@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+VisualStudioVersion = 15.0.27004.2009
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quantumart", "Quantumart\Quantumart.csproj", "{4936635F-9151-49F8-9017-615B9C828491}"
 EndProject
@@ -47,12 +47,12 @@ Global
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.Build.0 = Debug|Any CPU
+		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug_AspnetCore|Any CPU
+		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.Build.0 = Debug_AspnetCore|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.ActiveCfg = Release|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.Build.0 = Release|Any CPU
+		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.ActiveCfg = Release_AspnetCore|Any CPU
+		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
