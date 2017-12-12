@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>NET47;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>NET471;netcoreapp2.0</TargetFrameworks>
     <Version>3.1.1</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
@@ -20,7 +20,11 @@
     <RootNamespace>Quantumart.QPublishing</RootNamespace>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeNugetAssets</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
-
+  
+  <ItemGroup>
+    <Reference Include="netstandard" />
+  </ItemGroup>
+  
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
     <IncludeSource>True</IncludeSource>
     <IncludeSymbols>True</IncludeSymbols>
@@ -28,16 +32,16 @@
   </PropertyGroup>
 
   <Target Name="IncludeNugetAssets">
-    <ItemGroup Condition="'$(TargetFramework)'=='NET47'">
+    <ItemGroup Condition="'$(TargetFramework)'=='NET471'">
       <BuildOutputInPackage Include="$(OutputPath)Quantumart.QP8.Assembling.dll" />
     </ItemGroup>
   </Target>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='NET47'">
+  <ItemGroup Condition="'$(TargetFramework)'=='NET471'">
     <ProjectReference Include="..\Assembling\Assembling.csproj" PrivateAssets="All" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='NET47'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='NET471'">
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
@@ -49,7 +53,7 @@
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET47' OR '$(Configuration)|$(TargetFramework)'=='Release|NET47'">
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|NET471' OR '$(Configuration)|$(TargetFramework)'=='Release|NET471'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mobile" />
@@ -58,11 +62,11 @@
 
   <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.0.1" />
     <PackageReference Include="System.Collections" Version="4.3.0" />
     <Compile Remove="Controls\QMobileUserControlBase.cs" />
     <Compile Remove="Controls\**" />
@@ -78,4 +82,5 @@
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp2.0'">
     <Compile Remove="**" />
   </ItemGroup>
+
 </Project>
