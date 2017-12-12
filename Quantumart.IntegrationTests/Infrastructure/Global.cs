@@ -189,7 +189,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
             ReplayDynamicXml(
                 $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <actions backendUrl=""http://mscdev02:90/Backend/"" dbVersion=""7.9.9.0"">
-  <action code=""remove_field"" ids=""{fieldId}"" parentId=""{contentId}"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(new CultureHelpers().GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
+  <action code=""remove_field"" ids=""{fieldId}"" parentId=""{contentId}"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(CultureHelpers.GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
 </actions>
 ");
         }
@@ -199,7 +199,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
             ReplayDynamicXml(
                 $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <actions backendUrl=""http://mscdev02:90/Backend/"" dbVersion=""7.9.9.0"">
-  <action code=""multiple_remove_article"" ids=""{string.Join(",", articleIds)}"" parentId=""{contentId}"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(new CultureHelpers().GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
+  <action code=""multiple_remove_article"" ids=""{string.Join(",", articleIds)}"" parentId=""{contentId}"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(CultureHelpers.GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
 </actions>
 ");
         }
@@ -211,7 +211,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
                 ReplayDynamicXml(
                     $@"<?xml version=""1.0"" encoding=""utf-8""?>
 <actions backendUrl=""http://mscdev02:90/Backend/"" dbVersion=""7.9.9.0"">
-  <action code=""simple_remove_content"" ids=""{contentId}"" parentId=""35"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(new CultureHelpers().GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
+  <action code=""simple_remove_content"" ids=""{contentId}"" parentId=""35"" lcid=""{Lcid}"" executed=""{DateTime.Now.ToString(CultureHelpers.GetCultureByLcid(Lcid))}"" executedBy=""AuthorProxy"" />
 </actions>
 ");
             }
