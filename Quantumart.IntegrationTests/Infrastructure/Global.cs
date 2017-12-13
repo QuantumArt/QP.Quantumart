@@ -19,7 +19,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
 
         public static int SiteId => 35;
         
-        public static string ConnectionString => $"Initial Catalog={TestEnvironmentHelpers.GetSqlDbNameToRunTests};Data Source=mscsql01;Integrated Security=True;Application Name=UnitTest";
+        public static string ConnectionString => $"Initial Catalog={TestEnvironmentHelpers.SqlDbNameToRunTests};Data Source=mscsql01;Integrated Security=True;Application Name=UnitTest";
 
         public static string GetXml(string fileName) => File.ReadAllText(Path.Combine(TestContext.CurrentContext.TestDirectory, fileName));
 
@@ -175,7 +175,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
             var exitCode = ProcessHelpers.ExecuteFileAndReadOutput(new ProcessExecutionSettings
             {
                 ProcessExePath = Path.Combine(assemblyDirLocation, QpDbUpdateToolPath),
-                Arguments = $@"-s -vvv --disableDataIntegrity --disablePipedInput -m=""xml"" -p={Path.Combine(assemblyDirLocation, filePath)} {TestEnvironmentHelpers.GetSqlDbNameToRunTests}"
+                Arguments = $@"-s -vvv --disableDataIntegrity --disablePipedInput -m=""xml"" -p={Path.Combine(assemblyDirLocation, filePath)} ""{ConnectionString}"""
             }, out var _, out var errorOutput);
 
             if (exitCode != 0)
@@ -223,7 +223,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
             var exitCode = ProcessHelpers.ExecuteFileAndReadOutput(new ProcessExecutionSettings
             {
                 ProcessExePath = Path.Combine(assemblyDirLocation, QpDbUpdateToolPath),
-                Arguments = $"-s -vvv --disableDataIntegrity {TestEnvironmentHelpers.GetSqlDbNameToRunTests}",
+                Arguments = $"-s -vvv --disableDataIntegrity {TestEnvironmentHelpers.SqlDbNameToRunTests}",
                 StandardInputData = standardInputData
             }, out var _, out var errorOutput);
 

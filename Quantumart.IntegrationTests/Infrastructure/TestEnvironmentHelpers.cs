@@ -11,6 +11,6 @@ namespace Quantumart.IntegrationTests.Infrastructure
 
         private static readonly string CiLocalDbName = $"{CiDbNameParamPrefix}{Environment.MachineName.ToLowerInvariant()}";
 
-        internal static string GetSqlDbNameToRunTests => TestContext.Parameters.Get(CiDbNameParam, CiLocalDbName);
+        internal static string SqlDbNameToRunTests => TestContext.Parameters.Get(CiDbNameParam, CiLocalDbName);
     }
 }
