@@ -20,6 +20,14 @@
     <RootNamespace>Quantumart.QPublishing</RootNamespace>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeNugetAssets</TargetsForTfmSpecificBuildOutput>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PackageId>Quantumart</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
+    <PackageId>Quantumart.AspNetCore</PackageId>
+  </PropertyGroup>
   
   <ItemGroup>
     <Reference Include="netstandard" />
