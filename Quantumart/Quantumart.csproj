@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>NET471;netcoreapp2.0</TargetFrameworks>
-    <Version>3.1.1</Version>
+    <Version>3.1.2-beta</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -19,6 +19,14 @@
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
     <RootNamespace>Quantumart.QPublishing</RootNamespace>
     <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeNugetAssets</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <PackageId>Quantumart</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
+    <PackageId>Quantumart.AspNetCore</PackageId>
   </PropertyGroup>
   
   <ItemGroup>
