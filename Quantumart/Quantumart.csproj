@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>NET471;netcoreapp2.0</TargetFrameworks>
-    <Version>3.1.2-beta2</Version>
+    <Version>3.1.2</Version>
     <Authors>Pavel Celut, Alex Kostyukov</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -28,11 +28,11 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
     <PackageId>Quantumart.AspNetCore</PackageId>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Reference Include="netstandard" />
   </ItemGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
     <IncludeSource>True</IncludeSource>
     <IncludeSymbols>True</IncludeSymbols>
