@@ -223,7 +223,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
             var exitCode = ProcessHelpers.ExecuteFileAndReadOutput(new ProcessExecutionSettings
             {
                 ProcessExePath = Path.Combine(assemblyDirLocation, QpDbUpdateToolPath),
-                Arguments = $"-s -vvv --disableDataIntegrity {TestEnvironmentHelpers.SqlDbNameToRunTests}",
+                Arguments = $@"-s -vvv --disableDataIntegrity ""{ConnectionString}""",
                 StandardInputData = standardInputData
             }, out var _, out var errorOutput);
 
