@@ -62,7 +62,7 @@ namespace Quantumart.QPublishing.Database
                 await ImportContentDataAsync(dataDoc, cancellationToken);
 
                 var attrString = string.Join(",", resultAttrs.Select(n => n.Id.ToString()).ToArray());
-                ReplicateData(arrValues, attrString);
+                await ReplicateDataAsync(arrValues, attrString, cancellationToken);
 
                 var manyToManyAttrs = resultAttrs.Where(n => n.Type == AttributeType.Relation && n.LinkId.HasValue).ToArray();
                 if (manyToManyAttrs.Any())

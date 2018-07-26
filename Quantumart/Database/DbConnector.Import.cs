@@ -76,6 +76,12 @@ namespace Quantumart.QPublishing.Database
 
         private void ReplicateData(IEnumerable<Dictionary<string, string>> values, string attrString)
         {
+            var cmd = GetReplicateDataCommand(values, attrString);
+            ProcessData(cmd);
+        }
+
+        private SqlCommand GetReplicateDataCommand(IEnumerable<Dictionary<string, string>> values, string attrString)
+        {
             var cmd = new SqlCommand("qp_replicate_items")
             {
                 CommandType = CommandType.StoredProcedure,
@@ -85,7 +91,7 @@ namespace Quantumart.QPublishing.Database
             var result = string.Join(",", values.Select(n => n[SystemColumnNames.Id]).ToArray());
             cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.NVarChar, -1) { Value = result });
             cmd.Parameters.Add(new SqlParameter("@attr_ids", SqlDbType.NVarChar, -1) { Value = attrString });
-            ProcessData(cmd);
+            return cmd;
         }
 
         private void ImportItemLink(XDocument linkDoc)
