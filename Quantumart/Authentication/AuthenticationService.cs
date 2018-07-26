@@ -16,6 +16,8 @@ else
 
         private const string TokenQuery = "select UserId, ExpirationDate from access_token where $rowguid = @token and Application = @application and getdate() < ExpirationDate";
 
+        private const string SettingsQuery = "select use_tokens from db";
+
         private readonly DBConnector _connector;
 
         public AuthenticationService(DBConnector connector)
@@ -33,6 +35,8 @@ else
             {
                 throw new ArgumentNullException(nameof(application));
             }
+
+            CheckSettings();
 
             var sqlCommand = new SqlCommand(ClearSIDQuery);
             sqlCommand.Parameters.AddWithValue("@sid", sid);
@@ -76,6 +80,8 @@ else
                 throw new ArgumentNullException(nameof(application));
             }
 
+            CheckSettings();
+
             var sqlCommand = new SqlCommand(TokenQuery);
             sqlCommand.Parameters.AddWithValue("@token", token);
             sqlCommand.Parameters.AddWithValue("@application", application);
@@ -96,6 +102,16 @@ else
             }
 
             return null;
+        }
+
+        private void CheckSettings()
+        {
+            var sqlCommand = new SqlCommand(SettingsQuery);
+
+            if (!(bool)_connector.GetRealScalarData(sqlCommand))
+            {
+                throw new AuthenticationException("Option 'Use authentication tokens' must be on");
+            }
         }
     }
 }
