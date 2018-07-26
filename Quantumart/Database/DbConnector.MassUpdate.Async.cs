@@ -21,7 +21,7 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        public async Task MassUpdateASync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task MassUpdateAsync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, CancellationToken cancellationToken = default(CancellationToken))
         {
             await MassUpdateASync(contentId, values, lastModifiedBy, new MassUpdateOptions(), cancellationToken);
         }
