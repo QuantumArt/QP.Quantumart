@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Quantumart.IntegrationTests.Constants;
 using Quantumart.IntegrationTests.Infrastructure;
@@ -50,7 +51,7 @@ namespace Quantumart.IntegrationTests
         }
 
         [Test]
-        public void MassUpdate_SaveNull_ForNull()
+        public void MassUpdate_SaveNull_ForNull([DBConnectorContextValues] IDBConnectorContext context)
         {
             var values = new List<Dictionary<string, string>>();
             var article2 = new Dictionary<string, string>
@@ -64,7 +65,7 @@ namespace Quantumart.IntegrationTests
             };
 
             values.Add(article2);
-            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1));
+            context.MassUpdate(DbConnector, ContentId, values, 1);
             var id2 = int.Parse(article2[FieldName.ContentItemId]);
             var ids = new[] { id2 };
 
@@ -92,7 +93,7 @@ namespace Quantumart.IntegrationTests
             };
 
             values.Add(article3);
-            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1));
+            context.MassUpdate(DbConnector, ContentId, values, 1);
 
             var titleAfter = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var numAfter = Global.GetFieldValues<decimal?>(DbConnector, ContentId, "Number", ids)[0];
@@ -105,7 +106,8 @@ namespace Quantumart.IntegrationTests
             Assert.That(parentAfter, Is.Null);
             Assert.That(dateAfter, Is.Null);
             Assert.That(flagAfter, Is.Null);
-        }
+        }    
+
 
         [Test]
         public void ImportToContent_SaveNull_ForNull()
@@ -164,9 +166,10 @@ namespace Quantumart.IntegrationTests
             Assert.That(dateAfter, Is.Null);
             Assert.That(flagAfter, Is.Null);
         }
+    
 
         [Test]
-        public void MassUpdate_SaveNull_ForEmpty()
+        public void MassUpdate_SaveNull_ForEmpty([DBConnectorContextValues] IDBConnectorContext context)
         {
             var values = new List<Dictionary<string, string>>();
             var article2 = new Dictionary<string, string>
@@ -177,7 +180,7 @@ namespace Quantumart.IntegrationTests
             };
 
             values.Add(article2);
-            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1));
+            context.MassUpdate(DbConnector, ContentId, values, 1);
             var id2 = int.Parse(article2[FieldName.ContentItemId]);
             var ids = new[] { id2 };
 
@@ -190,7 +193,7 @@ namespace Quantumart.IntegrationTests
             };
 
             values.Add(article3);
-            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1));
+            context.MassUpdate(DbConnector, ContentId, values, 1);
 
             var titleAfter = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var numAfter = Global.GetFieldValues<decimal?>(DbConnector, ContentId, "Number", ids)[0];
@@ -198,6 +201,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(titleAfter, Is.Null);
             Assert.That(numAfter, Is.Null);
         }
+
 
         [OneTimeTearDown]
         public static void TearDown()
