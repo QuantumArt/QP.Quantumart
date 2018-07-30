@@ -149,19 +149,7 @@ namespace Quantumart.QPublishing.Database
 
         private void UpdateModified(IEnumerable<Dictionary<string, string>> arrValues, IEnumerable<int> existingIds, int[] newIds, int contentId)
         {
-            var cmd = new SqlCommand
-            {
-                CommandText = $"select content_item_id, Modified from content_{contentId}_united with(nolock) where content_item_id in (select id from @ids)",
-                CommandType = CommandType.Text,
-                Parameters =
-                {
-                    new SqlParameter("@ids", SqlDbType.Structured)
-                    {
-                        TypeName = "Ids",
-                        Value = IdsToDataTable(existingIds.Union(newIds))
-                    }
-                }
-            };
+            var cmd = GetUpdateModifiedCommand(existingIds, newIds, contentId);
 
             var arrModified = GetRealData(cmd)
                 .Select()
@@ -182,7 +170,30 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        private SqlCommand GetUpdateModifiedCommand(IEnumerable<int> existingIds, int[] newIds, int contentId)
+        {
+            return new SqlCommand
+            {
+                CommandText = $"select content_item_id, Modified from content_{contentId}_united with(nolock) where content_item_id in (select id from @ids)",
+                CommandType = CommandType.Text,
+                Parameters =
+                {
+                    new SqlParameter("@ids", SqlDbType.Structured)
+                    {
+                        TypeName = "Ids",
+                        Value = IdsToDataTable(existingIds.Union(newIds))
+                    }
+                }
+            };
+        }
+
         private int[] GetVersionIdsToRemove(int[] ids, int maxNumber)
+        {
+            var cmd = GetVersionIdsToRemoveCommand(ids, maxNumber);           
+            return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
+        }
+
+        private SqlCommand GetVersionIdsToRemoveCommand(int[] ids, int maxNumber)
         {
             var cmd = new SqlCommand(@"  select content_item_version_id from
                 (
@@ -198,7 +209,7 @@ namespace Quantumart.QPublishing.Database
 
             cmd.Parameters.AddWithValue("@maxNumber", maxNumber);
             cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(ids) });
-            return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
+            return cmd;
         }
 
 #if !ASPNETCORE && NET4
@@ -365,6 +376,17 @@ namespace Quantumart.QPublishing.Database
 
         private void ValidateConstraint(XContainer validatedDataDoc, IReadOnlyList<ContentAttribute> attrs)
         {
+            string attrNames;
+            var cmd = GetValidateConstraintCommand(validatedDataDoc, attrs, out attrNames);
+            var conflictIds = GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["CONTENT_ITEM_ID"])).ToArray();
+            if (conflictIds.Any())
+            {
+                throw new QpInvalidAttributeException($"Unique constraint violation for content articles. Fields: {attrNames}. Article IDs: {string.Join(", ", conflictIds.ToArray())}");
+            }
+        }
+
+        private SqlCommand GetValidateConstraintCommand(XContainer validatedDataDoc, IReadOnlyList<ContentAttribute> attrs, out string attrNames)
+        {
             var sb = new StringBuilder();
             var validatedIds = validatedDataDoc
                 .Descendants("ITEM")
@@ -373,7 +395,7 @@ namespace Quantumart.QPublishing.Database
                 .ToArray();
 
             var contentId = attrs[0].ContentId;
-            var attrNames = string.Join(", ", attrs.Select(n => n.Name));
+            attrNames = string.Join(", ", attrs.Select(n => n.Name));
             sb.AppendLine("declare @default_num int, @default_date datetime;");
             sb.AppendLine("set @default_num = -2147483648;");
             sb.AppendLine("set @default_date = getdate();");
@@ -412,11 +434,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = validatedDataDoc.ToString(SaveOptions.None) });
             cmd.Parameters.Add(new SqlParameter("@validatedIds", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(validatedIds) });
 
-            var conflictIds = GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["CONTENT_ITEM_ID"])).ToArray();
-            if (conflictIds.Any())
-            {
-                throw new QpInvalidAttributeException($"Unique constraint violation for content articles. Fields: {attrNames}. Article IDs: {string.Join(", ", conflictIds.ToArray())}");
-            }
+            return cmd;
         }
 
         private XDocument GetMassUpdateContentDataDocument(IEnumerable<Dictionary<string, string>> values, ContentAttribute[] attrs, int[] newIds, Content content, bool replaceUrls)
@@ -506,6 +524,23 @@ namespace Quantumart.QPublishing.Database
 
         private int[] MassUpdateContentItem(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, XDocument doc, bool createVersions)
         {
+            var cmd = GetMassUpdateContentItemCommand(contentId, lastModifiedBy, doc, createVersions);
+
+            var ids = new Queue<int>(GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["ID"])).ToArray());
+            var newIds = ids.ToArray();
+            foreach (var value in values)
+            {
+                if (value[SystemColumnNames.Id] == "0")
+                {
+                    value[SystemColumnNames.Id] = ids.Dequeue().ToString();
+                }
+            }
+
+            return newIds;
+        }
+
+        private SqlCommand GetMassUpdateContentItemCommand(int contentId, int lastModifiedBy, XDocument doc, bool createVersions)
+        {
             var createVersionsString = createVersions
                 ? "exec qp_create_content_item_versions @OldIds, @lastModifiedBy"
                 : string.Empty;
@@ -576,17 +611,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.AddWithValue("@lastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@notForReplication", 1);
 
-            var ids = new Queue<int>(GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["ID"])).ToArray());
-            var newIds = ids.ToArray();
-            foreach (var value in values)
-            {
-                if (value[SystemColumnNames.Id] == "0")
-                {
-                    value[SystemColumnNames.Id] = ids.Dequeue().ToString();
-                }
-            }
-
-            return newIds;
+            return cmd;
         }
     }
 }
