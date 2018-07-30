@@ -23,10 +23,10 @@ namespace Quantumart.QPublishing.Database
     {
         public async Task MassUpdateAsync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, CancellationToken cancellationToken = default(CancellationToken))
         {
-            await MassUpdateASync(contentId, values, lastModifiedBy, new MassUpdateOptions(), cancellationToken);
+            await MassUpdateAsync(contentId, values, lastModifiedBy, new MassUpdateOptions(), cancellationToken);
         }
 
-        public async Task MassUpdateASync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, MassUpdateOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task MassUpdateAsync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, MassUpdateOptions options, CancellationToken cancellationToken = default(CancellationToken))
         {
             var content = GetContentObject(contentId);
             if (content == null)
