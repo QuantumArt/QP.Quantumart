@@ -227,7 +227,7 @@ namespace Quantumart.QPublishing.Database
                 var contentDir = GetContentLibraryDirectory(imageAttr.SiteId, imageAttr.ContentId);
                 foreach (var article in arrValues)
                 {
-                    if (article.TryGetValue(imageAttr.Name, out var image))
+                    if (article.TryGetValue(imageAttr.Name, out var image) && image != null)
                     {
                         var info = new DynamicImageInfo
                         {
