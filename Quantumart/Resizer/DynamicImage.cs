@@ -89,9 +89,16 @@ namespace Quantumart.QPublishing.Resizer
 
         public static string GetDynamicImageRelUrl(string fileName, decimal attributeId, string outFileType)
         {
-            var fileNameParts = fileName.Split('.');
-            fileNameParts[fileNameParts.Length - 1] = outFileType;
-            return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
+            if (fileName == null)
+            {
+                return null;
+            }
+            else
+            {
+                var fileNameParts = fileName.Split('.');
+                fileNameParts[fileNameParts.Length - 1] = outFileType;
+                return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
+            }
         }
 
         private static void CreateFolderForFile(string filePath)

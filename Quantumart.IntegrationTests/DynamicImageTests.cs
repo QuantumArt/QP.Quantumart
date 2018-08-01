@@ -585,7 +585,7 @@ namespace Quantumart.IntegrationTests
 
 #if !ASPNETCORE && NET4
         [Test]
-        public void MassUpdate_DoesntCreateDynamicImages_EmptyBaseImage()
+        public void MassUpdate_DoesntCreateDynamicImages_NotSettedBaseImage()
         {
             var mockDynamicImage = new Mock<IDynamicImage>();
             DbConnector.DynamicImageCreator = mockDynamicImage.Object;
@@ -600,7 +600,34 @@ namespace Quantumart.IntegrationTests
             values.Add(article1);
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Create");
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Update");
-            mockDynamicImage.Verify(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()), Times.Never(), "Shouldn't be called for empty image fields");
+            mockDynamicImage.Verify(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()), Times.Never(), "Shouldn't be called for not setted image fields");
+        }
+
+        [Test]
+        public void MassUpdate_DoesntCreateDynamicImages_NullBaseImage()
+        {
+            var mockDynamicImage = new Mock<IDynamicImage>();
+            DbConnector.DynamicImageCreator = mockDynamicImage.Object;
+            mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()));
+
+            var values = new List<Dictionary<string, string>>();
+            var article1 = new Dictionary<string, string>
+            {
+                [FieldName.ContentItemId] = "0",
+                [ImageName] = null
+            };
+
+            values.Add(article1);
+            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Create");
+            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Update");
+
+            var ids = values.Select(x => int.Parse(x[FieldName.ContentItemId])).ToArray();
+
+            foreach (var dynamicField in new[] { "PngImage", "JpgImage", "GifImage" })
+            {
+                var dynamicValues = Global.GetFieldValues<string>(DbConnector, ContentId, dynamicField, ids);
+                Assert.That(dynamicValues, Is.All.Null);
+            }            
         }
 #endif
 

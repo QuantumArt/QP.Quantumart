@@ -244,7 +244,7 @@ namespace Quantumart.QPublishing.Database
 
 
                         DynamicImageCreator.CreateDynamicImage(info);
-                        article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info.ImageName, info.AttrId, info.FileType);
+                        article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info?.ImageName, info.AttrId, info.FileType);
                     }
                 }
             }
