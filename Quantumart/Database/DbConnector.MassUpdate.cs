@@ -227,7 +227,7 @@ namespace Quantumart.QPublishing.Database
                 var contentDir = GetContentLibraryDirectory(imageAttr.SiteId, imageAttr.ContentId);
                 foreach (var article in arrValues)
                 {
-                    if (article.TryGetValue(imageAttr.Name, out var image) && image != null)
+                    if (article.TryGetValue(imageAttr.Name, out var image))
                     {
                         var info = new DynamicImageInfo
                         {
@@ -244,7 +244,7 @@ namespace Quantumart.QPublishing.Database
 
 
                         DynamicImageCreator.CreateDynamicImage(info);
-                        article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info.ImageName, info.AttrId, info.FileType);
+                        article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info?.ImageName, info.AttrId, info.FileType);
                     }
                 }
             }

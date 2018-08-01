@@ -620,7 +620,14 @@ namespace Quantumart.IntegrationTests
             values.Add(article1);
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Create");
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Update");
-            mockDynamicImage.Verify(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()), Times.Never(), "Shouldn't be called for empty image fields");
+
+            var ids = values.Select(x => int.Parse(x[FieldName.ContentItemId])).ToArray();
+
+            foreach (var dynamicField in new[] { "PngImage", "JpgImage", "GifImage" })
+            {
+                var dynamicValues = Global.GetFieldValues<string>(DbConnector, ContentId, dynamicField, ids);
+                Assert.That(dynamicValues, Is.All.Null);
+            }            
         }
 #endif
 

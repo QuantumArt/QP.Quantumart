@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>NET471;netcoreapp2.0</TargetFrameworks>
-    <Version>3.2.1</Version>
+    <Version>3.2.2</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
