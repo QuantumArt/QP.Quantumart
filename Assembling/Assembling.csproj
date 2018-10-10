@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>NET471</TargetFramework>
+    <TargetFramework>net471</TargetFramework>
     <Configurations>Debug;Release</Configurations>
     <AssemblyName>Quantumart.QP8.Assembling</AssemblyName>
     <RootNamespace>Quantumart.QP8.Assembling</RootNamespace>
