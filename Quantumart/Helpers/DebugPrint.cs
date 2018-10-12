@@ -27,9 +27,12 @@ namespace Quantumart.QPublishing.Helpers
         public string GetSessionString()
         {
             var result = new StringBuilder();
-            foreach (var key in _dbConnector.HttpContext.Session.Keys)
+            if (_dbConnector.HttpContext != null)
             {
-                result.Append(GetElementString(key, _dbConnector.HttpContext.Session.Get(key)));
+                foreach (var key in _dbConnector.HttpContext.Session.Keys)
+                {
+                    result.Append(GetElementString(key, _dbConnector.HttpContext.Session.Get(key)));
+                }
             }
 
             return result.ToString();
@@ -54,13 +57,16 @@ namespace Quantumart.QPublishing.Helpers
         public string GetCookiesString()
         {
             var result = new StringBuilder();
-            foreach (var key in _dbConnector.HttpContext.Request.Cookies.Keys)
+            if (_dbConnector.HttpContext != null)
             {
-                result.Append(key + ": ");
-                var cookie = _dbConnector.HttpContext.Request.Cookies[key];
-                if (cookie != null)
+                foreach (var key in _dbConnector.HttpContext.Request.Cookies.Keys)
                 {
-                    result.Append($"{key}={cookie};<br>");
+                    result.Append(key + ": ");
+                    var cookie = _dbConnector.HttpContext.Request.Cookies[key];
+                    if (cookie != null)
+                    {
+                        result.Append($"{key}={cookie};<br>");
+                    }
                 }
             }
 

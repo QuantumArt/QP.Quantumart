@@ -58,7 +58,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     result = _lastModifiedBy.Value;
                 }
-                else if (HttpContext.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
+                else if (HttpContext?.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
                 {
                     result = (int)HttpContext.Items[LastModifiedByKey];
                 }
@@ -150,6 +150,12 @@ namespace Quantumart.QPublishing.Database
             ExternalTransaction = transaction;
         }
 
+        public DBConnector(string connectionString):
+            this(connectionString, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()), null)
+        {
+
+        }
+
         public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
         {
             if (dbConnectorSettings.ConnectionStrings == null)
@@ -175,7 +181,7 @@ namespace Quantumart.QPublishing.Database
             DynamicImageCreator = new DynamicImage();
 #endif
             DbConnectorSettings = dbConnectorSettings;
-            HttpContext = httpContextAccessor.HttpContext;
+            HttpContext = httpContextAccessor?.HttpContext;
         }
 #else
         public DBConnector()
