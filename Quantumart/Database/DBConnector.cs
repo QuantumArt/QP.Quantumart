@@ -156,6 +156,12 @@ namespace Quantumart.QPublishing.Database
 
         }
 
+         public DBConnector(IDbConnection connection):
+         this(connection, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()), null)
+        {
+
+        }
+
         public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
         {
             if (dbConnectorSettings.ConnectionStrings == null)
