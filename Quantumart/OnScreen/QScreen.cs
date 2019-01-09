@@ -75,10 +75,9 @@ namespace Quantumart.QPublishing.OnScreen
 #endif
         }
 
-        public int AuthenticateForCustomTab(DBConnector cnn)
+        public int AuthenticateForCustomTab(DBConnector cnn, string backendSid)
         {
             var result = 0;
-            var backendSid = GetQueryParameter("backend_sid").Replace("'", "''");
             if (!string.IsNullOrEmpty(backendSid))
             {
                 var sql = $"EXEC sp_executesql N'SELECT user_id from sessions_log WHERE sid = @sid', N'@sid nvarchar(255)', @sid = '{backendSid}'";
@@ -94,17 +93,17 @@ namespace Quantumart.QPublishing.OnScreen
             return result;
         }
 
-#if ASPNETCORE
-        public int AuthenticateForCustomTab() => AuthenticateForCustomTab(_dbConnector);
-#else
-        public int AuthenticateForCustomTab() => AuthenticateForCustomTab(_dbConnector);
-#endif
+        public int AuthenticateForCustomTab(DBConnector cnn)
+        {
+            var backendSid = GetQueryParameter("backend_sid").Replace("'", "''");
+            return AuthenticateForCustomTab(cnn, backendSid);
+        }
 
-#if ASPNETCORE
+        public int AuthenticateForCustomTab() => AuthenticateForCustomTab(_dbConnector);
+
+        public int AuthenticateForCustomTab(string backendSid) => AuthenticateForCustomTab(_dbConnector, backendSid);
+
         public bool CheckCustomTabAuthentication(DBConnector dbConnector)
-#else
-        public bool CheckCustomTabAuthentication(DBConnector dbConnector)
-#endif
         {
             var backendSid = GetQueryParameter("backend_sid").Replace("'", "''");
             if (string.IsNullOrEmpty(backendSid))
