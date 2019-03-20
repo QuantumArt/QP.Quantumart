@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0</TargetFrameworks>
-    <Version>3.3.0</Version>
+    <Version>3.3.1</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -61,11 +61,10 @@
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
+  <ItemGroup Condition="'$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mobile" />
-    <Compile Remove="Database\DbConnectorSettings.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
@@ -85,11 +84,14 @@
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.5.1" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
-    <Compile Remove="Resizer\**" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
     <Compile Remove="**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
   </ItemGroup>
 
 </Project>

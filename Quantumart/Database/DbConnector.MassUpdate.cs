@@ -8,10 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Info;
-
-#if !ASPNETCORE && NET4
 using Quantumart.QPublishing.Resizer;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -30,6 +27,7 @@ namespace Quantumart.QPublishing.Database
         public bool ReturnModified { get; set; }
 
         public bool ReplaceUrls { get; set; }
+
     }
 
     // ReSharper disable once InconsistentNaming
@@ -67,9 +65,7 @@ namespace Quantumart.QPublishing.Database
                 var fullAttrs = GetContentAttributeObjects(contentId).Where(n => n.Type != AttributeType.M2ORelation).ToArray();
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
-#if !ASPNETCORE && NET4
                 CreateDynamicImages(arrValues, fullAttrs);
-#endif
                 ValidateConstraints(arrValues, fullAttrs, content, options.ReplaceUrls);
 
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
@@ -189,7 +185,7 @@ namespace Quantumart.QPublishing.Database
 
         private int[] GetVersionIdsToRemove(int[] ids, int maxNumber)
         {
-            var cmd = GetVersionIdsToRemoveCommand(ids, maxNumber);           
+            var cmd = GetVersionIdsToRemoveCommand(ids, maxNumber);
             return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
         }
 
@@ -212,7 +208,6 @@ namespace Quantumart.QPublishing.Database
             return cmd;
         }
 
-#if !ASPNETCORE && NET4
         private void CreateDynamicImages(Dictionary<string, string>[] arrValues, ContentAttribute[] fullAttrs)
         {
             foreach (var dynImageAttr in fullAttrs.Where(n => n.RelatedImageId.HasValue))
@@ -243,13 +238,12 @@ namespace Quantumart.QPublishing.Database
                         };
 
 
-                        DynamicImageCreator.CreateDynamicImage(info);
+                        DynamicImageCreatorCreator.CreateDynamicImage(info);
                         article[dynImageAttr.Name] = DynamicImage.GetDynamicImageRelUrl(info?.ImageName, info.AttrId, info.FileType);
                     }
                 }
             }
         }
-#endif
 
         private void CreateFilesVersions(IEnumerable<Dictionary<string, string>> values, int[] ids, int contentId)
         {

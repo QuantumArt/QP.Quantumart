@@ -10,10 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Info;
-
-#if !ASPNETCORE && NET4
 using Quantumart.QPublishing.Resizer;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -53,9 +50,8 @@ namespace Quantumart.QPublishing.Database
                 var fullAttrs = GetContentAttributeObjects(contentId).Where(n => n.Type != AttributeType.M2ORelation).ToArray();
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
-#if !ASPNETCORE && NET4
                 CreateDynamicImages(arrValues, fullAttrs);
-#endif
+
                 await ValidateConstraintsAsync(arrValues, fullAttrs, content, options.ReplaceUrls, cancellationToken);
 
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);

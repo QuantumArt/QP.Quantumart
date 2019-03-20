@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
+using Quantumart.QPublishing.Resizer;
 #if ASPNETCORE
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
@@ -23,8 +24,8 @@ using System.Web;
 #endif
 #if !ASPNETCORE && NET4
 using Quantumart.QP8.Assembling;
-using Quantumart.QPublishing.Resizer;
 #endif
+
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -183,9 +184,7 @@ namespace Quantumart.QPublishing.Database
             CustomConnectionString = strConnectionString;
             CacheManager = new DbCacheManager(this, cache);
             FileSystem = new RealFileSystem();
-#if !ASPNETCORE && NET4
-            DynamicImageCreator = new DynamicImage();
-#endif
+            DynamicImageCreatorCreator = new DynamicImageCreatorCreator(FileSystem);
             DbConnectorSettings = dbConnectorSettings;
             HttpContext = httpContextAccessor?.HttpContext;
         }
@@ -206,9 +205,7 @@ namespace Quantumart.QPublishing.Database
             CustomConnectionString = strConnectionString;
             CacheManager = new DbCacheManager(this);
             FileSystem = new RealFileSystem();
-#if !ASPNETCORE && NET4
-            DynamicImageCreator = new DynamicImage();
-#endif
+            DynamicImageCreator = new DynamicImageCreator(FileSystem);
         }
 
         public DBConnector(IDbConnection connection)
@@ -265,9 +262,7 @@ namespace Quantumart.QPublishing.Database
 
         public static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-#if !ASPNETCORE && NET4
-        public IDynamicImage DynamicImageCreator { get; set; }
-#endif
+        public IDynamicImageCreator DynamicImageCreatorCreator { get; set; }
 
         private bool? _isStage;
 

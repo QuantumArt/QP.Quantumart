@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
 
@@ -45,10 +45,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'!='Debug|net471' AND '$(Configuration)|$(TargetFramework)'!='Release|net471'">
-    <Compile Remove="Infrastructure\DynamicImageCopyFile.cs" />
   </ItemGroup>
 
   <ItemGroup>

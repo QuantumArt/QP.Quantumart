@@ -9,13 +9,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
-#if !ASPNETCORE && NET4
 using Quantumart.QPublishing.Resizer;
-#endif
+
 #if !ASPNETCORE
 using System.IO;
 using System.Web;
-
 #endif
 
 // ReSharper disable once CheckNamespace
@@ -233,9 +231,7 @@ namespace Quantumart.QPublishing.Database
             //***********************
             // START *** update process
             //***********************
-#if !ASPNETCORE && NET4
             CreateAllDynamicImages(dynamicImagesList);
-#endif
 
             command.CommandText = sqlStringBuilder.ToString();
 
@@ -605,7 +601,6 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if !ASPNETCORE && NET4
         private void GetDynamicImagesForImage(int attributeId, int contentItemId, string imageName, ICollection<DynamicImageInfo> imagesList)
         {
             var imageAttr = GetContentAttributeObject(attributeId);
@@ -619,7 +614,6 @@ namespace Quantumart.QPublishing.Database
                     AttrId = attr.Id,
                     FileType = attr.DynamicImage.Type,
                     ImageName = imageName,
-                    ArticleId = contentItemId,
                     ImagePath = attrDir,
                     ContentLibraryPath = contentDir,
                     Width = attr.DynamicImage.Width,
@@ -646,11 +640,10 @@ namespace Quantumart.QPublishing.Database
             {
                 if (!string.IsNullOrEmpty(image.ImageName))
                 {
-                    DynamicImageCreator.CreateDynamicImage(image);
+                    DynamicImageCreatorCreator.CreateDynamicImage(image);
                 }
             }
         }
-#endif
 
         public string GetSqlInsertDataWithIdentity(SqlCommand command, string queryString)
         {
@@ -732,11 +725,7 @@ namespace Quantumart.QPublishing.Database
                         oSb.AppendLine(string.Empty);
                         if (attr.Type == AttributeType.Image)
                         {
-#if !ASPNETCORE && NET4
                             GetDynamicImagesForImage(attr.Id, contentItemId, data, dynamicImagesList);
-#else
-                            throw new NotImplementedException("There no functionality to work with images at core version of quantumart.dll");
-#endif
                         }
 
                         if (attr.LinkId.HasValue && UpdateManyToMany)
