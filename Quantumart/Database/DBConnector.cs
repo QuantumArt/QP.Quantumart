@@ -13,16 +13,23 @@ using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
-#if ASPNETCORE
+
+#if ASPNETCORE || NETSTANDARD
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 #else
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Web;
 #endif
-#if !ASPNETCORE && NET4
+
+#if ASPNETCORE
+using Microsoft.AspNetCore.Http;
+#endif
+
+
+
+#if NET4 && !ASPNETCORE
 using Quantumart.QP8.Assembling;
 #endif
 
@@ -49,7 +56,7 @@ namespace Quantumart.QPublishing.Database
 
         private int? _lastModifiedBy;
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
         public int LastModifiedBy
         {
             get
@@ -59,10 +66,12 @@ namespace Quantumart.QPublishing.Database
                 {
                     result = _lastModifiedBy.Value;
                 }
+#if ASPNETCORE
                 else if (HttpContext?.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
                 {
                     result = (int)HttpContext.Items[LastModifiedByKey];
                 }
+#endif
 
                 return result;
             }
@@ -115,13 +124,15 @@ namespace Quantumart.QPublishing.Database
 
 #if ASPNETCORE
         public HttpContext HttpContext { get; }
+#endif
 
+#if ASPNETCORE || NETSTANDARD
         public DbConnectorSettings DbConnectorSettings { get; }
 #else
         public NameValueCollection AppSettings => ConfigurationManager.AppSettings;
 #endif
 
-#if !ASPNETCORE
+#if !ASPNETCORE && !NETSTANDARD
         static DBConnector()
         {
             if (ConfigurationManager.ConnectionStrings["qp_database"] != null)
@@ -184,9 +195,64 @@ namespace Quantumart.QPublishing.Database
             CustomConnectionString = strConnectionString;
             CacheManager = new DbCacheManager(this, cache);
             FileSystem = new RealFileSystem();
-            DynamicImageCreatorCreator = new DynamicImageCreatorCreator(FileSystem);
+            DynamicImageCreator = new DynamicImageCreator(FileSystem);
             DbConnectorSettings = dbConnectorSettings;
             HttpContext = httpContextAccessor?.HttpContext;
+        }
+#elif NETSTANDARD
+        public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
+            : this(dbConnectorSettings.ConnectionString, dbConnectorSettings, cache)
+        {
+        }
+
+
+        public DBConnector(IDbConnection connection, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
+            : this(connection.ConnectionString, dbConnectorSettings, cache)
+        {
+            ExternalConnection = connection;
+        }
+
+        public DBConnector(IDbConnection connection, IDbTransaction transaction, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
+            : this(connection, dbConnectorSettings, cache)
+        {
+            ExternalTransaction = transaction;
+        }
+
+        public DBConnector(string connectionString):
+            this(connectionString, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()))
+        {
+
+        }
+
+         public DBConnector(IDbConnection connection):
+         this(connection, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()))
+        {
+
+        }
+
+        public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
+        {
+            if (dbConnectorSettings.ConnectionStrings == null)
+            {
+                dbConnectorSettings.ConnectionStrings = new Dictionary<string, string>();
+            }
+
+            if (!string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionString))
+            {
+                ConnectionString = dbConnectorSettings.ConnectionString;
+            }
+
+            ThrowNotificationExceptions = true;
+            ForceLocalCache = false;
+            UpdateManyToMany = true;
+            UpdateManyToOne = true;
+            CacheData = true;
+
+            CustomConnectionString = strConnectionString;
+            CacheManager = new DbCacheManager(this, cache);
+            FileSystem = new RealFileSystem();
+            DynamicImageCreator = new DynamicImageCreator(FileSystem);
+            DbConnectorSettings = dbConnectorSettings;
         }
 #else
         public DBConnector()
@@ -262,7 +328,7 @@ namespace Quantumart.QPublishing.Database
 
         public static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public IDynamicImageCreator DynamicImageCreatorCreator { get; set; }
+        public IDynamicImageCreator DynamicImageCreator { get; set; }
 
         private bool? _isStage;
 
@@ -275,7 +341,7 @@ namespace Quantumart.QPublishing.Database
                     return _isStage.Value;
                 }
 
-#if !ASPNETCORE
+#if !ASPNETCORE && !NETSTANDARD
                 if (CacheManager.Page != null)
                 {
                     return CacheManager.Page.IsStage;
@@ -297,6 +363,7 @@ namespace Quantumart.QPublishing.Database
 
         internal string SiteBindingPlaceHolder => "<%#site_url%>";
 
+#if NET4
         public static string GetConnectionString(string customerCode)
         {
             var doc = GetQpConfig();
@@ -340,6 +407,7 @@ namespace Quantumart.QPublishing.Database
 
             throw new InvalidOperationException("Cannot load TempDirectory parameter from QP7 configuration file");
         }
+#endif
 
         public static string GetString(object obj, string defaultValue)
         {
@@ -390,7 +458,7 @@ namespace Quantumart.QPublishing.Database
             result = result.Replace(UploadPlaceHolder, uploadUrl);
             result = result.Replace(UploadBindingPlaceHolder, uploadUrl);
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             var siteUrl = DbConnectorSettings.UseAbsoluteSiteUrl == 1 ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
 #else
             var siteUrl = AppSettings["UseAbsoluteSiteUrl"] == "1" ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
@@ -452,7 +520,7 @@ namespace Quantumart.QPublishing.Database
 
         private SqlTransaction GetActualSqlTransaction() => (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
         public bool CheckIsLive() => DbConnectorSettings.IsLive;
 #else
         public bool CheckIsLive() => AppSettings["isLive"] != "false";

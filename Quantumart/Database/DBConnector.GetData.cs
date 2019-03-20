@@ -153,7 +153,7 @@ namespace Quantumart.QPublishing.Database
 
         public DataTable GetData(string queryString, double cacheInterval) => GetData(queryString, cacheInterval, false);
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
         private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => DbConnectorSettings.CacheGetData == 1
 #else
         private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => AppSettings["CacheGetData"] == "1"

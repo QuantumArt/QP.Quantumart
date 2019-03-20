@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+	  <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
@@ -61,7 +61,7 @@
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mobile" />
@@ -76,7 +76,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.1" PrivateAssets="None" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.0.1" PrivateAssets="None" />
     <PackageReference Include="System.Collections" Version="4.3.0" PrivateAssets="None" />
-    <Compile Remove="Controls\QMobileUserControlBase.cs" />
     <Compile Remove="Controls\**" />
     <Compile Remove="Pages\**" />
   </ItemGroup>
@@ -84,14 +83,16 @@
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.5.1" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" PrivateAssets="None" />    
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
-    <Compile Remove="**" />
+    <Compile Remove="Controls\**" />
+    <Compile Remove="Pages\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" PrivateAssets="None" />
   </ItemGroup>
 
 </Project>

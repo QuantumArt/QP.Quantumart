@@ -1,3 +1,5 @@
+#if ASPNETCORE || NET4
+
 using Quantumart.QPublishing.Database;
 #if ASPNETCORE
 using Microsoft.AspNetCore.Http;
@@ -52,3 +54,4 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
+#endif

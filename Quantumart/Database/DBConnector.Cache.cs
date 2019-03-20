@@ -21,7 +21,7 @@ namespace Quantumart.QPublishing.Database
             return sb.ToString();
         }
 
-#if !ASPNETCORE
+#if !ASPNETCORE && !NETSTANDARD
         internal DataView GetPageObjects(string rowFilter) => GetDataView(CacheManager.PageObjectKey, rowFilter);
 #endif
 
@@ -55,7 +55,7 @@ namespace Quantumart.QPublishing.Database
 
         internal DataView GetPageMapping(string rowFilter) => GetDataView(CacheManager.PageMappingKey, rowFilter);
 
-#if !ASPNETCORE
+#if !ASPNETCORE && !NETSTANDARD
         internal Hashtable GetPageMappingHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageMappingHashKey);
 
         internal Hashtable GetTemplateObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.TemplateObjectHashKey);

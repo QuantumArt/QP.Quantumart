@@ -1,3 +1,4 @@
+#if ASPNETCORE || NET4
 using System;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
@@ -344,3 +345,4 @@ namespace Quantumart.QPublishing.OnScreen
 #endif
     }
 }
+#endif

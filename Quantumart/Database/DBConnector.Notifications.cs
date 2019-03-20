@@ -171,7 +171,7 @@ namespace Quantumart.QPublishing.Database
                 if (!DisableInternalNotifications)
                 {
                     var internalNotifications = notifications.Except(dataRows);
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
                     if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(DbConnectorSettings.MailHost))
 #else
                     if (string.Equals(AppSettings["MailComponent"], "qa_mail", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(AppSettings["MailHost"]))
@@ -195,7 +195,7 @@ namespace Quantumart.QPublishing.Database
                                 var objectId = GetNumInt(notifyRow["OBJECT_ID"]);
                                 var contentId = GetNumInt(notifyRow["CONTENT_ID"]);
                                 var objectFormatId = GetNumInt(notifyRow["FORMAT_ID"]);
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
                                 if (string.Equals(DbConnectorSettings.MailAssemble, "yes", StringComparison.InvariantCultureIgnoreCase))
 #else
                                 if (string.Equals(AppSettings["MailAssemble"], "yes", StringComparison.InvariantCultureIgnoreCase))
@@ -352,7 +352,7 @@ namespace Quantumart.QPublishing.Database
 
         private string GetNotifyDirectory(int siteId)
         {
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             var notifyUrl = GetSiteUrl(siteId, true) + DbConnectorSettings.RelNotifyUrl;
 #else
             var notifyUrl = GetSiteUrl(siteId, true) + AppSettings["RelNotifyUrl"];
@@ -415,7 +415,7 @@ namespace Quantumart.QPublishing.Database
         private string GetAspWrapperUrl(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive)
         {
             var liveString = isLive ? "1" : "0";
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             return $"{GetSiteUrl(siteId, isLive)}{DbConnectorSettings.RelNotifyUrl}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
 #else
             return $"{GetSiteUrl(siteId, isLive)}{AppSettings["RelNotifyUrl"]}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
@@ -504,7 +504,7 @@ namespace Quantumart.QPublishing.Database
             var from = string.Empty;
             if ((bool)notifyRow["FROM_DEFAULT_NAME"])
             {
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
                 fromName = DbConnectorSettings.MailFromName;
 #else
                 fromName = AppSettings["MailFromName"];
@@ -557,7 +557,7 @@ namespace Quantumart.QPublishing.Database
 
         private void SendMail(MailMessage mailMess)
         {
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             var mailHost = DbConnectorSettings.MailHost;
 #else
             var mailHost = AppSettings["MailHost"];
@@ -569,7 +569,7 @@ namespace Quantumart.QPublishing.Database
             }
 
             smtpMail.Host = mailHost;
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             if (!string.IsNullOrEmpty(DbConnectorSettings.MailLogin))
 #else
             if (!string.IsNullOrEmpty(AppSettings["MailLogin"]))
@@ -577,7 +577,7 @@ namespace Quantumart.QPublishing.Database
             {
                 var credentials = new NetworkCredential
                 {
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
                     UserName = DbConnectorSettings.MailLogin,
                     Password = DbConnectorSettings.MailPassword
 #else

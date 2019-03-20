@@ -1054,7 +1054,7 @@ namespace Quantumart.IntegrationTests
             var titleBefore = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var catBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentId, "Published", ref article2, id, true, mainCatId); }, "Update article");
 #else
             var files = (HttpFileCollection)null;
@@ -1092,7 +1092,7 @@ namespace Quantumart.IntegrationTests
             var catBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
             var numBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "Number", ids)[0];
 
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentName, "Published", ref article2, id, false); }, "Update article");
 #else
             var files = (HttpFileCollection)null;

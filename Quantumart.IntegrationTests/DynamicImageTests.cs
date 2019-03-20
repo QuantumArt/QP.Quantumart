@@ -434,7 +434,7 @@ namespace Quantumart.IntegrationTests
         public void MassUpdate_CreateDynamicImages_UpdateBaseImage()
         {
             var mockDynamicImage = new Mock<IDynamicImageCreator>();
-            DbConnector.DynamicImageCreatorCreator = mockDynamicImage.Object;
+            DbConnector.DynamicImageCreator = mockDynamicImage.Object;
 
             var actualImages = new List<DynamicImageInfo>();
             mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>())).Callback<DynamicImageInfo>(info => { actualImages.Add(info); });
@@ -504,7 +504,7 @@ namespace Quantumart.IntegrationTests
         public void AddFormToContent_CreateDynamicImages_ContentHasDynamicImages()
         {
             var mockDynamicImage = new Mock<IDynamicImageCreator>();
-            DbConnector.DynamicImageCreatorCreator = mockDynamicImage.Object;
+            DbConnector.DynamicImageCreator = mockDynamicImage.Object;
 
             var actualImages = new List<DynamicImageInfo>();
             mockDynamicImage
@@ -576,7 +576,7 @@ namespace Quantumart.IntegrationTests
         public void MassUpdate_DoesntCreateDynamicImages_NotSettedBaseImage()
         {
             var mockDynamicImage = new Mock<IDynamicImageCreator>();
-            DbConnector.DynamicImageCreatorCreator = mockDynamicImage.Object;
+            DbConnector.DynamicImageCreator = mockDynamicImage.Object;
             mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()));
 
             var values = new List<Dictionary<string, string>>();
@@ -595,7 +595,7 @@ namespace Quantumart.IntegrationTests
         public void MassUpdate_DoesntCreateDynamicImages_NullBaseImage()
         {
             var mockDynamicImage = new Mock<IDynamicImageCreator>();
-            DbConnector.DynamicImageCreatorCreator = mockDynamicImage.Object;
+            DbConnector.DynamicImageCreator = mockDynamicImage.Object;
             mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()));
 
             var values = new List<Dictionary<string, string>>();
@@ -622,7 +622,7 @@ namespace Quantumart.IntegrationTests
         public static void TestTearDown()
         {
             DbConnector.FileSystem = new FakeFileSystem();
-            DbConnector.DynamicImageCreatorCreator = new FakeDynamicImageCreatorCreator();
+            DbConnector.DynamicImageCreator = new FakeDynamicImageCreator();
         }
 
         [OneTimeTearDown]

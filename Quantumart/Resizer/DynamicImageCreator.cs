@@ -3,11 +3,11 @@ using Quantumart.QPublishing.Info;
 
 namespace Quantumart.QPublishing.Resizer
 {
-    public class DynamicImageCreatorCreator : IDynamicImageCreator
+    public class DynamicImageCreator : IDynamicImageCreator
     {
 
         private readonly IFileSystem _fs;
-        public DynamicImageCreatorCreator(IFileSystem fs)
+        public DynamicImageCreator(IFileSystem fs)
         {
             _fs = fs;
         }
