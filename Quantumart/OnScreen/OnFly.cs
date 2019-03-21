@@ -1,3 +1,4 @@
+#if ASPNETCORE || NET4
 using System;
 using System.Data;
 using System.Globalization;
@@ -323,3 +324,4 @@ namespace Quantumart.QPublishing.OnScreen
         }
     }
 }
+#endif

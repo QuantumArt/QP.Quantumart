@@ -22,6 +22,5 @@ namespace Quantumart.QPublishing.Info
 
         public string DynamicUrl { get; set; }
 
-        public int ArticleId { get; set; }
     }
 }

@@ -1,3 +1,4 @@
+#if ASPNETCORE || NET4
 using System.Web.UI;
 using NUnit.Framework;
 using Quantumart.QPublishing.Database;
@@ -23,3 +24,4 @@ namespace Quantumart.Tests
         }
     }
 }
+#endif

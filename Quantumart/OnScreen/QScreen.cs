@@ -1,3 +1,4 @@
+#if ASPNETCORE || NET4
 using System;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
@@ -69,7 +70,13 @@ namespace Quantumart.QPublishing.OnScreen
         private string GetQueryParameter(string key)
         {
 #if ASPNETCORE
-            return _dbConnector.HttpContext.Request.Query[key];
+            var request = _dbConnector.HttpContext.Request;
+            var value = request.Query[key].ToString();
+            if (string.IsNullOrEmpty(value) && request.Method == "POST")
+            {
+                value = request.Form[key].ToString();
+            }
+            return value;
 #else
             return HttpContext.Current.Request[key] ?? string.Empty;
 #endif
@@ -338,3 +345,4 @@ namespace Quantumart.QPublishing.OnScreen
 #endif
     }
 }
+#endif

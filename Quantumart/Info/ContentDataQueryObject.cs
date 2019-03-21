@@ -161,7 +161,7 @@ namespace Quantumart.QPublishing.Info
             CountSql = $"SELECT cast(COUNT(*) as bigint) FROM {from} WHERE {where}";
 
             var sb = new StringBuilder();
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             if (string.IsNullOrEmpty(DbConnector.DbConnectorSettings.Sql2012ModeDll) || GetCount)
 #else
             if (string.IsNullOrEmpty(DbConnector.AppSettings["Sql2012ModeDll"]) || GetCount)

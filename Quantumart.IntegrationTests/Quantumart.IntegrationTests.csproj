@@ -1,13 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
@@ -21,7 +17,7 @@
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
     <DefineConstants>NETSTANDARD</DefineConstants>
   </PropertyGroup>
 
@@ -45,10 +41,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'!='Debug|net471' AND '$(Configuration)|$(TargetFramework)'!='Release|net471'">
-    <Compile Remove="Infrastructure\DynamicImageCopyFile.cs" />
   </ItemGroup>
 
   <ItemGroup>

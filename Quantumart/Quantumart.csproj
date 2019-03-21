@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0</TargetFrameworks>
-    <Version>3.3.0</Version>
+    <Version>3.3.1</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
+	  <Reference Include="netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release' OR '$(Configuration)'=='Release_AspnetCore'">
@@ -65,7 +65,6 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />
     <Reference Include="System.Web.Mobile" />
-    <Compile Remove="Database\DbConnectorSettings.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
@@ -77,7 +76,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.0.1" PrivateAssets="None" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.0.1" PrivateAssets="None" />
     <PackageReference Include="System.Collections" Version="4.3.0" PrivateAssets="None" />
-    <Compile Remove="Controls\QMobileUserControlBase.cs" />
     <Compile Remove="Controls\**" />
     <Compile Remove="Pages\**" />
   </ItemGroup>
@@ -85,11 +83,16 @@
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.5.1" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
-    <Compile Remove="Resizer\**" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" PrivateAssets="None" />    
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
-    <Compile Remove="**" />
+    <Compile Remove="Controls\**" />
+    <Compile Remove="Pages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0006" PrivateAssets="None" />
   </ItemGroup>
 
 </Project>

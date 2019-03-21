@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -36,6 +37,7 @@ namespace Quantumart.IntegrationTests
 
         public static int[] BaseArticlesIds { get; private set; }
 
+
         [OneTimeSetUp]
         public static void Init()
         {
@@ -52,9 +54,7 @@ namespace Quantumart.IntegrationTests
 #else
             DbConnector = new DBConnector(Global.ConnectionString)
             {
-#if NET4
-                DynamicImageCreator = new FakeDynamicImage(),
-#endif
+                DynamicImageCreator = new FakeDynamicImageCreator(),
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
             };
@@ -98,7 +98,6 @@ namespace Quantumart.IntegrationTests
             Assert.That(paths, Is.SubsetOf(actualPathes), "CreateDirectory calls");
         }
 
-#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CreateVersionDirectory_ContentHasFileFields()
         {
@@ -123,7 +122,6 @@ namespace Quantumart.IntegrationTests
             var paths = Global.GetMaxVersions(DbConnector, ids).Select(n => DbConnector.GetVersionFolderForContent(ContentId, n)).ToArray();
             Assert.That(paths, Is.SubsetOf(actualPathes), "CreateDirectory calls");
         }
-#endif
 
         [Test]
         public void MassUpdate_DoesntCreateVersions_CreateVersionsFalse()
@@ -155,7 +153,6 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CreateDirectory(It.IsAny<string>()), Times.Never(), "No new folders");
         }
 
-#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_CopyFiles_ContentHasFileFields()
         {
@@ -227,9 +224,7 @@ namespace Quantumart.IntegrationTests
 
             Assert.That(list, Has.Member(file5), "Copy new file 2 to version dir without subfolders");
         }
-#endif
 
-#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CopyFiles_ContentHasFileFields()
         {
@@ -293,7 +288,6 @@ namespace Quantumart.IntegrationTests
             Assert.That(list, Has.Member(file3), "Copy new file to current dir without subfolders");
             Assert.That(list, Has.Member(file4), "Copy new file to version dir without subfolders");
         }
-#endif
 
         [Test]
         public void MassUpdate_DoesntCreateVersionDirectory_EmptyFileFields()
@@ -357,7 +351,6 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
         }
 
-#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_DoesntCreateVersionDirectory_DisableVersionControlFields()
         {
@@ -379,7 +372,6 @@ namespace Quantumart.IntegrationTests
             mockFileSystem.Verify(x => x.CreateDirectory(It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
             mockFileSystem.Verify(x => x.CopyFile(It.IsAny<string>(), It.IsAny<string>()), Times.Never(), "Shouldn't be called for disabled versions control fields");
         }
-#endif
 
         [Test]
         public void MassUpdate_RemoveVersionDirectory_VersionOverflow()
@@ -409,7 +401,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(paths, Is.EqualTo(actualPathes), "RemoveDirectory calls");
         }
 
-#if !ASPNETCORE && NET4
+
         [Test]
         public void AddFormToContent_RemoveVersionDirectory_VersionOverflow()
         {
@@ -437,13 +429,11 @@ namespace Quantumart.IntegrationTests
 
             Assert.That(paths, Is.EqualTo(actualPathes), "RemoveDirectory calls");
         }
-#endif
 
-#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_CreateDynamicImages_UpdateBaseImage()
         {
-            var mockDynamicImage = new Mock<IDynamicImage>();
+            var mockDynamicImage = new Mock<IDynamicImageCreator>();
             DbConnector.DynamicImageCreator = mockDynamicImage.Object;
 
             var actualImages = new List<DynamicImageInfo>();
@@ -509,17 +499,17 @@ namespace Quantumart.IntegrationTests
             Assert.That(gifs[0], Is.EqualTo(dbGif1), "Dynamic image value for gif in article 1");
             Assert.That(gifs[1], Is.EqualTo(dbGif2), "Dynamic image value for gif in article 2");
         }
-#endif
 
-#if !ASPNETCORE && NET4
         [Test]
         public void AddFormToContent_CreateDynamicImages_ContentHasDynamicImages()
         {
-            var mockDynamicImage = new Mock<IDynamicImage>();
+            var mockDynamicImage = new Mock<IDynamicImageCreator>();
             DbConnector.DynamicImageCreator = mockDynamicImage.Object;
 
             var actualImages = new List<DynamicImageInfo>();
-            mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>())).Callback<DynamicImageInfo>(info => { actualImages.Add(info); });
+            mockDynamicImage
+                .Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()))
+                .Callback<DynamicImageInfo>(info => { actualImages.Add(info); });
 
             const string name1 = "test789";
             const string name2 = "test321";
@@ -581,13 +571,11 @@ namespace Quantumart.IntegrationTests
             Assert.That(gifs1[0], Is.EqualTo(dbGif1), "Dynamic image value for gif in article 1");
             Assert.That(gifs2[0], Is.EqualTo(dbGif2), "Dynamic image value for gif in article 2");
         }
-#endif
 
-#if !ASPNETCORE && NET4
         [Test]
         public void MassUpdate_DoesntCreateDynamicImages_NotSettedBaseImage()
         {
-            var mockDynamicImage = new Mock<IDynamicImage>();
+            var mockDynamicImage = new Mock<IDynamicImageCreator>();
             DbConnector.DynamicImageCreator = mockDynamicImage.Object;
             mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()));
 
@@ -606,7 +594,7 @@ namespace Quantumart.IntegrationTests
         [Test]
         public void MassUpdate_DoesntCreateDynamicImages_NullBaseImage()
         {
-            var mockDynamicImage = new Mock<IDynamicImage>();
+            var mockDynamicImage = new Mock<IDynamicImageCreator>();
             DbConnector.DynamicImageCreator = mockDynamicImage.Object;
             mockDynamicImage.Setup(x => x.CreateDynamicImage(It.IsAny<DynamicImageInfo>()));
 
@@ -627,17 +615,14 @@ namespace Quantumart.IntegrationTests
             {
                 var dynamicValues = Global.GetFieldValues<string>(DbConnector, ContentId, dynamicField, ids);
                 Assert.That(dynamicValues, Is.All.Null);
-            }            
+            }
         }
-#endif
 
         [TearDown]
         public static void TestTearDown()
         {
             DbConnector.FileSystem = new FakeFileSystem();
-#if !ASPNETCORE && NET4
-            DbConnector.DynamicImageCreator = new FakeDynamicImage();
-#endif
+            DbConnector.DynamicImageCreator = new FakeDynamicImageCreator();
         }
 
         [OneTimeTearDown]

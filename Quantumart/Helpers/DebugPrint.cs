@@ -1,3 +1,4 @@
+#if ASPNETCORE || NET4
 using System.Collections;
 using System.Text;
 #if ASPNETCORE
@@ -116,3 +117,4 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
+#endif

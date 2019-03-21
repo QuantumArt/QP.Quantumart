@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
 
@@ -20,7 +20,7 @@
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
     <DefineConstants>NETSTANDARD</DefineConstants>
   </PropertyGroup>
 

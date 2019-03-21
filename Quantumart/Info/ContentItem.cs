@@ -9,7 +9,11 @@ using System.Text;
 using System.Xml.Linq;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
+
+#if ASPNETCORE || NET4
 using Quantumart.QPublishing.OnScreen;
+#endif
+
 #if !ASPNETCORE
 using System.Web;
 
@@ -369,12 +373,12 @@ namespace Quantumart.QPublishing.Info
                 values.Add(_dbConnector.FieldName(attr.Id), value);
             }
 
-#if !ASPNETCORE
+#if !ASPNETCORE && !NETSTANDARD
             HttpFileCollection files = null;
 #endif
             var modified = DateTime.MinValue;
             var notificationEvent = IsNew ? NotificationEvent.Create : NotificationEvent.Modify;
-#if ASPNETCORE
+#if ASPNETCORE || NETSTANDARD
             Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
 #else
             Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, ref files, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
@@ -389,12 +393,14 @@ namespace Quantumart.QPublishing.Info
 
         public void LoadLastModifiedFromCustomTab()
         {
+#if ASPNETCORE || NET4
             var qscreen = new QScreen(_dbConnector);
             var id = qscreen.GetCustomTabUserId();
             if (id != 0)
             {
                 LastModifiedBy = id;
             }
+#endif
         }
 
         internal XDocument GetXDocument()

@@ -1,3 +1,4 @@
+#if NET4
 using System;
 using System.Collections;
 using System.Data;
@@ -102,3 +103,4 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
+#endif
