@@ -932,7 +932,7 @@ namespace Quantumart.QPublishing.Database
 
         private Hashtable FillSiteHashTable()
         {
-            var dt = DbConnector.GetRealData("SELECT SITE_NAME, SITE_ID, DNS, STAGE_DNS, LIVE_DIRECTORY, STAGE_DIRECTORY, ASSEMBLY_PATH, STAGE_ASSEMBLY_PATH, UPLOAD_DIR, TEST_DIRECTORY, UPLOAD_URL, UPLOAD_URL_PREFIX, LIVE_VIRTUAL_ROOT, STAGE_VIRTUAL_ROOT, STAGE_EDIT_FIELD_BORDER, ASSEMBLE_FORMATS_IN_LIVE, USE_ABSOLUTE_UPLOAD_URL, ALLOW_USER_SESSIONS, IS_LIVE, SCRIPT_LANGUAGE, CONTEXT_CLASS_NAME, ENABLE_ONSCREEN FROM SITE");
+            var dt = DbConnector.GetRealData("SELECT SITE_NAME, SITE_ID, DNS, STAGE_DNS, LIVE_DIRECTORY, STAGE_DIRECTORY, ASSEMBLY_PATH, STAGE_ASSEMBLY_PATH, UPLOAD_DIR, TEST_DIRECTORY, UPLOAD_URL, UPLOAD_URL_PREFIX, LIVE_VIRTUAL_ROOT, STAGE_VIRTUAL_ROOT, STAGE_EDIT_FIELD_BORDER, ASSEMBLE_FORMATS_IN_LIVE, USE_ABSOLUTE_UPLOAD_URL, ALLOW_USER_SESSIONS, IS_LIVE, SCRIPT_LANGUAGE, CONTEXT_CLASS_NAME, ENABLE_ONSCREEN, REPLACE_URLS_IN_DB FROM SITE");
             var sites = new Hashtable(dt.Rows.Count);
             foreach (DataRow row in dt.Rows)
             {
@@ -959,7 +959,8 @@ namespace Quantumart.QPublishing.Database
                     ContextClassName = DBConnector.GetString(row["CONTEXT_CLASS_NAME"], "QPDataContext"),
                     IsLive = row["IS_LIVE"].ToString() == "1",
                     ScriptLanguage = row["SCRIPT_LANGUAGE"].ToString(),
-                    EnableOnScreen = (bool)row["ENABLE_ONSCREEN"]
+                    EnableOnScreen = (bool)row["ENABLE_ONSCREEN"],
+                    ReplaceUrlsInDB = (bool)row["REPLACE_URLS_IN_DB"]
                 };
             }
 

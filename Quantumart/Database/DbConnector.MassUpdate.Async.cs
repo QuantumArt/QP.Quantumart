@@ -51,6 +51,8 @@ namespace Quantumart.QPublishing.Database
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
                 CreateDynamicImages(arrValues, fullAttrs);
+                
+                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
 
                 await ValidateConstraintsAsync(arrValues, fullAttrs, content, options.ReplaceUrls, cancellationToken);
 

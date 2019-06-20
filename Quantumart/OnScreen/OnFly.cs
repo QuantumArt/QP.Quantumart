@@ -68,7 +68,7 @@ namespace Quantumart.QPublishing.OnScreen
             return functionReturnValue;
         }
 
-        public string UpdateArticle(int itemId, string attrName, string uploadUrl, string siteUrl, string attrValue)
+        public string UpdateArticle(int itemId, string attrName, string uploadUrl, string siteUrl, string attrValue, bool replaceUrlsInDB = false)
         {
             var uid = (int)GetUid();
             if (uid == 0)
@@ -141,8 +141,13 @@ namespace Quantumart.QPublishing.OnScreen
                     uploadUrl = HttpContext.Current.Server.UrlDecode(uploadUrl);
                     siteUrl = HttpContext.Current.Server.UrlDecode(siteUrl);
 #endif
-                    attrValue = attrValue.Replace(uploadUrl ?? throw new ArgumentNullException(nameof(uploadUrl)), "<" + "%=upload_url%" + ">");
-                    attrValue = attrValue.Replace(siteUrl ?? throw new ArgumentNullException(nameof(siteUrl)), "<" + "%=site_url%" + ">");
+
+                    if (replaceUrlsInDB)
+                    {
+                        attrValue = attrValue.Replace(uploadUrl ?? throw new ArgumentNullException(nameof(uploadUrl)), "<" + "%=upload_url%" + ">");
+                        attrValue = attrValue.Replace(siteUrl ?? throw new ArgumentNullException(nameof(siteUrl)), "<" + "%=site_url%" + ">");
+                    }
+                    
                     dataField = "BLOB_DATA";
                 }
                 else

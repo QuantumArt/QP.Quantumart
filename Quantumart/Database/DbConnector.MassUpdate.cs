@@ -66,6 +66,9 @@ namespace Quantumart.QPublishing.Database
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
                 CreateDynamicImages(arrValues, fullAttrs);
+
+                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
+
                 ValidateConstraints(arrValues, fullAttrs, content, options.ReplaceUrls);
 
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
