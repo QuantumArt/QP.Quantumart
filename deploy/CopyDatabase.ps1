@@ -19,6 +19,8 @@ param(
   [Bool] $isDebug = $false
 )
 
+Import-Module SqlServer
+
 $uniqueDestinationDbName = $destinationDbName + $uniqueId
 $uniqueBakPath = $backupFolderPhysicalPath + $backupFileNamePhysicalPath + $uniqueId + '.bak'
 $uniqueMdfPath = $backupFolderPhysicalPath + $backupFileNamePhysicalPath + $uniqueId + '.mdf'
@@ -71,4 +73,4 @@ if ($isDebug) {
   Write-Output $queryToRun
 }
 
-sqlcmd -S $serverInstance -b -Q $queryToRun -U $sqlUserId -P $sqlPassword
+Invoke-Sqlcmd -ServerInstance $serverInstance -Query $queryToRun -Username $sqlUserId -Password $sqlPassword
