@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0</TargetFrameworks>
-    <Version>3.3.4-beta1</Version>
+    <Version>3.4.0</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -83,7 +83,7 @@
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="System.Data.SqlClient" Version="4.5.1" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" PrivateAssets="None" />    
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" PrivateAssets="None" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
