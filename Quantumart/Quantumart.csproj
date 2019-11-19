@@ -61,6 +61,11 @@
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='Release_AspnetCore'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web" />

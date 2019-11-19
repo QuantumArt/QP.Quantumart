@@ -72,7 +72,7 @@ namespace Quantumart.QPublishing.OnScreen
 #if ASPNETCORE
             var request = _dbConnector.HttpContext.Request;
             var value = request.Query[key].ToString();
-            if (string.IsNullOrEmpty(value) && request.Method == "POST")
+            if (string.IsNullOrEmpty(value) && request.HasFormContentType)
             {
                 value = request.Form[key].ToString();
             }

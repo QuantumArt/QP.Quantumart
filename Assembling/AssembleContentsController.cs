@@ -470,15 +470,14 @@ namespace Quantumart.QP8.Assembling
         private string GenerateCommandLineParams(FileNameHelper helper)
         {
             var cmdBuilder = new StringBuilder();
-            cmdBuilder.AppendFormat("{0} ", helper.DbmlFilePath);
-            cmdBuilder.AppendFormat("/code:{0} ", helper.MainCodeFilePath);
+            cmdBuilder.Append($@"""{helper.DbmlFilePath}"" /code:""{helper.MainCodeFilePath}"" ");
             if (ProceedDbIndependentGeneration)
             {
-                cmdBuilder.AppendFormat("/map:{0} ", helper.MapFilePath);
+                cmdBuilder.Append($@"/map:""{helper.MapFilePath}"" ");
             }
             if (!string.IsNullOrEmpty(NameSpace))
             {
-                cmdBuilder.AppendFormat("/namespace:{0} ", NameSpace);
+                cmdBuilder.Append($@"/namespace:{NameSpace} ");
             }
             return cmdBuilder.ToString();
         }
