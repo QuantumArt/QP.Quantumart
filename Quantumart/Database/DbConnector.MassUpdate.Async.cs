@@ -20,7 +20,7 @@ namespace Quantumart.QPublishing.Database
     {
         public async Task MassUpdateAsync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, CancellationToken cancellationToken = default(CancellationToken))
         {
-            await MassUpdateAsync(contentId, values, lastModifiedBy, new MassUpdateOptions(), cancellationToken);
+            await MassUpdateAsync(contentId, values, lastModifiedBy, new MassUpdateOptions() {IsDefault = true}, cancellationToken);
         }
 
         public async Task MassUpdateAsync(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, MassUpdateOptions options, CancellationToken cancellationToken = default(CancellationToken))
@@ -34,6 +34,11 @@ namespace Quantumart.QPublishing.Database
             if (content.VirtualType > 0)
             {
                 throw new Exception($"Cannot modify virtual content (ID = {contentId})");
+            }
+
+            if (options.IsDefault)
+            {
+                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
             }
 
             var arrValues = values as Dictionary<string, string>[] ?? values.ToArray();
@@ -51,8 +56,6 @@ namespace Quantumart.QPublishing.Database
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
                 CreateDynamicImages(arrValues, fullAttrs);
-                
-                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
 
                 await ValidateConstraintsAsync(arrValues, fullAttrs, content, options.ReplaceUrls, cancellationToken);
 

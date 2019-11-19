@@ -20,7 +20,10 @@ namespace Quantumart.QPublishing.Database
             CreateVersions = true;
             ReturnModified = true;
             ReplaceUrls = true;
+            IsDefault = false;
         }
+
+        public bool IsDefault { get; set; }
 
         public bool CreateVersions { get; set; }
 
@@ -35,7 +38,7 @@ namespace Quantumart.QPublishing.Database
     {
         public void MassUpdate(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy)
         {
-            MassUpdate(contentId, values, lastModifiedBy, new MassUpdateOptions());
+            MassUpdate(contentId, values, lastModifiedBy, new MassUpdateOptions() { IsDefault = true });
         }
 
         public void MassUpdate(int contentId, IEnumerable<Dictionary<string, string>> values, int lastModifiedBy, MassUpdateOptions options)
@@ -51,6 +54,11 @@ namespace Quantumart.QPublishing.Database
                 throw new Exception($"Cannot modify virtual content (ID = {contentId})");
             }
 
+            if (options.IsDefault)
+            {
+                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
+            }
+
             var arrValues = values as Dictionary<string, string>[] ?? values.ToArray();
             var existingIds = arrValues.Select(n => int.Parse(n[SystemColumnNames.Id])).Where(n => n != 0).ToArray();
             var versionIdsToRemove = GetVersionIdsToRemove(existingIds, content.MaxVersionNumber);
@@ -61,13 +69,10 @@ namespace Quantumart.QPublishing.Database
             {
                 var doc = GetImportContentItemDocument(arrValues, content);
                 var newIds = MassUpdateContentItem(contentId, arrValues, lastModifiedBy, doc, createVersions);
-
                 var fullAttrs = GetContentAttributeObjects(contentId).Where(n => n.Type != AttributeType.M2ORelation).ToArray();
                 var resultAttrs = GetResultAttrs(arrValues, fullAttrs, newIds);
 
                 CreateDynamicImages(arrValues, fullAttrs);
-
-                options.ReplaceUrls = GetReplaceUrlsInDB(content.SiteId);
 
                 ValidateConstraints(arrValues, fullAttrs, content, options.ReplaceUrls);
 
