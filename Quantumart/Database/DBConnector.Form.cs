@@ -690,6 +690,7 @@ namespace Quantumart.QPublishing.Database
             var longUploadUrl = GetImagesUploadUrl(siteId);
             var longSiteLiveUrl = GetSiteUrl(siteId, true);
             var longSiteStageUrl = GetSiteUrl(siteId, false);
+            var replaceUrlsInDB = GetReplaceUrlsInDB(siteId);
             if (UpdateManyToOne)
             {
                 oSb.AppendLine("create table #resultIds (id numeric, attribute_id numeric not null, to_remove bit not null default 0);");
@@ -702,7 +703,7 @@ namespace Quantumart.QPublishing.Database
                 var data = dataValues[inputName];
                 if (updateEmpty || !IsEmptyData(data))
                 {
-                    if (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit)
+                    if (replaceUrlsInDB && (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit))
                     {
                         data = data
                             .Replace(longUploadUrl, UploadPlaceHolder)

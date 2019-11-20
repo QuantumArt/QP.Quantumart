@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0</TargetFrameworks>
-    <Version>3.3.5</Version>
+    <Version>3.4.0</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>

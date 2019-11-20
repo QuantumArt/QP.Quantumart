@@ -45,5 +45,7 @@ namespace Quantumart.QPublishing.Info
         public bool AllowUserSessions { get; set; }
 
         public bool EnableOnScreen { get; set; }
+
+        public bool ReplaceUrlsInDB { get; set; }
     }
 }

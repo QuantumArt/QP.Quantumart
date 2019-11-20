@@ -915,7 +915,26 @@ namespace Quantumart.IntegrationTests
         }
 
         [Test]
-        public void MassUpdate_WithUrlsAndReplaceUrlsDefault_ReplaceUrls()
+        public void MassUpdate_WithUrlsAndReplaceUrlsTrue_ReplaceUrls()
+        {
+            var values = new List<Dictionary<string, string>>();
+            var article1 = new Dictionary<string, string>
+            {
+                [FieldName.ContentItemId] = "0",
+                ["Description"] = $@"<a href=""{DbConnector.GetImagesUploadUrl(Global.SiteId)}"">test</a>"
+            };
+
+            values.Add(article1);
+            Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1, new MassUpdateOptions { ReplaceUrls = true }), "Add article");
+
+            var id = int.Parse(values[0][FieldName.ContentItemId]);
+            var ids = new[] { id };
+            var desc = Global.GetFieldValues<string>(DbConnector, ContentId, "Description", ids)[0];
+            Assert.That(desc, Does.Contain(@"<%=upload_url%>"));
+        }
+
+        [Test]
+        public void MassUpdate_WithUrlsAndReplaceUrlsDefault_DependsOnSiteProps()
         {
             var values = new List<Dictionary<string, string>>();
             var article1 = new Dictionary<string, string>
@@ -926,11 +945,12 @@ namespace Quantumart.IntegrationTests
 
             values.Add(article1);
             Assert.DoesNotThrow(() => DbConnector.MassUpdate(ContentId, values, 1), "Add article");
+            var replace = DbConnector.GetReplaceUrlsInDB(Global.SiteId);
 
             var id = int.Parse(values[0][FieldName.ContentItemId]);
             var ids = new[] { id };
             var desc = Global.GetFieldValues<string>(DbConnector, ContentId, "Description", ids)[0];
-            Assert.That(desc, Does.Contain(@"<%=upload_url%>"));
+            Assert.That(desc, replace ? Does.Contain(@"<%=upload_url%>") : Does.Not.Contain(@"<%=upload_url%>"));
         }
 
         [Test]

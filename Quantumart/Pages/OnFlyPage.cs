@@ -17,7 +17,7 @@ namespace Quantumart.QPublishing.Pages
         public string DecreaseStatus(string itemId) => new OnFly(_dbConnector).DecreaseStatus(int.Parse(itemId));
 
         [RemoteScriptingMethod]
-        public string UpdateArticle(string itemId, string attrName, string uploadUrl, string siteUrl, string attrValue) => new OnFly(_dbConnector).UpdateArticle(int.Parse(itemId), attrName, uploadUrl, siteUrl, attrValue);
+        public string UpdateArticle(string itemId, string attrName, string uploadUrl, string siteUrl, string attrValue, bool replaceUrlsInDB = false) => new OnFly(_dbConnector).UpdateArticle(int.Parse(itemId), attrName, uploadUrl, siteUrl, attrValue, replaceUrlsInDB);
 
         [RemoteScriptingMethod]
         public string CreateLikeArticle(string itemId, string contentId, string siteId) => new OnFly(_dbConnector).CreateLikeArticle(int.Parse(itemId), int.Parse(contentId), int.Parse(siteId));

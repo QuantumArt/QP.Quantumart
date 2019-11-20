@@ -463,6 +463,8 @@ namespace Quantumart.QPublishing.Database
 #else
             var siteUrl = AppSettings["UseAbsoluteSiteUrl"] == "1" ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
 #endif
+
+
             result = result.Replace(SitePlaceHolder, siteUrl);
             result = result.Replace(SiteBindingPlaceHolder, siteUrl);
 
@@ -533,6 +535,8 @@ namespace Quantumart.QPublishing.Database
         public bool GetAllowUserSessions(int siteId) => GetSite(siteId)?.AllowUserSessions ?? true;
 
         public bool GetEnableOnScreen(int siteId) => GetSite(siteId)?.EnableOnScreen ?? false;
+
+        public bool GetReplaceUrlsInDB(int siteId) => GetSite(siteId)?.ReplaceUrlsInDB ?? false;
 
         public void CopyArticleSchedule(int fromArticleId, int toArticleId)
         {
