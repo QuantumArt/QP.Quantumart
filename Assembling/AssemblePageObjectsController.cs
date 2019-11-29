@@ -1,4 +1,5 @@
 using System.Data;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -35,7 +36,7 @@ namespace Quantumart.QP8.Assembling
         }
 
         public AssemblePageObjectsController(int pageId, string connectionParameter)
-            : base(connectionParameter)
+            : base(connectionParameter, DatabaseType.SqlServer)
         {
             FillController(pageId);
         }

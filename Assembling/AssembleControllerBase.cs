@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -50,19 +51,19 @@ namespace Quantumart.QP8.Assembling
             IsDbConnected = true;
         }
 
-        protected AssembleControllerBase(string connectionParameter)
+        protected AssembleControllerBase(string connectionParameter, DatabaseType dbType)
         {
-            FillController(connectionParameter, false);
+            FillController(connectionParameter, false, dbType);
         }
 
-        protected AssembleControllerBase(string connectionParameter, bool isCustomerCode)
+        protected AssembleControllerBase(string connectionParameter, bool isCustomerCode, DatabaseType dbType)
         {
-            FillController(connectionParameter, isCustomerCode);
+            FillController(connectionParameter, isCustomerCode, dbType);
         }
 
-        private void FillController(string connectionParameter, bool isCustomerCode)
+        private void FillController(string connectionParameter, bool isCustomerCode, DatabaseType dbType)
         {
-            Cnn = new DbConnector(connectionParameter, isCustomerCode);
+            Cnn = new DbConnector(connectionParameter, isCustomerCode, dbType);
             IsDbConnected = true;
         }
 
@@ -82,12 +83,12 @@ namespace Quantumart.QP8.Assembling
 
         protected static void CreateFolder(string path)
         {
-            var pathFragments = path.Split('\\');
+            var pathFragments = path.Split(Path.DirectorySeparatorChar);
             var sb = new StringBuilder();
             foreach (var fragment in pathFragments)
             {
                 sb.Append(fragment);
-                sb.Append(@"\");
+                sb.Append(Path.DirectorySeparatorChar);
                 if (!fragment.EndsWith(":", StringComparison.OrdinalIgnoreCase))
                 {
                     var currentPath = sb.ToString();

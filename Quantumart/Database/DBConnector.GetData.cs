@@ -1,11 +1,10 @@
 using System;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using Quantumart.QPublishing.Info;
-#if NET4
-using System.Diagnostics;
-#endif
+using NLog.Fluent;
 #if !ASPNETCORE && NET4
 using System.Web.Caching;
 #endif
@@ -20,7 +19,7 @@ namespace Quantumart.QPublishing.Database
         {
             var dataset = new DataSet();
             var arr = queryString.Split(';');
-            var connection = GetActualSqlConnection();
+            var connection = GetActualConnection();
 
             try
             {
@@ -29,12 +28,11 @@ namespace Quantumart.QPublishing.Database
                     connection.Open();
                 }
 
-                var adapter = new SqlDataAdapter { AcceptChangesDuringFill = false };
+                var adapter = CreateDbAdapter();
+                adapter.AcceptChangesDuringFill = false;
                 dataset.EnforceConstraints = false;
-                adapter.SelectCommand = new SqlCommand(queryString, connection)
-                {
-                    Transaction = GetActualSqlTransaction()
-                };
+                adapter.SelectCommand = CreateDbCommand(queryString, connection);
+                adapter.SelectCommand.Transaction = GetActualTransaction();
 
                 int i;
                 for (i = arr.GetLowerBound(0); i <= arr.GetUpperBound(0); i++)
@@ -57,7 +55,7 @@ namespace Quantumart.QPublishing.Database
             }
             finally
             {
-                if (NeedToDisposeActualSqlConnection)
+                if (NeedToDisposeActualConnection)
                 {
                     connection.Dispose();
                 }
@@ -66,13 +64,13 @@ namespace Quantumart.QPublishing.Database
 
         public DataTable GetRealData(string queryString)
         {
-            var cmd = new SqlCommand(queryString);
+            var cmd = CreateDbCommand(queryString);
             return GetRealData(cmd);
         }
 
-        public DataTable GetRealData(SqlCommand cmd) => GetRealData(cmd, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection);
+        public DataTable GetRealData(DbCommand cmd) => GetRealData(cmd, GetActualConnection(), GetActualTransaction(), NeedToDisposeActualConnection);
 
-        public DataTable GetRealData(SqlCommand cmd, SqlConnection cn, SqlTransaction tr, bool disposeConnection)
+        public DataTable GetRealData(DbCommand cmd, DbConnection cn, DbTransaction tr, bool disposeConnection)
         {
             try
             {
@@ -83,10 +81,9 @@ namespace Quantumart.QPublishing.Database
 
                 cmd.Connection = cn;
                 cmd.Transaction = tr;
-                var adapter = new SqlDataAdapter
-                {
-                    SelectCommand = cmd
-                };
+
+                var adapter = CreateDbAdapter();
+                adapter.SelectCommand = cmd;
 
                 return GetFilledDataTable(adapter);
             }
@@ -102,7 +99,7 @@ namespace Quantumart.QPublishing.Database
 #if !ASPNETCORE && NET4
         public DataTable GetRealDataWithDependency(string queryString, ref SqlCacheDependency dependency)
         {
-            var connection = GetActualSqlConnection();
+            var connection = GetActualConnection();
             try
             {
                 if (connection.State == ConnectionState.Closed)
@@ -110,15 +107,16 @@ namespace Quantumart.QPublishing.Database
                     connection.Open();
                 }
 
-                var adapter = new SqlDataAdapter();
-                var cmd = new SqlCommand(queryString, connection) { Transaction = GetActualSqlTransaction() };
-                dependency = new SqlCacheDependency(cmd);
+                var adapter = CreateDbAdapter();
+                var cmd = CreateDbCommand(queryString, connection);
+                cmd.Transaction = GetActualTransaction();
+                dependency = new SqlCacheDependency((SqlCommand)cmd);
                 adapter.SelectCommand = cmd;
                 return GetFilledDataTable(adapter);
             }
             finally
             {
-                if (NeedToDisposeActualSqlConnection)
+                if (NeedToDisposeActualConnection)
                 {
                     connection.Dispose();
                 }
@@ -126,9 +124,9 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-        public object GetRealScalarData(SqlCommand command)
+        public object GetRealScalarData(DbCommand command)
         {
-            var connection = GetActualSqlConnection();
+            var connection = GetActualConnection();
             try
             {
                 if (connection.State == ConnectionState.Closed)
@@ -137,12 +135,12 @@ namespace Quantumart.QPublishing.Database
                 }
 
                 command.Connection = connection;
-                command.Transaction = GetActualSqlTransaction();
+                command.Transaction = GetActualTransaction();
                 return command.ExecuteScalar();
             }
             finally
             {
-                if (NeedToDisposeActualSqlConnection)
+                if (NeedToDisposeActualConnection)
                 {
                     connection.Dispose();
                 }
@@ -153,11 +151,8 @@ namespace Quantumart.QPublishing.Database
 
         public DataTable GetData(string queryString, double cacheInterval) => GetData(queryString, cacheInterval, false);
 
-#if ASPNETCORE || NETSTANDARD
-        private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => DbConnectorSettings.CacheGetData == 1
-#else
-        private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => AppSettings["CacheGetData"] == "1"
-#endif
+        private DataTable GetData(string queryString, double cacheInterval, bool useDefaultInterval) => DbConnectorSettings.CacheGetData
+
             ? GetCachedData(queryString, cacheInterval, useDefaultInterval)
             : GetRealData(queryString);
 
@@ -183,12 +178,8 @@ namespace Quantumart.QPublishing.Database
         public string GetSecuritySql(int contentId, long userId, long groupId, long startLevel, long endLevel)
         {
             string result;
-            var cmd = new SqlCommand
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandText = "qp_GetPermittedItemsAsQuery"
-            };
-
+            var cmd = CreateDbCommand("qp_GetPermittedItemsAsQuery");
+            cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.Add(new SqlParameter("@user_id", SqlDbType.Decimal) { Value = userId });
             cmd.Parameters.Add(new SqlParameter("@group_id", SqlDbType.Decimal) { Value = groupId });
             cmd.Parameters.Add(new SqlParameter("@start_level", SqlDbType.Int) { Value = startLevel });
@@ -198,7 +189,7 @@ namespace Quantumart.QPublishing.Database
             cmd.Parameters.Add(new SqlParameter("@parent_entity_id", SqlDbType.Decimal) { Value = contentId });
             cmd.Parameters.Add(new SqlParameter("@SQLOut", SqlDbType.NVarChar, -1) { Direction = ParameterDirection.Output });
 
-            var connection = GetActualSqlConnection();
+            var connection = GetActualConnection();
             try
             {
                 if (connection.State == ConnectionState.Closed)
@@ -212,7 +203,7 @@ namespace Quantumart.QPublishing.Database
             }
             finally
             {
-                if (NeedToDisposeActualSqlConnection)
+                if (NeedToDisposeActualConnection)
                 {
                     connection.Dispose();
                 }
@@ -240,10 +231,10 @@ namespace Quantumart.QPublishing.Database
 
         internal QueryResult GetFilledDataTable(IQueryObject obj)
         {
-            var adapter = new SqlDataAdapter();
-            var cmd = obj.GetSqlCommand();
+            var adapter = CreateDbAdapter();
+            var cmd = obj.GetDbCommand();
             adapter.SelectCommand = cmd;
-            var cnn = GetActualSqlConnection(obj.DbConnector.InstanceConnectionString);
+            var cnn = GetActualConnection(obj.DbConnector.InstanceConnectionString);
             try
             {
                 if (cnn.State == ConnectionState.Closed)
@@ -251,7 +242,7 @@ namespace Quantumart.QPublishing.Database
                     cnn.Open();
                 }
                 adapter.SelectCommand.Connection = cnn;
-                adapter.SelectCommand.Transaction = GetActualSqlTransaction();
+                adapter.SelectCommand.Transaction = GetActualTransaction();
                 var result = GetFilledDataTable(adapter);
                 long totalRecords;
                 if (obj.GetCount)
@@ -261,11 +252,11 @@ namespace Quantumart.QPublishing.Database
                         totalRecords = result.Rows.Count > 0 ? (int)result.Rows[0]["ROWS_COUNT"] : 0;
                         if (!obj.IsFirstPage && totalRecords == 0)
                         {
-                            var countCmd = new SqlCommand(obj.CountSql);
-                            var sqlParams = new SqlParameter[cmd.Parameters.Count];
-                            cmd.Parameters.CopyTo(sqlParams, 0);
+                            var countCmd = CreateDbCommand(obj.CountSql);
+                            var dbParameters = new DbParameter[cmd.Parameters.Count];
+                            cmd.Parameters.CopyTo(dbParameters, 0);
                             cmd.Parameters.Clear();
-                            countCmd.Parameters.AddRange(sqlParams);
+                            countCmd.Parameters.AddRange(dbParameters);
                             totalRecords = (long)GetRealScalarData(countCmd);
                         }
                     }
@@ -283,14 +274,14 @@ namespace Quantumart.QPublishing.Database
             }
             finally
             {
-                if (NeedToDisposeActualSqlConnection)
+                if (NeedToDisposeActualConnection)
                 {
                     cnn.Dispose();
                 }
             }
         }
 
-        internal DataTable GetFilledDataTable(SqlDataAdapter adapter)
+        internal DataTable GetFilledDataTable(DbDataAdapter adapter)
         {
             var dt = new DataTable
             {
@@ -314,7 +305,7 @@ namespace Quantumart.QPublishing.Database
             return GetContentData(obj, out var _);
         }
 
-        public SqlDataReader GetContentDataReader(ContentDataQueryObject obj, CommandBehavior readerParams = CommandBehavior.Default)
+        public DbDataReader GetContentDataReader(ContentDataQueryObject obj, CommandBehavior readerParams = CommandBehavior.Default)
         {
             if (ExternalConnection == null)
             {
@@ -323,9 +314,9 @@ namespace Quantumart.QPublishing.Database
 
             obj.GetCount = false;
             obj.UseClientSelection = false;
-            var cmd = obj.GetSqlCommand();
+            var cmd = obj.GetDbCommand();
             cmd.Connection = ExternalConnection as SqlConnection;
-            cmd.Transaction = GetActualSqlTransaction();
+            cmd.Transaction = GetActualTransaction();
             if (cmd.Connection != null && cmd.Connection.State == ConnectionState.Closed)
             {
                 cmd.Connection.Open();
@@ -455,16 +446,16 @@ namespace Quantumart.QPublishing.Database
 
         public void ProcessData(string queryString)
         {
-            var command = new SqlCommand(queryString);
+            var command = CreateDbCommand(queryString);
             ProcessData(command);
         }
 
-        public void ProcessData(SqlCommand command)
+        public void ProcessData(DbCommand command)
         {
-            ProcessData(command, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection);
+            ProcessData(command, GetActualConnection(), GetActualTransaction(), NeedToDisposeActualConnection);
         }
 
-        public void ProcessData(SqlCommand command, SqlConnection cnn, SqlTransaction tr, bool disposeConnection)
+        public void ProcessData(DbCommand command, DbConnection cnn, DbTransaction tr, bool disposeConnection)
         {
             try
             {
@@ -486,14 +477,14 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private void ProcessDataAsNewTransaction(SqlCommand command)
+        private void ProcessDataAsNewTransaction(DbCommand command)
         {
             const int maxRetries = 5;
             var retry = maxRetries;
             while (retry > 0)
             {
-                var connection = GetActualSqlConnection();
-                var extTran = GetActualSqlTransaction();
+                var connection = GetActualConnection();
+                var extTran = GetActualTransaction();
                 try
                 {
                     if (connection.State == ConnectionState.Closed)
@@ -510,12 +501,9 @@ namespace Quantumart.QPublishing.Database
                         {
                             command.Transaction.Commit();
                         }
-
-                        retry = -1;
                     }
-                    catch (SqlException e)
+                    catch (DbException e)
                     {
-#if NET4
                         try
                         {
                             if (extTran == null)
@@ -525,35 +513,7 @@ namespace Quantumart.QPublishing.Database
                         }
                         catch (Exception ex)
                         {
-                            var errorMessage = $"DbConnector.cs, ProcessDataAsNewTransaction(SqlCommand command), MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
-                            EventLog.WriteEntry("Application", errorMessage);
-                        }
-#else
-                        if (extTran == null)
-                        {
-                            command.Transaction.Rollback();
-                        }
-#endif
-
-                        //error with rollback
-                        //assume rollback already happened automatically
-                        //do nothing
-                        if (e.Number == 1205)
-                        {
-                            //deadlock
-                            retry = retry - 1;
-                        }
-                        else
-                        {
-                            //try just one more time (maybe a timeout)
-                            if (retry == maxRetries)
-                            {
-                                retry = 1;
-                            }
-                            else
-                            {
-                                throw;
-                            }
+                            _logger.Error().Exception(ex).Message("Error while updating db").Write();
                         }
 
                         if (retry == 0)
@@ -561,22 +521,15 @@ namespace Quantumart.QPublishing.Database
                             throw;
                         }
                     }
-#if NET4
                     catch (Exception ex)
                     {
-                        var errorMessage =$"DbConnector.cs, ProcessDataAsNewTransaction(SqlCommand command), MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
-                        EventLog.WriteEntry("Application", errorMessage);
+                        _logger.Error().Exception(ex).Message("Error while updating db").Write();
                     }
-#else
-                    catch
-                    {
-                        // ignored
-                    }
-#endif
                 }
                 finally
                 {
-                    if (NeedToDisposeActualSqlConnection)
+                    retry = -1;
+                    if (NeedToDisposeActualConnection)
                     {
                         connection.Dispose();
                     }

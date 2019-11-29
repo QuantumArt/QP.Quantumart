@@ -68,13 +68,13 @@ namespace Quantumart.QPublishing.Resizer
 
         private string GetDynamicImageRelPath()
         {
-            var newName = _info.ImageName.Replace("/", "\\");
+            var newName = _info.ImageName.Replace("/", Path.DirectorySeparatorChar.ToString());
             var fileNameParts = newName.Split('.');
             if (!fileNameParts[fileNameParts.Length - 1].Equals(SVG_EXTENSION, StringComparison.InvariantCultureIgnoreCase))
             {
                 fileNameParts[fileNameParts.Length - 1] = _info.FileType;
             }
-            return "field_" + _info.AttrId + "\\" + string.Join(".", fileNameParts);
+            return "field_" + _info.AttrId + Path.DirectorySeparatorChar + string.Join(".", fileNameParts);
         }
 
 
@@ -129,7 +129,7 @@ namespace Quantumart.QPublishing.Resizer
 
         public void Create()
         {
-            var baseImagePath = (_info.ImagePath + "\\" + _info.ImageName).Replace("/", "\\");
+            var baseImagePath = (_info.ImagePath + Path.DirectorySeparatorChar + _info.ImageName).Replace("/", Path.DirectorySeparatorChar.ToString());
             if (!File.Exists(baseImagePath))
             {
                 return;

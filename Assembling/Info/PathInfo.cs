@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 // ReSharper disable once CheckNamespace
@@ -132,24 +133,24 @@ namespace Quantumart.QP8.Assembling.Info
         private void CalculateFullPath()
         {
             var sb = new StringBuilder(BaseAssemblePath);
-            sb.Append("\\");
+            sb.Append(Path.DirectorySeparatorChar);
             if (!string.IsNullOrEmpty(TemplateFolder))
             {
                 sb.Append(TemplateFolder);
-                sb.Append("\\");
+                sb.Append(Path.DirectorySeparatorChar);
             }
 
             TemplateFolderPath = sb.ToString();
             if (!string.IsNullOrEmpty(PageFolder))
             {
                 sb.Append(PageFolder);
-                sb.Append("\\");
+                sb.Append(Path.DirectorySeparatorChar);
             }
 
             PageFolderPath = sb.ToString();
             FullPagePath = (_info.IsAssembleFormatMode ? BaseAssemblePath : PageFolderPath) + _info.PageFileName;
-            TemplateControlsPath = TemplateFolderPath + TemplateControlsFolderName + "\\";
-            PageControlsPath = PageFolderPath + PageControlsFolderName + "\\";
+            TemplateControlsPath = TemplateFolderPath + TemplateControlsFolderName + Path.DirectorySeparatorChar;
+            PageControlsPath = PageFolderPath + PageControlsFolderName + Path.DirectorySeparatorChar;
         }
 
         private void CalculateUrls()
@@ -219,9 +220,9 @@ namespace Quantumart.QP8.Assembling.Info
 
             var sb = new StringBuilder(BaseAssemblePath);
             sb.Append(templateFolder);
-            sb.Append("\\");
+            sb.Append(Path.DirectorySeparatorChar);
             sb.Append(controlsFolderName);
-            sb.Append("\\");
+            sb.Append(Path.DirectorySeparatorChar);
             dv.Dispose();
             return sb.ToString();
         }

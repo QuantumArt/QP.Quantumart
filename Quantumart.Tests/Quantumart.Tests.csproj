@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
@@ -12,7 +12,7 @@
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net471'">
+  <ItemGroup>
     <ProjectReference Include="..\Assembling\Assembling.csproj" />
   </ItemGroup>
 
@@ -42,4 +42,5 @@
   <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
     <Compile Remove="**" />
   </ItemGroup>
+
 </Project>

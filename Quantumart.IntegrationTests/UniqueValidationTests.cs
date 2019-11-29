@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
+using Npgsql;
 using NUnit.Framework;
+using QP.ConfigurationService.Models;
 using Quantumart.IntegrationTests.Constants;
 using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
@@ -37,7 +39,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -45,7 +47,7 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString) { ForceLocalCache = true };
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
 #endif
             Clear();
 
@@ -105,7 +107,9 @@ namespace Quantumart.IntegrationTests
         public void MassUpdate_ThrowsException_ValidateConstraintForDataConflict()
         {
             var values = new List<Dictionary<string, string>>();
-            var id = (decimal)DbConnector.GetRealScalarData(new SqlCommand($"select content_item_id from content_{ContentId}_united where [Title] <> 'Name2'"));
+            var fn = SqlQuerySyntaxHelper.FieldName(DbConnector.DatabaseType, "Title");
+            var cmd = DbConnector.CreateDbCommand($"select content_item_id from content_{ContentId}_united where {fn} <> 'Name2'");
+            var id = (decimal)DbConnector.GetRealScalarData(cmd);
             var article1 = new Dictionary<string, string>
             {
                 [FieldName.ContentItemId] = id.ToString(CultureInfo.InvariantCulture),
@@ -166,7 +170,9 @@ namespace Quantumart.IntegrationTests
         {
             var titleName = DbConnector.FieldName(Global.SiteId, ContentName, "Title");
             var numberName = DbConnector.FieldName(Global.SiteId, ContentName, "Number");
-            var id = (int)(decimal)DbConnector.GetRealScalarData(new SqlCommand($"select content_item_id from content_{ContentId}_united where [Title] <> 'Name2'"));
+            var fn = SqlQuerySyntaxHelper.FieldName(DbConnector.DatabaseType, "Title");
+            var cmd = DbConnector.CreateDbCommand($"select content_item_id from content_{ContentId}_united where {fn} <> 'Name2'");
+            var id = (int)(decimal)DbConnector.GetRealScalarData(cmd);
             var article1 = new Hashtable
             {
                 [titleName] = "Name2",
@@ -179,7 +185,8 @@ namespace Quantumart.IntegrationTests
         [Test]
         public void MassUpdate_UpdateNothing_InCaseOfAnyError()
         {
-            var maxId = (decimal)DbConnector.GetRealScalarData(new SqlCommand("select max(content_item_id) from content_item") { CommandType = CommandType.Text });
+            var cmd = DbConnector.CreateDbCommand("select max(content_item_id) from content_item");
+            var maxId = (decimal)DbConnector.GetRealScalarData(cmd);
             var values = new List<Dictionary<string, string>>();
             var article1 = new Dictionary<string, string>
             {
@@ -196,13 +203,9 @@ namespace Quantumart.IntegrationTests
 
             values.Add(article2);
             Assert.That(() => { DbConnector.MassUpdate(ContentId, values, 1); }, Throws.Exception);
+            ;
 
-            var maxIdAfter =
-                (decimal)DbConnector.GetRealScalarData(new SqlCommand("select max(content_item_id) from content_item")
-                {
-                    CommandType = CommandType.Text
-                });
-
+            var maxIdAfter = (decimal)DbConnector.GetRealScalarData(cmd);
             var titles = Global.GetTitles(DbConnector, ContentId);
             Assert.That(titles, Does.Not.Contain("Name5"), "In case of any error the internal transaction should be rolled back");
             Assert.That(maxId, Is.EqualTo(maxIdAfter), "No new content items");
@@ -234,14 +237,21 @@ namespace Quantumart.IntegrationTests
             };
 
             values2.Add(article3);
-            using (var cn = new SqlConnection(Global.ConnectionString))
+            using (var cn = Global.CreateConnection())
             {
                 cn.Open();
                 var tr = cn.BeginTransaction();
 #if ASPNETCORE
-                var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor());
+                var localConnector = new DBConnector(cn, tr,
+                    new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
+                    new MemoryCache(new MemoryCacheOptions()),
+                    new HttpContextAccessor()
+                );
 #elif NETSTANDARD
-                var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()));
+                var localConnector = new DBConnector(cn, tr,
+                    new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
+                    new MemoryCache(new MemoryCacheOptions())
+                );
 #else
                 var localConnector = new DBConnector(cn, tr);
 #endif
@@ -274,7 +284,7 @@ namespace Quantumart.IntegrationTests
                 [FieldName.ContentItemId] = "0"
             };
 
-            using (var cn = new SqlConnection(Global.ConnectionString))
+            using (var cn = Global.CreateConnection())
             {
                 cn.Open();
                 var tr = cn.BeginTransaction();

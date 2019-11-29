@@ -1,4 +1,5 @@
 using System.Data;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -8,22 +9,22 @@ namespace Quantumart.QP8.Assembling
     {
         public int FormatId { get; protected set; }
 
-        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter, bool isCustomerCode, AssembleLocation fixedLocation)
-            : base(connectionParameter, isCustomerCode)
+        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter, bool isCustomerCode, AssembleLocation fixedLocation, DatabaseType dbType = DatabaseType.SqlServer)
+            : base(connectionParameter, isCustomerCode, dbType)
         {
             UseFixedLocation = true;
             FixedLocation = fixedLocation;
             FillController(formatId, mode);
         }
 
-        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter, bool isCustomerCode)
-            : base(connectionParameter, isCustomerCode)
+        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter, bool isCustomerCode, DatabaseType dbType = DatabaseType.SqlServer)
+            : base(connectionParameter, isCustomerCode, dbType)
         {
             FillController(formatId, mode);
         }
 
-        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter)
-            : base(connectionParameter)
+        public AssembleFormatController(int formatId, AssembleMode mode, string connectionParameter, DatabaseType dbType = DatabaseType.SqlServer)
+            : base(connectionParameter, dbType)
         {
             FillController(formatId, mode);
         }

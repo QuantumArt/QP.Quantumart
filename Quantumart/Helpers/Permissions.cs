@@ -2,9 +2,9 @@ using System;
 using System.Data;
 using Quantumart.QPublishing.Database;
 
-#if NET4
-using System.Diagnostics;
-#endif
+using NLog;
+using NLog.Fluent;
+using QP.ConfigurationService.Models;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
@@ -16,6 +16,16 @@ namespace Quantumart.QPublishing.Helpers
         public Permissions(DBConnector dbConnector)
         {
             _dbConnector = dbConnector;
+        }
+
+        private string Output(string columnName)
+        {
+            return _dbConnector.DatabaseType == DatabaseType.Postgres ? "" : $" OUTPUT inserted.{columnName} ";
+        }
+
+        private string Returning(string columnName)
+        {
+            return _dbConnector.DatabaseType == DatabaseType.SqlServer ? "" : $" returning {columnName} ";
         }
 
         public DataTable GetUserInfo(int userId)
@@ -32,13 +42,18 @@ namespace Quantumart.QPublishing.Helpers
 
         public int AddUser(string username, string password, string firstName, string lastName, string email)
         {
-            var insertClause = $"insert into users (login, password, disabled, first_name, last_name, email, subscribed, last_modified_by, language_id, vmode) values (\'{username}\', \'{password}\', 1, \'{firstName}\', \'{lastName}\', \'{email}\', 1, 1, 1, 0)";
+            var outUserId = Output("user_id");
+            var retUserId = Returning("user_id");
+            var insertClause = $"insert into users (login, password, disabled, first_name, last_name, email, subscribed, last_modified_by, language_id, vmode) {outUserId}" +
+                $"values (\'{username}\', \'{password}\', 1, \'{firstName}\', \'{lastName}\', \'{email}\', 1, 1, 1, 0) {retUserId}";
             return _dbConnector.InsertDataWithIdentity(insertClause);
         }
 
         public int AddUser(string username, string password, int disabled, string firstName, string lastName, string email)
         {
-            var insertClause = $"insert into users (login, password, disabled, first_name, last_name, email, subscribed, last_modified_by, language_id, vmode) values (\'{username}\', \'{password}\', \'{disabled}\', \'{firstName}\', \'{lastName}\', \'{email}\', 1, 1, 1, 0)";
+            var retUserId = _dbConnector.DatabaseType == DatabaseType.Postgres ? Returning("user_id") : "; select scope_identity() as user_id";
+            var insertClause = $"insert into users (login, password, disabled, first_name, last_name, email, subscribed, last_modified_by, language_id, vmode)" +
+                $" values (\'{username}\', \'{password}\', \'{disabled}\', \'{firstName}\', \'{lastName}\', \'{email}\', 1, 1, 1, 0) {retUserId}";
             return _dbConnector.InsertDataWithIdentity(insertClause);
         }
 
@@ -50,33 +65,28 @@ namespace Quantumart.QPublishing.Helpers
 
         public bool RemoveUser(int userId)
         {
-            var deleteClause = $"delete users where user_id = {userId}";
+            var deleteClause = $"delete from users where user_id = {userId}";
             _dbConnector.ProcessData(deleteClause);
             return true;
         }
 
         public int AuthenticateUser(string username, string password)
         {
-            var selectClause = $"qp_authenticate @login = '{username}', @password = '{password}'";
+            var cmd = _dbConnector.CreateDbCommand("qp_authenticate");
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@login", username);
+            cmd.Parameters.AddWithValue("@password", password);
+
             DataTable dt;
             try
             {
-                dt = _dbConnector.GetRealData(selectClause);
+                dt = _dbConnector.GetRealData(cmd);
             }
-#if NET4
             catch (Exception ex)
             {
-                var errorMessage = $"Permissions.cs, AuthenticateUser(string username, string password), MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
-                EventLog.WriteEntry("Application", errorMessage);
+                LogManager.GetCurrentClassLogger().Error().Exception(ex).Message("Error while authenticating user").Write();
                 return 0;
             }
-#else
-            catch
-            {
-                return 0;
-            }
-#endif
-
             return dt.Rows.Count > 0 ? DBConnector.GetNumInt(dt.Rows[0]["user_id"]) : 0;
         }
 
@@ -102,7 +112,10 @@ namespace Quantumart.QPublishing.Helpers
                 allowOwnership = "1";
             }
 
-            var insertClause = $"insert into user_group (group_name, shared_content_items) values (\'{name}\', {allowOwnership})";
+            var outGroupId = Output("group_id");
+            var retGroupId = Returning("group_id");
+
+            var insertClause = $"insert into user_group (group_name, shared_content_items) {outGroupId} values (\'{name}\', {allowOwnership}) {retGroupId}";
             return _dbConnector.InsertDataWithIdentity(insertClause);
         }
 
@@ -125,7 +138,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void RemoveGroup(int groupId)
         {
-            var deleteClause = $"delete user_group where group_id = {groupId}";
+            var deleteClause = $"delete from user_group where group_id = {groupId}";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -167,13 +180,13 @@ namespace Quantumart.QPublishing.Helpers
 
         public void AddUserToGroup(int userId, int groupId)
         {
-            var insertClause = $"if not exists (select * from user_group_bind where group_id={groupId} and user_id={userId}){Environment.NewLine} insert into user_group_bind (group_id, user_id) values ({groupId}, {userId})";
+            var insertClause = $"insert into user_group_bind (group_id, user_id) select {groupId}, {userId} where not exists (select * from user_group_bind where group_id={groupId} and user_id={userId})";
             _dbConnector.ProcessData(insertClause);
         }
 
         public void RemoveUserFromGroup(int userId, int groupId)
         {
-            var deleteClause = $"delete user_group_bind where group_id = {groupId} and user_id = {userId}";
+            var deleteClause = $"delete from user_group_bind where group_id = {groupId} and user_id = {userId}";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -203,37 +216,37 @@ namespace Quantumart.QPublishing.Helpers
 
         public void RemoveAllUsersFromItemPermission(int itemId)
         {
-            var deleteClause = $"delete content_item_access where content_item_id = {itemId} and user_id is not null and group_id is null and user_id!=1";
+            var deleteClause = $"delete from content_item_access where content_item_id = {itemId} and user_id is not null and group_id is null and user_id!=1";
             _dbConnector.ProcessData(deleteClause);
         }
 
         public void RemoveAllGroupsFromItemPermission(int itemId)
         {
-            var deleteClause = $"delete content_item_access where content_item_id = {itemId} and group_id is not null and user_id is null and group_id!=1";
+            var deleteClause = $"delete from content_item_access where content_item_id = {itemId} and group_id is not null and user_id is null and group_id!=1";
             _dbConnector.ProcessData(deleteClause);
         }
 
         public void RemoveAllEntitiesFromItemPermission(int itemId)
         {
-            var deleteClause = $"delete content_item_access where content_item_id = {itemId} and IsNull(group_id,-1)!=1 and IsNull(user_id,-1)!=1 ";
+            var deleteClause = $"delete from content_item_access where content_item_id = {itemId} and IsNull(group_id,-1)!=1 and IsNull(user_id,-1)!=1 ";
             _dbConnector.ProcessData(deleteClause);
         }
 
         public void AddUserToItemPermission(int userId, int itemId, int permissionId)
         {
-            var insertClause = $" delete content_item_access where user_id={userId} and content_item_id ={itemId};  insert into content_item_access (content_item_id, user_id, permission_level_id, last_modified_by) values ({itemId}, {userId}, {permissionId}, 1)";
+            var insertClause = $" delete from content_item_access where user_id={userId} and content_item_id ={itemId};  insert into content_item_access (content_item_id, user_id, permission_level_id, last_modified_by) values ({itemId}, {userId}, {permissionId}, 1)";
             _dbConnector.ProcessData(insertClause);
         }
 
         public void AddGroupToItemPermission(int groupId, int itemId, int permissionId)
         {
-            var insertClause = $" delete content_item_access where group_id={groupId} and content_item_id ={itemId};  insert into content_item_access (content_item_id, group_id, permission_level_id, last_modified_by) values ({itemId}, {groupId}, {permissionId}, 1)";
+            var insertClause = $" delete from content_item_access where group_id={groupId} and content_item_id ={itemId};  insert into content_item_access (content_item_id, group_id, permission_level_id, last_modified_by) values ({itemId}, {groupId}, {permissionId}, 1)";
             _dbConnector.ProcessData(insertClause);
         }
 
         public void RemoveUserFromItemPermission(int userId, int itemId)
         {
-            var deleteClause = $"delete content_item_access where content_item_id = {itemId} and user_id = {userId}";
+            var deleteClause = $"delete from content_item_access where content_item_id = {itemId} and user_id = {userId}";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -245,7 +258,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void RemoveGroupFromItemPermission(int groupId, int itemId)
         {
-            var deleteClause = $"delete content_item_access where content_item_id = {itemId} and group_id = {groupId}";
+            var deleteClause = $"delete from content_item_access where content_item_id = {itemId} and group_id = {groupId}";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -269,19 +282,19 @@ namespace Quantumart.QPublishing.Helpers
 
         public void RemoveAllUsersFromContentPermission(int contentId)
         {
-            var deleteClause = "delete content_access where content_id = " + contentId + " and user_id is not null and group_id is null and user_id!=1";
+            var deleteClause = "delete from content_access where content_id = " + contentId + " and user_id is not null and group_id is null and user_id!=1";
             _dbConnector.ProcessData(deleteClause);
         }
 
         public void RemoveAllGroupsFromContentPermission(int contentId)
         {
-            var deleteClause = "delete content_access where content_id = " + contentId + " and group_id is not null and user_id is null and group_id!=1";
+            var deleteClause = "delete from content_access where content_id = " + contentId + " and group_id is not null and user_id is null and group_id!=1";
             _dbConnector.ProcessData(deleteClause);
         }
 
         public void RemoveAllEntitiesFromContentPermission(int contentId)
         {
-            var deleteClause = "delete content_access where content_id = " + contentId + " and IsNull(group_id,-1)!=1 and IsNull(user_id,-1)!=1 ";
+            var deleteClause = "delete from content_access where content_id = " + contentId + " and IsNull(group_id,-1)!=1 and IsNull(user_id,-1)!=1 ";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -298,7 +311,7 @@ namespace Quantumart.QPublishing.Helpers
                 propagate = "1";
             }
 
-            var insertClause = $" delete content_access where content_id = {contentId} and user_id = {userId};  insert into content_access (content_id, user_id, permission_level_id, propagate_to_items) values ({contentId}, {userId}, {permissionId}, {propagate})";
+            var insertClause = $" delete from content_access where content_id = {contentId} and user_id = {userId};  insert into content_access (content_id, user_id, permission_level_id, propagate_to_items) values ({contentId}, {userId}, {permissionId}, {propagate})";
             _dbConnector.ProcessData(insertClause);
         }
 
@@ -315,13 +328,13 @@ namespace Quantumart.QPublishing.Helpers
                 propagate = "1";
             }
 
-            var insertClause = $" delete content_access where content_id = {contentId} and group_id = {groupId};  insert into content_access (content_id, group_id, permission_level_id, propagate_to_items) values ({contentId}, {groupId}, {permissionId}, {propagate})";
+            var insertClause = $" delete from content_access where content_id = {contentId} and group_id = {groupId};  insert into content_access (content_id, group_id, permission_level_id, propagate_to_items) values ({contentId}, {groupId}, {permissionId}, {propagate})";
             _dbConnector.ProcessData(insertClause);
         }
 
         public void RemoveUserFromContentPermission(int userId, int contentId)
         {
-            var deleteClause = $"delete content_access where content_id = {contentId} and user_id = {userId}";
+            var deleteClause = $"delete from content_access where content_id = {contentId} and user_id = {userId}";
             _dbConnector.ProcessData(deleteClause);
         }
 
@@ -339,7 +352,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void RemoveGroupFromContentPermission(int groupId, int contentId)
         {
-            var deleteClause = $"delete content_access where content_id = {contentId} and group_id = {groupId}";
+            var deleteClause = $"delete from content_access where content_id = {contentId} and group_id = {groupId}";
             _dbConnector.ProcessData(deleteClause);
         }
 

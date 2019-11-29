@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <Version>1.0.0-beta3</Version>
+    <Authors>Pavel Celut, Koryakin Sergey</Authors>
+    <Company>Quantum Art</Company>
+    <Product>QP8.Framework</Product>
+    <Description>Linq classes assembling for QP8 clients</Description>
+    <Copyright>Copyright © 2007-2019 Quantum Art</Copyright>
+    <PackageReleaseNotes>Stable version</PackageReleaseNotes>
+    <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/QuantumArt/QP.Quantumart</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/QuantumArt/QP.Quantumart</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>QP</PackageTags>
+    <AssemblyName>Quantumart.QP8.Assembling.T4</AssemblyName>
+    <RootNamespace>Quantumart.QP8.Assembling.T4</RootNamespace>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <IncludeSource>True</IncludeSource>
+    <IncludeSymbols>True</IncludeSymbols>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Configuration"/>
+    <Reference Include="System.Data.Linq"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EnvDTE" Version="8.0.1" />
+    <PackageReference Include="Microsoft.VisualStudio.TextTemplating.15.0" Version="15.4.27004" />
+    <PackageReference Include="Microsoft.VisualStudio.TextTemplating.Interfaces.15.0" Version="15.4.27004" />
+  </ItemGroup>
+
+</Project>

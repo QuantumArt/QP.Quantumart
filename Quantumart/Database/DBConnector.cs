@@ -1,22 +1,14 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Data;
 using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Xml;
-using Microsoft.Win32;
-using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
-using Quantumart.QPublishing.Resizer;
-
 #if ASPNETCORE || NETSTANDARD
-using System.Collections.Generic;
-using Microsoft.Extensions.Caching.Memory;
 #else
 using System.Collections.Specialized;
 using System.Configuration;
@@ -27,12 +19,7 @@ using System.Web;
 using Microsoft.AspNetCore.Http;
 #endif
 
-
-
-#if NET4 && !ASPNETCORE
 using Quantumart.QP8.Assembling;
-#endif
-
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -40,296 +27,19 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
-        private const string IdentityParamString = "@itemId";
 
-        private bool _throwLoadFileExceptions = true;
-
-        public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
+        public DbConnectorSettings DbConnectorSettings { get; }
 
         internal static readonly int LegacyNotFound = -1;
-
-        internal static readonly string RegistryPath = @"Software\Quantum Art\Q-Publishing";
-
-        public DbCacheManager CacheManager { get; internal set; }
-
-        public bool ForceLocalCache { get; set; }
-
-        private int? _lastModifiedBy;
-
-#if ASPNETCORE || NETSTANDARD
-        public int LastModifiedBy
-        {
-            get
-            {
-                var result = 1;
-                if (_lastModifiedBy.HasValue)
-                {
-                    result = _lastModifiedBy.Value;
-                }
-#if ASPNETCORE
-                else if (HttpContext?.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
-                {
-                    result = (int)HttpContext.Items[LastModifiedByKey];
-                }
-#endif
-
-                return result;
-            }
-            set => _lastModifiedBy = value;
-        }
-#else
-        public int LastModifiedBy
-        {
-            get
-            {
-                var result = 1;
-                if (_lastModifiedBy.HasValue)
-                {
-                    result = _lastModifiedBy.Value;
-                }
-                else if (HttpContext.Current != null && HttpContext.Current.Items.Contains(LastModifiedByKey))
-                {
-                    result = (int)HttpContext.Current.Items[LastModifiedByKey];
-                }
-
-                return result;
-            }
-            set => _lastModifiedBy = value;
-        }
-#endif
-
-        public bool UseLocalCache => ForceLocalCache;
-
-        public bool CacheData { get; set; }
-
-        public bool UpdateManyToMany { get; set; }
-
-        public bool UpdateManyToOne { get; set; }
-
-        public bool ThrowNotificationExceptions { get; set; }
-
-        public static string ConnectionString { get; set; }
-
-        public string CustomConnectionString { get; set; }
-
-        public string InstanceConnectionString => !string.IsNullOrEmpty(CustomConnectionString) ? CustomConnectionString : ConnectionString;
-
-        public IDbConnection ExternalConnection { get; set; }
-
-        public IDbTransaction ExternalTransaction { get; set; }
-
-        private IDbConnection InternalConnection { get; set; }
-
-        private IDbTransaction InternalTransaction { get; set; }
 
 #if ASPNETCORE
         public HttpContext HttpContext { get; }
 #endif
 
-#if ASPNETCORE || NETSTANDARD
-        public DbConnectorSettings DbConnectorSettings { get; }
-#else
-        public NameValueCollection AppSettings => ConfigurationManager.AppSettings;
-#endif
-
-#if !ASPNETCORE && !NETSTANDARD
-        static DBConnector()
-        {
-            if (ConfigurationManager.ConnectionStrings["qp_database"] != null)
-            {
-                ConnectionString = ConfigurationManager.ConnectionStrings["qp_database"].ConnectionString;
-                ConfigurationManager.AppSettings["ConnectionString"] = ConnectionString;
-            }
-        }
-#endif
-
-#if ASPNETCORE
-        public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
-            : this(dbConnectorSettings.ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
-        {
-        }
-
-
-        public DBConnector(IDbConnection connection, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
-            : this(connection.ConnectionString, dbConnectorSettings, cache, httpContextAccessor)
-        {
-            ExternalConnection = connection;
-        }
-
-        public DBConnector(IDbConnection connection, IDbTransaction transaction, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
-            : this(connection, dbConnectorSettings, cache, httpContextAccessor)
-        {
-            ExternalTransaction = transaction;
-        }
-
-        public DBConnector(string connectionString):
-            this(connectionString, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()), null)
-        {
-
-        }
-
-         public DBConnector(IDbConnection connection):
-         this(connection, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()), null)
-        {
-
-        }
-
-        public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache, IHttpContextAccessor httpContextAccessor)
-        {
-            if (dbConnectorSettings.ConnectionStrings == null)
-            {
-                dbConnectorSettings.ConnectionStrings = new Dictionary<string, string>();
-            }
-
-            if (!string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionString))
-            {
-                ConnectionString = dbConnectorSettings.ConnectionString;
-            }
-
-            ThrowNotificationExceptions = true;
-            ForceLocalCache = false;
-            UpdateManyToMany = true;
-            UpdateManyToOne = true;
-            CacheData = true;
-
-            CustomConnectionString = strConnectionString;
-            CacheManager = new DbCacheManager(this, cache);
-            FileSystem = new RealFileSystem();
-            DynamicImageCreator = new DynamicImageCreator(FileSystem);
-            DbConnectorSettings = dbConnectorSettings;
-            HttpContext = httpContextAccessor?.HttpContext;
-        }
-#elif NETSTANDARD
-        public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
-            : this(dbConnectorSettings.ConnectionString, dbConnectorSettings, cache)
-        {
-        }
-
-
-        public DBConnector(IDbConnection connection, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
-            : this(connection.ConnectionString, dbConnectorSettings, cache)
-        {
-            ExternalConnection = connection;
-        }
-
-        public DBConnector(IDbConnection connection, IDbTransaction transaction, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
-            : this(connection, dbConnectorSettings, cache)
-        {
-            ExternalTransaction = transaction;
-        }
-
-        public DBConnector(string connectionString):
-            this(connectionString, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()))
-        {
-
-        }
-
-         public DBConnector(IDbConnection connection):
-         this(connection, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()))
-        {
-
-        }
-
-        public DBConnector(string strConnectionString, DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
-        {
-            if (dbConnectorSettings.ConnectionStrings == null)
-            {
-                dbConnectorSettings.ConnectionStrings = new Dictionary<string, string>();
-            }
-
-            if (!string.IsNullOrWhiteSpace(dbConnectorSettings.ConnectionString))
-            {
-                ConnectionString = dbConnectorSettings.ConnectionString;
-            }
-
-            ThrowNotificationExceptions = true;
-            ForceLocalCache = false;
-            UpdateManyToMany = true;
-            UpdateManyToOne = true;
-            CacheData = true;
-
-            CustomConnectionString = strConnectionString;
-            CacheManager = new DbCacheManager(this, cache);
-            FileSystem = new RealFileSystem();
-            DynamicImageCreator = new DynamicImageCreator(FileSystem);
-            DbConnectorSettings = dbConnectorSettings;
-        }
-#else
-        public DBConnector()
-            : this(ConnectionString)
-        {
-        }
-
-        public DBConnector(string strConnectionString)
-        {
-            ForceLocalCache = false;
-            CacheData = true;
-            UpdateManyToMany = true;
-            UpdateManyToOne = true;
-            ThrowNotificationExceptions = true;
-
-            CustomConnectionString = strConnectionString;
-            CacheManager = new DbCacheManager(this);
-            FileSystem = new RealFileSystem();
-            DynamicImageCreator = new DynamicImageCreator(FileSystem);
-        }
-
-        public DBConnector(IDbConnection connection)
-            : this(connection.ConnectionString)
-        {
-            ExternalConnection = connection;
-        }
-
-        public DBConnector(IDbConnection connection, IDbTransaction transaction)
-            : this(connection)
-        {
-            ExternalTransaction = transaction;
-        }
-#endif
-
-        private void CreateInternalConnection(bool withTransaction)
-        {
-            InternalConnection = GetActualSqlConnection();
-            if (InternalConnection.State == ConnectionState.Closed)
-            {
-                InternalConnection.Open();
-            }
-
-            if (withTransaction)
-            {
-                var extTr = GetActualSqlTransaction();
-                InternalTransaction = extTr ?? InternalConnection.BeginTransaction();
-            }
-        }
-
-        private void CommitInternalTransaction()
-        {
-            if (ExternalTransaction == null)
-            {
-                InternalTransaction.Commit();
-            }
-        }
-
-        private void DisposeInternalConnection()
-        {
-            if (ExternalConnection == null)
-            {
-                InternalConnection.Dispose();
-                InternalConnection = null;
-                InternalTransaction = null;
-            }
-        }
-
-        private bool NeedToDisposeActualSqlConnection => ExternalConnection == null && InternalConnection == null;
-
-        private string _instanceCachePrefix;
-
-        public string InstanceCachePrefix => _instanceCachePrefix ?? (_instanceCachePrefix = ExtractCachePrefix(InstanceConnectionString));
-
         public static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
-        public IDynamicImageCreator DynamicImageCreator { get; set; }
 
+        #region live and stage
         private bool? _isStage;
 
         public bool IsStage
@@ -341,19 +51,18 @@ namespace Quantumart.QPublishing.Database
                     return _isStage.Value;
                 }
 
-#if !ASPNETCORE && !NETSTANDARD
-                if (CacheManager.Page != null)
-                {
-                    return CacheManager.Page.IsStage;
-                }
-#endif
 
                 return !CheckIsLive();
             }
             set => _isStage = value;
         }
 
-        public IFileSystem FileSystem { get; set; }
+        public bool CheckIsLive() => DbConnectorSettings.IsLive;
+
+        #endregion
+
+
+        #region formatters
 
         internal string UploadPlaceHolder => "<%=upload_url%>";
 
@@ -363,51 +72,6 @@ namespace Quantumart.QPublishing.Database
 
         internal string SiteBindingPlaceHolder => "<%#site_url%>";
 
-#if NET4
-        public static string GetConnectionString(string customerCode)
-        {
-            var doc = GetQpConfig();
-            var node = doc.SelectSingleNode("configuration/customers/customer[@customer_name='" + customerCode + "']/db/text()");
-            if (node != null)
-            {
-                return node.Value.Replace("Provider=SQLOLEDB;", "");
-            }
-
-            throw new InvalidOperationException("Cannot load connection string for Asp.NET in QP7 configuration file");
-        }
-
-        public static XmlDocument GetQpConfig()
-        {
-            var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
-            var qKey = localKey.OpenSubKey(RegistryPath);
-            if (qKey != null)
-            {
-                var regValue = qKey.GetValue("Configuration File");
-                if (regValue != null)
-                {
-                    var doc = new XmlDocument();
-                    doc.Load(regValue.ToString());
-                    return doc;
-                }
-
-                throw new InvalidOperationException("QP7 records in the registry are inconsistent or damaged");
-            }
-
-            throw new InvalidOperationException("QP7 is not installed");
-        }
-
-        public static string GetQpTempDirectory()
-        {
-            var doc = GetQpConfig();
-            var node = doc.SelectSingleNode("configuration/app_vars/app_var[@app_var_name='TempDirectory']/text()");
-            if (node != null)
-            {
-                return node.Value;
-            }
-
-            throw new InvalidOperationException("Cannot load TempDirectory parameter from QP7 configuration file");
-        }
-#endif
 
         public static string GetString(object obj, string defaultValue)
         {
@@ -419,38 +83,6 @@ namespace Quantumart.QPublishing.Database
 
         public static int GetNumInt(object obj) => (int)(decimal)obj;
 
-        private static string ExtractCachePrefix(string cnnString)
-        {
-            var result = string.Empty;
-            if (cnnString != null)
-            {
-                var cnnParams = cnnString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).AsEnumerable().Select(s => new { Key = s.Split('=')[0], Value = s.Split('=')[1] }).ToArray();
-                var dbName = cnnParams
-                    .Where(n => string.Equals(n.Key, "Initial Catalog", StringComparison.InvariantCultureIgnoreCase) || string.Equals(n.Key, "Database", StringComparison.InvariantCultureIgnoreCase))
-                    .Select(n => n.Value)
-                    .FirstOrDefault();
-
-                if (dbName == null)
-                {
-                    throw new ArgumentException("The connection supplied string should contain at least 'Initial Catalog' or 'Database' keyword.");
-                }
-
-                var serverName = cnnParams
-                    .Where(n => string.Equals(n.Key, "Data Source", StringComparison.InvariantCultureIgnoreCase) || string.Equals(n.Key, "Server", StringComparison.InvariantCultureIgnoreCase))
-                    .Select(n => n.Value)
-                    .FirstOrDefault();
-
-                if (serverName == null)
-                {
-                    throw new ArgumentException("The connection string supplied should contain at least 'Data Source' or 'Server' keyword.");
-                }
-
-                result = $"{dbName}.{serverName}.";
-            }
-
-            return result;
-        }
-
         public string FormatField(string input, int siteId, bool isLive)
         {
             var result = input;
@@ -458,11 +90,7 @@ namespace Quantumart.QPublishing.Database
             result = result.Replace(UploadPlaceHolder, uploadUrl);
             result = result.Replace(UploadBindingPlaceHolder, uploadUrl);
 
-#if ASPNETCORE || NETSTANDARD
-            var siteUrl = DbConnectorSettings.UseAbsoluteSiteUrl == 1 ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
-#else
-            var siteUrl = AppSettings["UseAbsoluteSiteUrl"] == "1" ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
-#endif
+            var siteUrl = DbConnectorSettings.UseAbsoluteSiteUrl ? GetSiteUrl(siteId, isLive) : GetSiteUrlRel(siteId, isLive);
 
 
             result = result.Replace(SitePlaceHolder, siteUrl);
@@ -473,17 +101,6 @@ namespace Quantumart.QPublishing.Database
 
         public string FormatField(string input, int siteId) => FormatField(input, siteId, !IsStage);
 
-        public int InsertDataWithIdentity(string queryString)
-        {
-            var command = new SqlCommand(queryString + ";SELECT @Identity = SCOPE_IDENTITY();");
-            var idParam = command.Parameters.Add("@Identity", SqlDbType.Decimal);
-            idParam.Direction = ParameterDirection.Output;
-            ProcessData(command);
-            return GetNumInt(idParam.Value);
-        }
-
-        public int GetIdentityId(SqlCommand command) => command.Parameters.Contains(IdentityParamString) ? GetNumInt(command.Parameters[IdentityParamString].Value) : 0;
-
         public string ReplaceCommas(string str)
         {
             var sb = new StringBuilder(str);
@@ -491,42 +108,10 @@ namespace Quantumart.QPublishing.Database
             return sb.ToString();
         }
 
-        public string GetCachedFileContents(string path)
-        {
-            var key = CacheManager.FileContentsCacheKeyPrefix + path.ToLowerInvariant();
-            return GetCachedEntity(key, LoadFileContents);
-        }
+        #endregion
 
-        private string LoadFileContents(string key)
-        {
-            var path = key.Replace(CacheManager.FileContentsCacheKeyPrefix, string.Empty);
-            var result = string.Empty;
-            try
-            {
-                result = File.ReadAllText(path);
-            }
-            catch (Exception)
-            {
-                if (_throwLoadFileExceptions)
-                {
-                    throw;
-                }
-            }
 
-            return result;
-        }
-
-        private SqlConnection GetActualSqlConnection(string internalConnectionString) => (InternalConnection ?? ExternalConnection) as SqlConnection ?? new SqlConnection(internalConnectionString);
-
-        private SqlConnection GetActualSqlConnection() => GetActualSqlConnection(InstanceConnectionString);
-
-        private SqlTransaction GetActualSqlTransaction() => (InternalTransaction ?? ExternalTransaction) as SqlTransaction;
-
-#if ASPNETCORE || NETSTANDARD
-        public bool CheckIsLive() => DbConnectorSettings.IsLive;
-#else
-        public bool CheckIsLive() => AppSettings["isLive"] != "false";
-#endif
+        #region site props
 
         public bool IsLive(int siteId) => GetSite(siteId)?.IsLive ?? true;
 
@@ -537,6 +122,11 @@ namespace Quantumart.QPublishing.Database
         public bool GetEnableOnScreen(int siteId) => GetSite(siteId)?.EnableOnScreen ?? false;
 
         public bool GetReplaceUrlsInDB(int siteId) => GetSite(siteId)?.ReplaceUrlsInDB ?? false;
+
+        #endregion
+
+
+        #region misc queries
 
         public void CopyArticleSchedule(int fromArticleId, int toArticleId)
         {
@@ -595,6 +185,28 @@ namespace Quantumart.QPublishing.Database
             return (bool)returnParam.Value;
         }
 
+
+        public DataTable GetContainerQueryResultTable(ContainerQueryObject obj, out long totalRecords)
+        {
+            obj.WithReset = false;
+            var result = CacheManager.GetQueryResult(obj, out totalRecords);
+            if (!result.Columns.Contains("content_item_id"))
+            {
+                obj.WithReset = true;
+                result = CacheManager.GetQueryResult(obj, out totalRecords);
+            }
+
+            return new DataView(result).ToTable();
+        }
+
+        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords) =>
+            GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
+
+        #endregion
+
+
+        #region workflow and statuses
+
         public int GetMaximumWeightStatusTypeId(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Id;
 
         public string GetMaximumWeightStatusTypeName(int siteId) => ((StatusType)GetStatusHashTable()[siteId]).Name;
@@ -615,119 +227,7 @@ namespace Quantumart.QPublishing.Database
 
         public DataRow GetPreviousStatusHistoryRecord(int id) => Status.GetPreviousStatusHistoryRecord(id, this);
 
-        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, ref long totalRecords)
-        {
-            const string searchSp = "qp_fulltextSiteSearch";
-            const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
-
-            var dt = new DataTable();
-            var ds = new DataSet();
-            var useMorphologyInt = useMorphology ? 1 : 0;
-            if (GetCachedData(strSql).Rows.Count > 0)
-            {
-                var adapter = new SqlDataAdapter();
-                var connection = GetActualSqlConnection();
-                try
-                {
-                    if (connection.State == ConnectionState.Closed)
-                    {
-                        connection.Open();
-                    }
-
-                    adapter.SelectCommand = new SqlCommand(searchSp, connection)
-                    {
-                        Transaction = GetActualSqlTransaction(),
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    adapter.SelectCommand.Parameters.Add("@tabname", SqlDbType.NVarChar, 255).Value = tabname;
-                    adapter.SelectCommand.Parameters.Add("@use_morphology", SqlDbType.Int, 4).Value = useMorphologyInt;
-                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = expression.ToLower();
-                    adapter.SelectCommand.Parameters.Add("@minrank", SqlDbType.Int, 4).Value = minRank;
-                    adapter.SelectCommand.Parameters.Add("@startpos", SqlDbType.Int, 4).Value = startPos;
-                    adapter.SelectCommand.Parameters.Add("@count", SqlDbType.Int, 100).Value = recordCount;
-                    adapter.AcceptChangesDuringFill = false;
-                    adapter.Fill(ds);
-                }
-                finally
-                {
-                    if (NeedToDisposeActualSqlConnection)
-                    {
-                        connection.Dispose();
-                    }
-                }
-
-                if (ds.Tables[0].Rows.Count > 0)
-                {
-                    dt = ds.Tables[1];
-                    totalRecords = (long)ds.Tables[0].Rows[0]["total"];
-                }
-
-                adapter.AcceptChangesDuringFill = true;
-            }
-
-            return dt;
-        }
-
-        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, DateTime startDate, DateTime endDate, int showStaticContent, ref long totalRecords)
-        {
-            const string searchSp = "qp_fulltextSiteSearchWithDate";
-            var dt = new DataTable();
-            var ds = new DataSet();
-
-            const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
-            var useMorphologyInt = useMorphology ? 1 : 0;
-            if (GetCachedData(strSql).Rows.Count > 0)
-            {
-                var adapter = new SqlDataAdapter();
-                var connection = GetActualSqlConnection();
-                try
-                {
-                    if (connection.State == ConnectionState.Closed)
-                    {
-                        connection.Open();
-                    }
-
-                    adapter.SelectCommand = new SqlCommand(searchSp, connection)
-                    {
-                        Transaction = GetActualSqlTransaction(),
-                        CommandType = CommandType.StoredProcedure
-                    };
-
-                    adapter.SelectCommand.Parameters.Add("@tabname", SqlDbType.NVarChar, 255).Value = tabname;
-                    adapter.SelectCommand.Parameters.Add("@use_morphology", SqlDbType.Int, 4).Value = useMorphologyInt;
-                    adapter.SelectCommand.Parameters.Add("@expression", SqlDbType.NVarChar, 1000).Value = expression.ToLower();
-                    adapter.SelectCommand.Parameters.Add("@minrank", SqlDbType.Int, 4).Value = minRank;
-                    adapter.SelectCommand.Parameters.Add("@startpos", SqlDbType.Int, 4).Value = startPos;
-                    adapter.SelectCommand.Parameters.Add("@count", SqlDbType.Int, 100).Value = recordCount;
-                    adapter.SelectCommand.Parameters.Add("@startDate", SqlDbType.DateTime).Value = startDate;
-                    adapter.SelectCommand.Parameters.Add("@endDate", SqlDbType.DateTime).Value = endDate;
-                    adapter.SelectCommand.Parameters.Add("@showStatic", SqlDbType.Bit).Value = showStaticContent;
-
-                    adapter.AcceptChangesDuringFill = false;
-                    adapter.Fill(ds);
-                }
-                finally
-                {
-                    if (NeedToDisposeActualSqlConnection)
-                    {
-                        connection.Dispose();
-                    }
-                }
-
-                if (ds.Tables[0].Rows.Count > 0)
-                {
-                    dt = ds.Tables[1];
-                    totalRecords = (long)ds.Tables[0].Rows[0]["total"];
-                }
-
-                adapter.AcceptChangesDuringFill = true;
-            }
-
-            return dt;
-        }
-
-        public string CorrectStatuses(int srcSiteId, int destSiteId, string where)
+                public string CorrectStatuses(int srcSiteId, int destSiteId, string where)
         {
             var result = where;
             if (destSiteId != 0 && srcSiteId != destSiteId)
@@ -787,21 +287,122 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        public DataTable GetContainerQueryResultTable(ContainerQueryObject obj, out long totalRecords)
+        #endregion
+
+
+        #region search
+        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, ref long totalRecords)
         {
-            obj.WithReset = false;
-            var result = CacheManager.GetQueryResult(obj, out totalRecords);
-            if (!result.Columns.Contains("content_item_id"))
+            const string searchSp = "qp_fulltextSiteSearch";
+            const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
+
+            var dt = new DataTable();
+            var ds = new DataSet();
+            var useMorphologyInt = useMorphology ? 1 : 0;
+            if (GetCachedData(strSql).Rows.Count > 0)
             {
-                obj.WithReset = true;
-                result = CacheManager.GetQueryResult(obj, out totalRecords);
+                var adapter = CreateDbAdapter();
+                var connection = GetActualConnection();
+                try
+                {
+                    if (connection.State == ConnectionState.Closed)
+                    {
+                        connection.Open();
+                    }
+
+                    adapter.SelectCommand = CreateDbCommand(searchSp, connection);
+                    adapter.SelectCommand.Transaction = GetActualTransaction();
+                    adapter.SelectCommand.CommandType = CommandType.StoredProcedure;
+                    adapter.SelectCommand.Parameters.AddWithValue("@tabname", tabname);
+                    adapter.SelectCommand.Parameters.AddWithValue("@use_morphology", useMorphologyInt);
+                    adapter.SelectCommand.Parameters.AddWithValue("@expression", expression.ToLower());
+                    adapter.SelectCommand.Parameters.AddWithValue("@minrank", minRank);
+                    adapter.SelectCommand.Parameters.AddWithValue("@startpos", startPos);
+                    adapter.SelectCommand.Parameters.AddWithValue("@count", recordCount);
+                    adapter.AcceptChangesDuringFill = false;
+                    adapter.Fill(ds);
+                }
+                finally
+                {
+                    if (NeedToDisposeActualConnection)
+                    {
+                        connection.Dispose();
+                    }
+                }
+
+                if (ds.Tables[0].Rows.Count > 0)
+                {
+                    dt = ds.Tables[1];
+                    totalRecords = (long)ds.Tables[0].Rows[0]["total"];
+                }
+
+                adapter.AcceptChangesDuringFill = true;
             }
 
-            return new DataView(result).ToTable();
+            return dt;
         }
 
-        public DataTable GetPageData(string select, string from, string where, string orderBy, long startRow, long pageSize, byte getCount, out long totalRecords) =>
-            GetContainerQueryResultTable(new ContainerQueryObject(this, select, from, where, orderBy, startRow.ToString(), pageSize.ToString()), out totalRecords);
+
+        public DataTable GetSearchResults(string expression, bool useMorphology, int startPos, long recordCount, string tabname, int minRank, DateTime startDate, DateTime endDate, int showStaticContent, ref long totalRecords)
+        {
+            const string searchSp = "qp_fulltextSiteSearchWithDate";
+            var dt = new DataTable();
+            var ds = new DataSet();
+
+            const string strSql = "SELECT count(*) from sysobjects where name = '" + searchSp + "'";
+            var useMorphologyInt = useMorphology ? 1 : 0;
+            if (GetCachedData(strSql).Rows.Count > 0)
+            {
+                var adapter = CreateDbAdapter();
+                var connection = GetActualConnection();
+                try
+                {
+                    if (connection.State == ConnectionState.Closed)
+                    {
+                        connection.Open();
+                    }
+
+                    adapter.SelectCommand = CreateDbCommand(searchSp, connection);
+                    adapter.SelectCommand.Transaction = GetActualTransaction();
+                    adapter.SelectCommand.CommandType = CommandType.StoredProcedure;
+                    adapter.SelectCommand.Parameters.AddWithValue("@tabname", tabname);
+                    adapter.SelectCommand.Parameters.AddWithValue("@use_morphology", useMorphologyInt);
+                    adapter.SelectCommand.Parameters.AddWithValue("@expression",  expression.ToLower());
+                    adapter.SelectCommand.Parameters.AddWithValue("@minrank",  minRank);
+                    adapter.SelectCommand.Parameters.AddWithValue("@startpos", startPos);
+                    adapter.SelectCommand.Parameters.AddWithValue("@count", recordCount);
+                    adapter.SelectCommand.Parameters.AddWithValue("@startDate", startDate);
+                    adapter.SelectCommand.Parameters.AddWithValue("@endDate", endDate);
+                    adapter.SelectCommand.Parameters.AddWithValue("@showStatic", showStaticContent);
+                    adapter.AcceptChangesDuringFill = false;
+                    adapter.Fill(ds);
+                }
+                finally
+                {
+                    if (NeedToDisposeActualConnection)
+                    {
+                        connection.Dispose();
+                    }
+                }
+
+                if (ds.Tables[0].Rows.Count > 0)
+                {
+                    dt = ds.Tables[1];
+                    totalRecords = (long)ds.Tables[0].Rows[0]["total"];
+                }
+
+                adapter.AcceptChangesDuringFill = true;
+            }
+
+            return dt;
+        }
+
+        #endregion
+
+
+        #region mapping
+
+        private bool _throwLoadFileExceptions = true;
 
         public string GetBinDirectory(int siteId, bool isLive)
         {
@@ -815,6 +416,9 @@ namespace Quantumart.QPublishing.Database
         }
 
         public string GetAppDataDirectory(int siteId, bool isLive) => GetBinDirectory(siteId, isLive).Replace("bin", "App_Data");
+
+
+
 
         public string GetDefaultMapFileContents(int siteId, bool isLive, string contextName)
         {
@@ -833,7 +437,6 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-#if !ASPNETCORE && NET4
         private string GetRealDefaultMapFileContents(string key)
         {
             if (string.IsNullOrEmpty(key))
@@ -855,7 +458,7 @@ namespace Quantumart.QPublishing.Database
                 contextName = GetSite(siteId).ContextClassName;
             }
 
-            var mapping = new AssembleContentsController(siteId, InstanceConnectionString) { IsLive = isLive }.GetMapping(contextName);
+            var mapping = new AssembleContentsController(siteId, InstanceConnectionString, DatabaseType) { IsLive = isLive }.GetMapping(contextName);
             if (string.IsNullOrEmpty(mapping))
             {
                 throw new ApplicationException($"Cannot receive mapping for context '{contextName}' from site (ID={siteId})");
@@ -863,14 +466,39 @@ namespace Quantumart.QPublishing.Database
 
             return mapping;
         }
-#else
-        private static string GetRealDefaultMapFileContents(string key) => throw new NotImplementedException("Not implemented at .net core app framework");
-#endif
 
         public string GetMapFileContents(int siteId, bool isLive, string fileName) => GetCachedFileContents(Path.Combine(GetAppDataDirectory(siteId, isLive), fileName));
 
         public string GetDefaultMapFileContents(int siteId, string contextName = null) => GetDefaultMapFileContents(siteId, !IsStage, contextName);
 
         public string GetMapFileContents(int siteId, string fileName) => GetMapFileContents(siteId, !IsStage, fileName);
+
+
+        public string GetCachedFileContents(string path)
+        {
+            var key = CacheManager.FileContentsCacheKeyPrefix + path.ToLowerInvariant();
+            return GetCachedEntity(key, LoadFileContents);
+        }
+
+        private string LoadFileContents(string key)
+        {
+            var path = key.Replace(CacheManager.FileContentsCacheKeyPrefix, string.Empty);
+            var result = string.Empty;
+            try
+            {
+                result = File.ReadAllText(path);
+            }
+            catch (Exception)
+            {
+                if (_throwLoadFileExceptions)
+                {
+                    throw;
+                }
+            }
+
+            return result;
+        }
+
+        #endregion
     }
 }

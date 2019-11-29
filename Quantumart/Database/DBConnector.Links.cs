@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
@@ -88,13 +89,13 @@ namespace Quantumart.QPublishing.Database
 
         public string GetRealContentItemLinkIDs(int linkId, string itemIds, bool isManyToMany)
         {
-            var sql = GetContentItemLinkQuery(linkId, itemIds, isManyToMany, false);
-            if (string.IsNullOrEmpty(sql))
+            var cmd = GetContentItemLinkCommand(linkId, itemIds, isManyToMany, false);
+            if (cmd == null)
             {
                 return string.Empty;
             }
 
-            var dt = GetRealData(sql);
+            var dt = GetRealData(cmd);
             var result = new List<string> { "0" };
             result.AddRange(dt.Rows.OfType<DataRow>().Select(n => n[0].ToString()));
             return string.Join(",", result.ToArray());
@@ -104,10 +105,10 @@ namespace Quantumart.QPublishing.Database
         {
             var result = new Dictionary<int, List<string>>();
             var idstr = string.Join(",", ids.Select(n => n.ToString()).ToArray());
-            var sql = GetContentItemLinkQuery(linkId, idstr, isManyToMany, true);
-            if (!string.IsNullOrEmpty(sql))
+            var cmd = GetContentItemLinkCommand(linkId, idstr, isManyToMany, true);
+            if (cmd != null)
             {
-                var dt = GetRealData(sql);
+                var dt = GetRealData(cmd);
                 foreach (DataRow dr in dt.Rows)
                 {
                     var itemId = (int)(decimal)dr["item_id"];
@@ -126,60 +127,72 @@ namespace Quantumart.QPublishing.Database
             return result.Select(n => new KeyValuePair<int, string>(n.Key, string.Join(",", n.Value.ToArray()))).ToDictionary(n => n.Key, n => n.Value);
         }
 
-        public string GetContentItemLinkQuery(string linkFieldName, long itemId) => GetContentItemLinkQuery(linkFieldName, itemId.ToString());
+        public DbCommand GetContentItemLinkCommand(string linkFieldName, long itemId) => GetContentItemLinkCommand(linkFieldName, itemId.ToString());
 
-        public string GetContentItemLinkQuery(string linkFieldName, string itemIds)
+        public DbCommand GetContentItemLinkCommand(string linkFieldName, string itemIds)
         {
             var info = GetRelationInfoForItem(linkFieldName, itemIds);
-            return info == null ? string.Empty : GetContentItemLinkQuery(info.LinkId, itemIds, info.IsManyToMany, false);
+            return info == null ? null : GetContentItemLinkCommand(info.LinkId, itemIds, info.IsManyToMany, false);
         }
 
-        public string GetContentItemLinkQuery(int linkId, long itemId) => GetContentItemLinkQuery(linkId, itemId.ToString());
+        public DbCommand GetContentItemLinkCommand(int linkId, long itemId) => GetContentItemLinkCommand(linkId, itemId.ToString());
 
-        public string GetContentItemLinkQuery(int linkId, string itemIds) => GetContentItemLinkQuery(linkId, itemIds, true, false);
+        public DbCommand GetContentItemLinkCommand(int linkId, string itemIds) => GetContentItemLinkCommand(linkId, itemIds, true, false);
 
-        public string GetContentItemLinkQuery(int linkId, long itemId, bool isManyToMany) => GetContentItemLinkQuery(linkId, itemId.ToString(), isManyToMany, false);
+        public DbCommand GetContentItemLinkCommand(int linkId, long itemId, bool isManyToMany) => GetContentItemLinkCommand(linkId, itemId.ToString(), isManyToMany, false);
 
-        public string GetContentItemLinkQuery(int linkId, string itemIds, bool isManyToMany, bool returnAll)
+        public DbCommand GetContentItemLinkCommand(int linkId, string itemIds, bool isManyToMany, bool returnAll)
         {
             if (linkId == LegacyNotFound)
             {
-                return string.Empty;
+                return null;
             }
 
             var ids = itemIds.Split(',');
             string table;
-            string select;
+            string query;
             if (isManyToMany)
             {
                 table = IsStage ? "item_link_united" : "item_link";
                 if (ids.Length == 1)
                 {
-                    return string.Format("EXEC sp_executesql N'SELECT linked_item_id FROM {2} WITH (NOLOCK) WHERE item_id = @itemId AND link_id = @linkId', N'@itemId NUMERIC, @linkId NUMERIC', @itemId = {0}, @linkId = {1};", ids[0], linkId, table);
+                    query = $@"SELECT linked_item_id FROM {table} {WithNoLock} WHERE item_id = @itemId AND link_id = @linkId";
+                }
+                else
+                {
+                    query = returnAll ? "item_id, linked_item_id" : "DISTINCT linked_item_id";
+                    query = $@"SELECT {query} FROM {table} {WithNoLock} where item_id in ({itemIds}) AND link_id = @linkId";
+                }
+            }
+            else
+            {
+                var attr = GetContentAttributeObject(linkId);
+
+                if (attr == null)
+                {
+                    return null;
                 }
 
-                select = returnAll ? "item_id, linked_item_id" : "DISTINCT linked_item_id";
-                return string.Format("SELECT {3} FROM {2} WITH (NOLOCK) where item_id in ({0}) AND link_id = {1}", itemIds, linkId, table, select);
+                var attrName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
+
+                table = IsStage ? $@"content_{attr.ContentId}_united" : $@"content_{attr.ContentId}";
+                if (ids.Length == 1)
+                {
+                    query = $"SELECT content_item_id FROM {table} {WithNoLock} WHERE {attrName} = @itemId";
+                }
+                else
+                {
+                    query = returnAll
+                        ? $"[{attr.Name}] as item_id, content_item_id as linked_item_id"
+                        : "DISTINCT content_item_id";
+
+                    query = $@"SELECT {query} FROM {table} {WithNoLock} WHERE {attrName} in ({itemIds})";
+                }
             }
-
-            var attr = GetContentAttributeObject(linkId);
-            if (attr == null)
-            {
-                return string.Empty;
-            }
-
-            table = IsStage ? "content_{0}_united" : "content_{0}";
-            table = string.Format(table, attr.ContentId);
-            if (ids.Length == 1)
-            {
-                return $"EXEC sp_executesql N'SELECT content_item_id FROM {table} WITH(NOLOCK) WHERE [{attr.Name}] = @itemId', N'@itemId NUMERIC', @itemId = {ids[0]}";
-            }
-
-            select = returnAll
-                ? $"[{attr.Name}] as item_id, content_item_id as linked_item_id"
-                : "DISTINCT content_item_id";
-
-            return string.Format("SELECT {3} FROM {0} WITH (NOLOCK) WHERE [{1}] in ({2})", table, attr.Name, itemIds, select);
+            var cmd = CreateDbCommand(query);
+            cmd.Parameters.AddWithValue("@linkId", linkId);
+            cmd.Parameters.AddWithValue("@itemId", ids[0]);
+            return cmd;
         }
 
         // ReSharper disable once InconsistentNaming

@@ -23,7 +23,7 @@ namespace Quantumart.IntegrationTests
     [TestFixture]
     public class DynamicImageTests
     {
-        private const string ContentName = "Test files";
+        private const string ContentName = "test files";
 
         private const string ImageName = "BaseImage";
 
@@ -43,7 +43,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -52,7 +52,7 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString)
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType)
             {
                 DynamicImageCreator = new FakeDynamicImageCreator(),
                 FileSystem = new FakeFileSystem(),

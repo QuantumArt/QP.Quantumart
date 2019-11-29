@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory = $true)]
   [String] $sqlUserId = '',
 
@@ -72,5 +72,6 @@ if ($isDebug) {
   Write-Output "`r`nFinal query result: "
   Write-Output $queryToRun
 }
+
 
 Invoke-Sqlcmd -ServerInstance $serverInstance -Query $queryToRun -Username $sqlUserId -Password $sqlPassword

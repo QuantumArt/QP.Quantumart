@@ -87,13 +87,15 @@ namespace Quantumart.QPublishing.OnScreen
             var result = 0;
             if (!string.IsNullOrEmpty(backendSid))
             {
-                var sql = $"EXEC sp_executesql N'SELECT user_id from sessions_log WHERE sid = @sid', N'@sid nvarchar(255)', @sid = '{backendSid}'";
-                var dt = cnn.GetRealData(sql);
+                var readCmd = cnn.CreateDbCommand("SELECT user_id from sessions_log WHERE sid = @sid");
+                readCmd.Parameters.AddWithValue("@sid", backendSid);
+                var dt = cnn.GetRealData(readCmd);
                 if (dt.Rows.Count > 0)
                 {
                     result = (int)(decimal)dt.Rows[0]["user_id"];
-                    sql = $"EXEC sp_executesql N'UPDATE sessions_log SET sid = NULL WHERE sid = @sid', N'@sid nvarchar(255)', @sid = '{backendSid}'";
-                    cnn.ProcessData(sql);
+                    var updateCmd = cnn.CreateDbCommand("UPDATE sessions_log SET sid = NULL WHERE sid = @sid");
+                    updateCmd.Parameters.AddWithValue("@sid", backendSid);
+                    cnn.ProcessData(updateCmd);
                 }
             }
 

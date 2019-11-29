@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
 
@@ -46,7 +47,7 @@ namespace Quantumart.QPublishing.Database
             var versionIdsToRemove = await GetVersionIdsToRemoveAsync(existingIds, content.MaxVersionNumber, cancellationToken);
             var createVersions = options.CreateVersions && content.UseVersionControl;
 
-            CreateInternalConnection(true);
+            CreateInternalConnection();
             try
             {
                 var doc = GetImportContentItemDocument(arrValues, content);
@@ -62,8 +63,8 @@ namespace Quantumart.QPublishing.Database
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
                 await ImportContentDataAsync(dataDoc, cancellationToken);
 
-                var attrString = string.Join(",", resultAttrs.Select(n => n.Id.ToString()).ToArray());
-                await ReplicateDataAsync(arrValues, attrString, cancellationToken);
+                var attrIds = resultAttrs.Select(n => n.Id).ToArray();
+                await ReplicateDataAsync(arrValues, attrIds, cancellationToken);
 
                 var manyToManyAttrs = resultAttrs.Where(n => n.Type == AttributeType.Relation && n.LinkId.HasValue).ToArray();
                 if (manyToManyAttrs.Any())
@@ -104,12 +105,18 @@ namespace Quantumart.QPublishing.Database
                 .ToDictionary(kRow => Convert.ToInt32(kRow["content_item_id"]), vRow => Convert.ToDateTime(vRow["modified"]));
 
             var newHash = new HashSet<int>(newIds);
+            var format = "MM/dd/yyyy HH:mm:ss.fff";
+            if (DatabaseType == DatabaseType.Postgres)
+            {
+                format += "fff";
+            }
             foreach (var value in arrValues)
             {
                 var id = int.Parse(value[SystemColumnNames.Id]);
                 if (id != 0 && arrModified.TryGetValue(id, out var modified))
                 {
-                    value[SystemColumnNames.Modified] = modified.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
+
+                    value[SystemColumnNames.Modified] = modified.ToString(format, CultureInfo.InvariantCulture);
                     if (newHash.Contains(id))
                     {
                         value[SystemColumnNames.Created] = value[SystemColumnNames.Modified];

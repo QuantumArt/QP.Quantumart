@@ -48,6 +48,9 @@ namespace Quantumart.IntegrationTests
 
         public static int ContentId { get; private set; }
 
+
+        public static int LinkId { get; private set; }
+
         public static int DictionaryContentId { get; private set; }
 
         [OneTimeSetUp]
@@ -55,7 +58,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -63,7 +66,7 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString) { ForceLocalCache = true };
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
 #endif
             Clear();
 
@@ -71,8 +74,8 @@ namespace Quantumart.IntegrationTests
 
             ContentId = Global.GetContentId(DbConnector, ContentName);
             DictionaryContentId = Global.GetContentId(DbConnector, DictionaryContentName);
-
-            EfLinksExists = Global.EfLinksExists(DbConnector, ContentId);
+            LinkId = Global.GetLinkId(DbConnector, ContentId, "Categories");
+            EfLinksExists = true;
             TitleName = DbConnector.FieldName(Global.SiteId, ContentName, "Title");
             MainCategoryName = DbConnector.FieldName(Global.SiteId, ContentName, "MainCategory");
             NumberName = DbConnector.FieldName(Global.SiteId, ContentName, "Number");
@@ -115,8 +118,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfAsyncBefore = Global.CountEfLinks(DbConnector, ints, ContentId, true);
-                var cntEfBefore = Global.CountEfLinks(DbConnector, ints, ContentId);
+                var cntEfAsyncBefore = Global.CountEfLinks(DbConnector, ints, LinkId, true);
+                var cntEfBefore = Global.CountEfLinks(DbConnector, ints, LinkId);
                 Assert.That(cntEfAsyncBefore, Is.EqualTo(cntAsyncBefore));
                 Assert.That(cntEfBefore, Is.EqualTo(cntBefore));
             }
@@ -135,8 +138,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfAsyncAfterSplit = Global.CountEfLinks(DbConnector, ints, ContentId, true);
-                var cntEfAfterSplit = Global.CountEfLinks(DbConnector, ints, ContentId);
+                var cntEfAsyncAfterSplit = Global.CountEfLinks(DbConnector, ints, LinkId, true);
+                var cntEfAfterSplit = Global.CountEfLinks(DbConnector, ints, LinkId);
                 Assert.That(cntEfAsyncAfterSplit, Is.EqualTo(cntAsyncAfterSplit));
                 Assert.That(cntEfAfterSplit, Is.EqualTo(cntAfterSplit));
             }
@@ -176,8 +179,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfAsyncAfterMerge = Global.CountEfLinks(DbConnector, ints, ContentId, true);
-                var cntEfAfterMerge = Global.CountEfLinks(DbConnector, ints, ContentId);
+                var cntEfAsyncAfterMerge = Global.CountEfLinks(DbConnector, ints, LinkId, true);
+                var cntEfAfterMerge = Global.CountEfLinks(DbConnector, ints, LinkId);
                 Assert.That(cntEfAsyncAfterMerge, Is.EqualTo(cntAsyncAfterMerge));
                 Assert.That(cntEfAfterMerge, Is.EqualTo(cntAfterMerge));
             }
@@ -217,8 +220,8 @@ namespace Quantumart.IntegrationTests
             Assert.That(ints2, Is.EqualTo(intsSaved2), "Second article M2M saved");
             if (EfLinksExists)
             {
-                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
+                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
                 Assert.That(intsEfSaved1, Is.EquivalentTo(intsSaved1));
                 Assert.That(intsEfSaved2, Is.EquivalentTo(intsSaved2));
             }
@@ -247,10 +250,10 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
-                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, ContentId, true);
-                var intsEfUpdatedAsync2 = Global.GetEfLinks(DbConnector, ids2, ContentId, true);
+                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
+                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, LinkId, true);
+                var intsEfUpdatedAsync2 = Global.GetEfLinks(DbConnector, ids2, LinkId, true);
                 Assert.That(intsEfUpdated1, Is.EquivalentTo(intsUpdated1));
                 Assert.That(intsEfUpdated2, Is.EquivalentTo(intsUpdated2));
                 Assert.That(intsEfUpdatedAsync1, Is.EquivalentTo(intsUpdatedAsync1));
@@ -289,10 +292,10 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfMerged1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfMerged2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
-                var intsEfMergedAsync1 = Global.GetEfLinks(DbConnector, ids1, ContentId, true);
-                var intsEfMergedAsync2 = Global.GetEfLinks(DbConnector, ids2, ContentId, true);
+                var intsEfMerged1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfMerged2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
+                var intsEfMergedAsync1 = Global.GetEfLinks(DbConnector, ids1, LinkId, true);
+                var intsEfMergedAsync2 = Global.GetEfLinks(DbConnector, ids2, LinkId, true);
                 Assert.That(intsEfMerged1, Is.EquivalentTo(intsMerged1));
                 Assert.That(intsEfMerged2, Is.EquivalentTo(intsMerged2));
                 Assert.That(intsEfMergedAsync1, Is.EquivalentTo(intsMergedAsync1));
@@ -322,7 +325,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
+                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
                 Assert.That(ints1, Is.EqualTo(intsEfSaved1), "article EF M2M saved");
             }
 
@@ -345,8 +348,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, ContentId, true);
+                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, LinkId, true);
                 Assert.That(ints1, Is.EqualTo(intsEfUpdated1), "Article EF M2M (main) remains the same");
                 Assert.That(intsNew1, Is.EqualTo(intsEfUpdatedAsync1), "Article EF M2M (async) saved");
             }
@@ -365,8 +368,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfMerged1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfMergedAsync1 = Global.GetEfLinks(DbConnector, ids1, ContentId, true);
+                var intsEfMerged1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfMergedAsync1 = Global.GetEfLinks(DbConnector, ids1, LinkId, true);
                 Assert.That(intsEfMerged1, Is.EqualTo(intsUpdatedAsync1), "Article EF M2M (main) merged");
                 Assert.That(intsEfMergedAsync1, Is.Empty, "Article EF M2M (async) cleared");
             }
@@ -409,8 +412,8 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
+                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
                 Assert.That(ints1, Is.EqualTo(intsEfSaved1), "First article EF M2M saved");
                 Assert.That(ints2, Is.EqualTo(intsEfSaved2), "Second article EF M2M saved");
             }
@@ -428,7 +431,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEfLinks, Is.EqualTo(cntLinks), "EF links");
             }
 
@@ -440,8 +443,8 @@ namespace Quantumart.IntegrationTests
             Assert.That(intsNew2, Is.EqualTo(intsUpdated2), "Second article M2M updated");
             if (EfLinksExists)
             {
-                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
+                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
                 Assert.That(intsNew1, Is.EqualTo(intsEfUpdated1), "First article EF M2M updated");
                 Assert.That(intsNew2, Is.EqualTo(intsEfUpdated2), "Second article EF M2M updated");
             }
@@ -475,7 +478,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(ints1, Is.EqualTo(intsSaved1), "Article M2M saved");
             if (EfLinksExists)
             {
-                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids, ContentId);
+                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids, LinkId);
                 Assert.That(ints1, Is.EqualTo(intsEfSaved1), "Article EF M2M saved");
             }
 
@@ -489,7 +492,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEfLinks, Is.EqualTo(cntLinks), "EF links");
             }
 
@@ -499,7 +502,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(intsNew1, Is.EqualTo(intsUpdated1), "Article M2M updated");
             if (EfLinksExists)
             {
-                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids, ContentId);
+                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids, LinkId);
                 Assert.That(intsNew1, Is.EqualTo(intsEfUpdated1), "Article EF M2M updated");
             }
 
@@ -909,7 +912,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEf = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEf = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEf, Is.EqualTo(2), "Default EF M2M");
             }
         }
@@ -996,7 +999,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEf = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEf = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEf, Is.EqualTo(2), "Default EF M2M");
             }
         }
@@ -1121,9 +1124,9 @@ namespace Quantumart.IntegrationTests
             var titleAfter = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var catAfter = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
             var numAfter = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "Number", ids)[0];
-            Assert.That(titleBefore, Is.Not.EqualTo(titleAfter), "Changed Title");
-            Assert.That(catBefore, Is.EqualTo(catAfter), "Same Category");
-            Assert.That(numBefore, Is.EqualTo(numAfter), "Same Number");
+            Assert.That(titleAfter, Is.Not.EqualTo(titleBefore), "Changed Title");
+            Assert.That(catAfter, Is.EqualTo(catBefore), "Same Category");
+            Assert.That(numAfter, Is.EqualTo(numBefore), "Same Number");
             Assert.That(titleAfter, Is.EqualTo(article2[TitleName]), "Category updated");
         }
 
@@ -1154,7 +1157,7 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEfLinks = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEfLinks, Is.EqualTo(cntLinks), "EF links saved");
             }
 
@@ -1164,7 +1167,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(cntLinksAfter, Is.EqualTo(0), "Links nullified");
             if (EfLinksExists)
             {
-                var cntEfLinksAfter = Global.CountEfLinks(DbConnector, ids, ContentId);
+                var cntEfLinksAfter = Global.CountEfLinks(DbConnector, ids, LinkId);
                 Assert.That(cntEfLinksAfter, Is.EqualTo(0), "EF links nullified");
             }
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using Quantumart.Helpers;
 using Quantumart.QPublishing.Database;
@@ -79,7 +80,7 @@ namespace Quantumart.QPublishing.Info
             }
         }
 
-        public SqlCommand GetSqlCommand()
+        public DbCommand GetDbCommand()
         {
             var cmd = new SqlCommand
             {

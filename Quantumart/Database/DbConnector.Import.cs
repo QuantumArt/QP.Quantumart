@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
 
 // ReSharper disable once CheckNamespace
@@ -46,7 +48,7 @@ namespace Quantumart.QPublishing.Database
                 attrs = fullAttrs.Where(n => fullUpdate || attrIds != null && attrIds.Contains(n.Id)).ToArray();
             }
 
-            CreateInternalConnection(true);
+            CreateInternalConnection();
             try
             {
                 var doc = GetImportContentItemDocument(enumerable, content);
@@ -55,8 +57,8 @@ namespace Quantumart.QPublishing.Database
                 var dataDoc = GetImportContentDataDocument(enumerable, attrs, content, overrideMissedFields);
                 ImportContentData(dataDoc);
 
-                var attrString = fullUpdate ? string.Empty : string.Join(",", attrs.Select(n => n.Id.ToString()).ToArray());
-                ReplicateData(enumerable, attrString);
+                var replAttrIds = fullUpdate ? new int[] {} : attrs.Select(n => n.Id).ToArray();
+                ReplicateData(enumerable, replAttrIds);
 
                 var manyToManyAttrs = attrs.Where(n => n.Type == AttributeType.Relation && n.LinkId.HasValue);
                 var toManyAttrs = manyToManyAttrs as ContentAttribute[] ?? manyToManyAttrs.ToArray();
@@ -74,23 +76,30 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private void ReplicateData(IEnumerable<Dictionary<string, string>> values, string attrString)
+        private void ReplicateData(IEnumerable<Dictionary<string, string>> values, int[] attrIds)
         {
-            var cmd = GetReplicateDataCommand(values, attrString);
+            var cmd = GetReplicateDataCommand(values, attrIds);
             ProcessData(cmd);
         }
 
-        private SqlCommand GetReplicateDataCommand(IEnumerable<Dictionary<string, string>> values, string attrString)
+        private DbCommand GetReplicateDataCommand(IEnumerable<Dictionary<string, string>> values, int[] attrIds)
         {
-            var cmd = new SqlCommand("qp_replicate_items")
+            var cmd = CreateDbCommand();
+            var ids = values.Select(n => Int32.Parse(n[SystemColumnNames.Id])).ToArray();
+            if (DatabaseType == DatabaseType.SqlServer)
             {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 120
-            };
+                cmd.CommandText = "qp_replicate_items";
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.NVarChar, -1) { Value = string.Join(",", ids ) });
+                cmd.Parameters.Add(new SqlParameter("@attr_ids", SqlDbType.NVarChar, -1) { Value = string.Join(",", attrIds ) });
+            }
+            else
+            {
+                cmd.CommandText = attrIds.Any() ? "call qp_replicate_items(@ids, @attr_ids);" : "call qp_replicate_items(@ids);";
+                cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@ids", ids, DatabaseType));
+                cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@attr_ids", attrIds, DatabaseType));
+            }
 
-            var result = string.Join(",", values.Select(n => n[SystemColumnNames.Id]).ToArray());
-            cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.NVarChar, -1) { Value = result });
-            cmd.Parameters.Add(new SqlParameter("@attr_ids", SqlDbType.NVarChar, -1) { Value = attrString });
             return cmd;
         }
 
@@ -101,17 +110,26 @@ namespace Quantumart.QPublishing.Database
                 throw new ArgumentNullException(nameof(linkDoc));
             }
 
-            var cmd = new SqlCommand("qp_update_m2m_values")
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandTimeout = 120
-            };
+            var cmd = CreateDbCommand("qp_update_m2m_values");
+            cmd.CommandTimeout = 120;
 
-            cmd.Parameters.AddWithValue("@xmlParameter", linkDoc.ToString(SaveOptions.None));
+            if (DatabaseType == DatabaseType.SqlServer)
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+            }
+            else
+            {
+                cmd.CommandText = "call qp_update_m2m_values(@xmlParameter);";
+            }
+
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetXmlParam(
+                "@xmlParameter", linkDoc.ToString(SaveOptions.None), DatabaseType)
+            );
+
             ProcessData(cmd);
         }
 
-        private static XDocument GetImportItemLinkDocument(IEnumerable<Dictionary<string, string>> values, IEnumerable<ContentAttribute> manyToManyAttrs)
+        private XDocument GetImportItemLinkDocument(IEnumerable<Dictionary<string, string>> values, IEnumerable<ContentAttribute> manyToManyAttrs)
         {
             var linkDoc = new XDocument();
             linkDoc.Add(new XElement("items"));
@@ -145,31 +163,54 @@ namespace Quantumart.QPublishing.Database
             ProcessData(cmd);
         }
 
-        private SqlCommand GetImportContentDataCommand(XNode dataDoc)
+        private DbCommand GetImportContentDataCommand(XNode dataDoc)
         {
-            const string sql = @"
-            WITH X (CONTENT_ITEM_ID, ATTRIBUTE_ID, DATA, BLOB_DATA)
-            AS
-            (
-                SELECT
-                doc.col.value('./@id', 'int') CONTENT_ITEM_ID
-                ,doc.col.value('./@attrId', 'int') ATTRIBUTE_ID
-                ,doc.col.value('(DATA)[1]', 'nvarchar(3500)') DATA
-                ,doc.col.value('(BLOB_DATA)[1]', 'nvarchar(max)') BLOB_DATA
-                FROM @xmlParameter.nodes('/ITEMS/ITEM') doc(col)
-            )
-            UPDATE CONTENT_DATA
-            SET CONTENT_DATA.DATA = case when X.DATA = '' then NULL else X.DATA end, CONTENT_DATA.BLOB_DATA = case when X.BLOB_DATA = '' then NULL else X.BLOB_DATA end, NOT_FOR_REPLICATION = 1, MODIFIED = GETDATE()
-            FROM dbo.CONTENT_DATA
-            INNER JOIN X ON CONTENT_DATA.CONTENT_ITEM_ID = X.CONTENT_ITEM_ID AND dbo.CONTENT_DATA.ATTRIBUTE_ID = X.ATTRIBUTE_ID            ";
+            string sql;
 
-            var cmd = new SqlCommand(sql)
+            if (DatabaseType == DatabaseType.SqlServer)
             {
-                CommandTimeout = 120,
-                CommandType = CommandType.Text
-            };
+                sql = @"
+                    WITH X (CONTENT_ITEM_ID, ATTRIBUTE_ID, DATA, BLOB_DATA)
+                    AS
+                    (
+                        SELECT
+                        doc.col.value('./@id', 'int') CONTENT_ITEM_ID
+                        ,doc.col.value('./@attrId', 'int') ATTRIBUTE_ID
+                        ,doc.col.value('(DATA)[1]', 'nvarchar(3500)') DATA
+                        ,doc.col.value('(BLOB_DATA)[1]', 'nvarchar(max)') BLOB_DATA
+                        FROM @xmlParameter.nodes('/ITEMS/ITEM') doc(col)
+                    )
+                    UPDATE CONTENT_DATA
+                    SET CONTENT_DATA.DATA = case when X.DATA = '' then NULL else X.DATA end,
+                        CONTENT_DATA.BLOB_DATA = case when X.BLOB_DATA = '' then NULL else X.BLOB_DATA end,
+                        NOT_FOR_REPLICATION = 1, MODIFIED = GETDATE()
+                    FROM dbo.CONTENT_DATA
+                    INNER JOIN X ON CONTENT_DATA.CONTENT_ITEM_ID = X.CONTENT_ITEM_ID AND dbo.CONTENT_DATA.ATTRIBUTE_ID = X.ATTRIBUTE_ID ";
+            }
+            else
+            {
+                sql = @"
+                    WITH X
+                    AS
+                    (
+                        select xml.content_item_id, xml.attribute_id,
+                            case when xml.DATA = '' then NULL else xml.DATA end as data,
+                            case when xml.BLOB_DATA = '' then NULL else xml.BLOB_DATA end
+                        from XMLTABLE('/ITEMS/ITEM' PASSING @xmlParameter COLUMNS
+			                CONTENT_ITEM_ID int PATH '@id',
+			                ATTRIBUTE_ID int PATH '@attrId',
+			                DATA text PATH 'DATA',
+			                BLOB_DATA text PATH 'BLOB_DATA'
+		                ) xml
+                    )
+                    UPDATE CONTENT_DATA cd
+                    SET DATA = coalesce(X.BLOB_DATA, X.DATA), NOT_FOR_REPLICATION = true, MODIFIED = now()
+                    FROM X WHERE cd.CONTENT_ITEM_ID = X.CONTENT_ITEM_ID AND cd.ATTRIBUTE_ID = X.ATTRIBUTE_ID ";
+            }
 
-            cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = dataDoc.ToString(SaveOptions.None) });
+            var cmd = CreateDbCommand(sql);
+            cmd.CommandTimeout = 120;
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetXmlParam("@xmlParameter", dataDoc.ToString(SaveOptions.None), DatabaseType));
             return cmd;
         }
 
@@ -297,11 +338,24 @@ namespace Quantumart.QPublishing.Database
                 SELECT ID FROM @NewArticles
                 ";
 
-            var cmd = new SqlCommand(insertInto) { CommandType = CommandType.Text };
-            cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = doc.ToString(SaveOptions.None) });
+            var cmd = CreateDbCommand(insertInto);
+            var xml = doc.ToString(SaveOptions.None);
+
+            if (DatabaseType != DatabaseType.SqlServer)
+            {
+                cmd.CommandText = "select id from qp_mass_update_content_item(@xmlParameter, @contentId, @lastModifiedBy, @notForReplication, @createVersions, @importOnly);";
+            }
+
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetXmlParam("@xmlParameter", xml, DatabaseType));
             cmd.Parameters.AddWithValue("@contentId", contentId);
             cmd.Parameters.AddWithValue("@lastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@notForReplication", 1);
+            if (DatabaseType != DatabaseType.SqlServer)
+            {
+                cmd.Parameters.AddWithValue("@createVersions", false);
+                cmd.Parameters.AddWithValue("@importOnly", true);
+            }
+
 
             var ids = new Queue<int>(GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["ID"])).ToArray());
             foreach (var value in values)

@@ -10,8 +10,11 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
+#if !NETSTANDARD
 using Quantumart.QP8.Assembling.T4;
+#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
@@ -75,7 +78,8 @@ namespace Quantumart.QP8.Assembling
                 if (null == _contentsTable)
                 {
                     var qb = new StringBuilder();
-                    qb.Append("select c.*, cast(isnull(cwb.is_async, 0) as bit) as split_articles from content c ");
+                    var split = Cnn.DbType == DatabaseType.SqlServer ? "cast(coalesce(cwb.is_async, 0) as bit)" : "coalesce(cwb.is_async, false)";
+                    qb.Append($"select c.*, {split} as split_articles from content c ");
                     qb.Append(" left join content_workflow_bind cwb on c.content_id = cwb.content_id ");
                     qb.Append($" where site_id = {SiteId}");
                     _contentsTable = Cnn.GetDataTable(qb.ToString());
@@ -111,18 +115,18 @@ namespace Quantumart.QP8.Assembling
 
         public DataTable FieldsInfoTable => _fieldsInfoTable ?? (_fieldsInfoTable = Cnn.GetDataTable("select COLUMN_NAME, TABLE_NAME, DATA_TYPE from INFORMATION_SCHEMA.COLUMNS"));
 
-        public DataTable LinkTable => _linkTable ?? (_linkTable = Cnn.GetDataTable("select * from content_link"));
+        public DataTable LinkTable => _linkTable ?? (_linkTable = Cnn.GetDataTable("select link_id, l_content_id as content_id, r_content_id as linked_content_id from content_to_content"));
 
         public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca)"));
 
-        public AssembleContentsController(int siteId, string connectionParameter)
-            : base(connectionParameter)
+        public AssembleContentsController(int siteId, string connectionParameter, DatabaseType dbType = DatabaseType.SqlServer)
+            : base(connectionParameter, dbType)
         {
             FillController(siteId, null);
         }
 
-        public AssembleContentsController(int siteId, string sqlMetalPath, string connectionParameter)
-            : base(connectionParameter)
+        public AssembleContentsController(int siteId, string sqlMetalPath, string connectionParameter, DatabaseType dbType = DatabaseType.SqlServer)
+            : base(connectionParameter, dbType)
         {
             FillController(siteId, sqlMetalPath);
         }
@@ -408,6 +412,10 @@ namespace Quantumart.QP8.Assembling
 
         private void GenerateMain()
         {
+#if NETSTANDARD
+            throw new PlatformNotSupportedException();
+#else
+
             if (UseT4)
             {
                 var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
@@ -425,6 +433,7 @@ namespace Quantumart.QP8.Assembling
             {
                 RunSqlMetal();
             }
+#endif
         }
 
         private void RunSqlMetal()

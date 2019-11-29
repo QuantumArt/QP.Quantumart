@@ -28,6 +28,8 @@ namespace Quantumart.IntegrationTests
 
         public static int ContentId { get; private set; }
 
+        public static int LinkId { get; private set; }
+
         public static int DictionaryContentId { get; private set; }
 
         public static int[] BaseArticlesIds { get; private set; }
@@ -41,7 +43,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -49,14 +51,15 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString) { ForceLocalCache = true };
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
 #endif
             Clear();
 
             Global.ReplayXml(@"TestData/m2m_nonsplitted.xml");
 
             ContentId = Global.GetContentId(DbConnector, ContentName);
-            EfLinksExists = Global.EfLinksExists(DbConnector, ContentId);
+            LinkId = Global.GetLinkId(DbConnector, ContentId, "Categories");
+            EfLinksExists = true;
             DictionaryContentId = Global.GetContentId(DbConnector, DictionaryContentName);
             BaseArticlesIds = Global.GetIds(DbConnector, ContentId);
             CategoryIds = Global.GetIds(DbConnector, DictionaryContentId);
@@ -99,8 +102,8 @@ namespace Quantumart.IntegrationTests
             Assert.That(ints2, Is.EqualTo(intsSaved2), "Second article M2M saved");
             if (EfLinksExists)
             {
-                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
+                var intsEfSaved1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfSaved2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
                 Assert.That(ints1, Is.EqualTo(intsEfSaved1), "First article EF M2M saved");
                 Assert.That(ints2, Is.EqualTo(intsEfSaved2), "Second article EF M2M saved");
             }
@@ -128,10 +131,10 @@ namespace Quantumart.IntegrationTests
 
             if (EfLinksExists)
             {
-                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
-                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, ContentId, true);
-                var intsEfUpdatedAsync2 = Global.GetEfLinks(DbConnector, ids2, ContentId, true);
+                var intsEfUpdated2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
+                var intsEfUpdated1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfUpdatedAsync1 = Global.GetEfLinks(DbConnector, ids1, LinkId, true);
+                var intsEfUpdatedAsync2 = Global.GetEfLinks(DbConnector, ids2, LinkId, true);
 
                 Assert.That(intsNew1, Is.EqualTo(intsEfUpdated1), "First article EF M2M (main) saved");
                 Assert.That(intsNew2, Is.EqualTo(intsEfUpdated2), "Second article EF M2M (main) saved");
@@ -163,8 +166,8 @@ namespace Quantumart.IntegrationTests
             Assert.That(intsPublished2, Is.EqualTo(intsUpdated2), "Second article same");
             if (EfLinksExists)
             {
-                var intsEfPublished1 = Global.GetEfLinks(DbConnector, ids1, ContentId);
-                var intsEfPublished2 = Global.GetEfLinks(DbConnector, ids2, ContentId);
+                var intsEfPublished1 = Global.GetEfLinks(DbConnector, ids1, LinkId);
+                var intsEfPublished2 = Global.GetEfLinks(DbConnector, ids2, LinkId);
                 Assert.That(intsEfPublished1, Is.EqualTo(intsUpdated1), "First EF article same");
                 Assert.That(intsEfPublished2, Is.EqualTo(intsUpdated2), "Second EF article same");
             }

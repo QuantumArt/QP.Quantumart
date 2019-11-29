@@ -69,7 +69,7 @@ namespace Quantumart.QPublishing.Database
 
         private string GetDbDataValue(int articleId, ContentAttribute field)
         {
-            var cmd = new SqlCommand { CommandType = CommandType.Text };
+            var cmd = CreateDbCommand();
             var dbFieldName = field.Type == AttributeType.Textbox || field.Type == AttributeType.VisualEdit ? "BLOB_DATA" : "DATA";
             cmd.CommandText = $"select {dbFieldName} from content_data where content_item_id = @itemId and attribute_id = @fieldId";
             cmd.Parameters.AddWithValue("@itemId", articleId);
@@ -80,7 +80,7 @@ namespace Quantumart.QPublishing.Database
 
         private string GetVersionDbDataValue(int versionId, ContentAttribute field)
         {
-            var cmd = new SqlCommand { CommandType = CommandType.Text };
+            var cmd = CreateDbCommand();
             var dbFieldName = field.Type == AttributeType.Textbox || field.Type == AttributeType.VisualEdit ? "BLOB_DATA" : "DATA";
             cmd.CommandText = $"select {dbFieldName} from version_content_data where content_item_version_id = @versionId and attribute_id = @fieldId";
             cmd.Parameters.AddWithValue("@versionId", versionId);
@@ -91,17 +91,12 @@ namespace Quantumart.QPublishing.Database
 
         private DataTable GetVersionDataValues(IEnumerable<int> versionIds, IEnumerable<int> attrIds)
         {
-            var cmd = new SqlCommand
-            {
-                CommandType = CommandType.Text,
-                CommandText = "select attribute_id, content_item_version_id, data from version_content_data where content_item_version_id in (select id from @versionIds) and attribute_id in (select id from @attrIds)",
-                Parameters =
-                {
-                    new SqlParameter("@versionIds", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(versionIds) },
-                    new SqlParameter("@attrIds", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(attrIds) }
-                }
-            };
-
+            var cmd = CreateDbCommand($@"
+                select attribute_id, content_item_version_id, data from version_content_data
+                where content_item_version_id in (select id from {IdList("@versionIds", "i")}) and attribute_id in (select id from {IdList("@attrIds", "a")})
+            ");
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@versionIds", versionIds, DatabaseType));
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@attrIds", attrIds, DatabaseType));
             return GetRealData(cmd);
         }
 
@@ -122,8 +117,8 @@ namespace Quantumart.QPublishing.Database
                 FileSystem.CreateDirectory(file.ToFolder);
                 FileSystem.CreateDirectory(file.Folder);
 
-                var sourceName = $@"{file.Folder}\{file.Name.Replace("/", "\\")}";
-                var destName = $@"{file.ToFolder}\{Path.GetFileName(file.Name)}";
+                var sourceName = $@"{file.Folder}{Path.DirectorySeparatorChar}{file.Name.Replace("/", Path.DirectorySeparatorChar.ToString())}";
+                var destName = $@"{file.ToFolder}{Path.DirectorySeparatorChar}{Path.GetFileName(file.Name)}";
                 FileSystem.CopyFile(sourceName, destName);
             }
         }
@@ -143,9 +138,9 @@ namespace Quantumart.QPublishing.Database
                 return 0;
             }
 
-            using (var cmd = new SqlCommand())
+
+            using (var cmd = CreateDbCommand())
             {
-                cmd.CommandType = CommandType.Text;
                 cmd.CommandText = $"select cast({function}(content_item_version_id) as int) from content_item_version where content_item_id = @id";
                 cmd.Parameters.AddWithValue("@id", articleId);
                 return CastDbNull.To<int>(GetRealScalarData(cmd));
@@ -159,17 +154,16 @@ namespace Quantumart.QPublishing.Database
                 return new int[0];
             }
 
-            var cmd = new SqlCommand
+            using (var cmd = CreateDbCommand())
             {
-                CommandType = CommandType.Text,
-                CommandText = $"select cast({function}(content_item_version_id) as int) as data from content_item_version where content_item_id in (select id from @ids) group by content_item_id",
-                Parameters =
-                {
-                    new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(ids) }
-                }
-            };
-
-            return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["data"])).ToArray();
+                cmd.CommandText = $@"
+                    select cast({function}(content_item_version_id) as int) as data
+                    from content_item_version where content_item_id in (select id from {IdList()})
+                    group by content_item_id
+                ";
+                cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@ids", ids, DatabaseType));
+                return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["data"])).ToArray();
+            }
         }
     }
 }

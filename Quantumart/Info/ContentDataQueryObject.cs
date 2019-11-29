@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Npgsql;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Database;
 
 // ReSharper disable once CheckNamespace
@@ -64,7 +67,7 @@ namespace Quantumart.QPublishing.Info
 
         public bool WithReset { get; set; }
 
-        public List<SqlParameter> Parameters { get; set; }
+        public List<DbParameter> Parameters { get; set; }
 
         public string CountSql { get; private set; }
 
@@ -104,7 +107,7 @@ namespace Quantumart.QPublishing.Info
 
         public ContentDataQueryObject(DBConnector dbConnector, string siteName, string contentName, string fields, string whereExpression, string orderExpression, long startRow, long pageSize, byte useSchedule, string statusName, byte showSplittedArticle, byte includeArchive, bool cacheResult, double cacheInterval, bool useClientSelection, bool withReset)
         {
-            Parameters = new List<SqlParameter>();
+            Parameters = new List<DbParameter>();
             SiteName = siteName;
             ContentName = contentName;
             Fields = fields;
@@ -124,7 +127,7 @@ namespace Quantumart.QPublishing.Info
             GetCount = true;
         }
 
-        public SqlCommand GetSqlCommand()
+        public DbCommand GetDbCommand()
         {
             int contentId;
             var siteId = 0;
@@ -154,70 +157,42 @@ namespace Quantumart.QPublishing.Info
                 from = from.Replace(InsertKey, DbConnector.GetSecuritySql(contentId, UserId, GroupId, StartLevel, EndLevel));
             }
 
-            var where = GetSqlCommandWhere(siteId);
+            var cmd = DbConnector.CreateDbCommand();
+
+            var where = GetSqlCommandWhere(siteId, cmd);
             var orderBy = GetSqlCommandOrderBy();
             var startRow = StartRowExpression <= 0 ? 1 : StartRowExpression;
             var endRow = new long[] { 0, int.MaxValue, int.MaxValue - 1 }.Contains(PageSizeExpression) ? 0 : startRow + PageSizeExpression - 1;
             CountSql = $"SELECT cast(COUNT(*) as bigint) FROM {from} WHERE {where}";
 
             var sb = new StringBuilder();
-#if ASPNETCORE || NETSTANDARD
-            if (string.IsNullOrEmpty(DbConnector.DbConnectorSettings.Sql2012ModeDll) || GetCount)
-#else
-            if (string.IsNullOrEmpty(DbConnector.AppSettings["Sql2012ModeDll"]) || GetCount)
-#endif
-            {
-                sb.AppendLine("WITH PAGED_DATA_CTE AS");
-                sb.AppendLine("(");
-                sb.AppendLine($"	SELECT c.*, ROW_NUMBER() OVER (ORDER BY {orderBy}) AS ROW_NUMBER, {(GetCount ? "COUNT(*) OVER()" : "0")} AS ROWS_COUNT");
-                sb.AppendLine($"	FROM ( SELECT {select} FROM {from} WHERE {where} ) AS c");
-                sb.AppendLine(")");
-                sb.AppendLine("SELECT * FROM PAGED_DATA_CTE");
+
+
+
+                sb.AppendLine($@"SELECT {select} FROM {from} WHERE {where} ORDER BY {orderBy}");
                 if (endRow > 0 || startRow > 1)
                 {
-                    sb.AppendLine(" WHERE 1 = 1");
-                    if (startRow > 1)
-                    {
-                        sb.AppendLine(" AND ROW_NUMBER >= @startRow");
-                        Parameters.Add(new SqlParameter("@startRow", SqlDbType.Int) { Value = startRow });
-                    }
-                    if (endRow > 0)
-                    {
-                        sb.AppendLine(" AND ROW_NUMBER <= @endRow");
-                        Parameters.Add(new SqlParameter("@endRow", SqlDbType.Int) { Value = endRow });
-                    }
-                }
-                sb.AppendLine("ORDER BY ROW_NUMBER ASC");
-            }
-            else
-            {
-                sb.AppendLine($"SELECT {select} FROM {from} WHERE {where} ");
-                sb.Append("ORDER BY ");
-                sb.AppendLine(orderBy);
-                if (endRow > 0 || startRow > 1)
-                {
+                    cmd.Parameters.AddWithValue("@startRow", startRow - 1);
                     if (endRow != int.MaxValue)
                     {
-                        Parameters.Add(new SqlParameter("@startRow", SqlDbType.Int) { Value = startRow - 1 });
-                        Parameters.Add(new SqlParameter("@endRow", SqlDbType.Int) { Value = endRow });
-                        sb.AppendLine(@"OFFSET @startRow ROWS FETCH NEXT @endRow - @startRow ROWS ONLY");
+                        cmd.Parameters.AddWithValue("@endRow", endRow);
+                        sb.AppendLine(DbConnector.DatabaseType == DatabaseType.SqlServer ?
+                            @"OFFSET @startRow ROWS FETCH NEXT @endRow - @startRow ROWS ONLY" :
+                            @"LIMIT @endRow - @startRow OFFSET @startRow"
+                        );
                     }
                     else
                     {
                         if (startRow > 1)
                         {
-                            Parameters.Add(new SqlParameter("@startRow", SqlDbType.Int) { Value = startRow - 1 });
-                            sb.AppendLine(@"OFFSET @startRow ROWS");
+                            sb.AppendLine(DbConnector.DatabaseType == DatabaseType.SqlServer ?
+                                @"OFFSET @startRow ROWS" : @"OFFSET @startRow"
+                            );
                         }
                     }
                 }
-            }
 
-            var cmd = new SqlCommand
-            {
-                CommandText = sb.ToString(),
-                CommandType = CommandType.Text
-            };
+
 
             if (Parameters != null)
             {
@@ -227,6 +202,8 @@ namespace Quantumart.QPublishing.Info
                 }
             }
 
+            cmd.CommandText = sb.ToString();
+
             return cmd;
         }
 
@@ -235,7 +212,7 @@ namespace Quantumart.QPublishing.Info
         private string GetSqlCommandFrom(int contentId)
         {
             var tableSuffix = ShowSplittedArticle == 0 ? "" : "_united";
-            var from = "content_" + contentId + tableSuffix + " as c WITH(NOLOCK) ";
+            var from = $"content_{contentId}{tableSuffix} as c {DbConnector.WithNoLock} ";
             if (UseSecurity)
             {
                 if (FilterRecords)
@@ -256,7 +233,7 @@ namespace Quantumart.QPublishing.Info
             return from;
         }
 
-        private string GetSqlCommandWhere(int siteId)
+        private string GetSqlCommandWhere(int siteId, DbCommand cmd)
         {
             var whereBuilder = new StringBuilder(!string.IsNullOrEmpty(WhereExpression) ? WhereExpression : "1 = 1");
             if (UseSchedule == 1)
@@ -269,11 +246,11 @@ namespace Quantumart.QPublishing.Info
                 whereBuilder.Append(" and c.archive = 0");
             }
 
-            whereBuilder.AppendFormat(" and c.status_type_id in ({0})", GetSqlCommandStatusString(siteId));
+            whereBuilder.Append($" and c.status_type_id in ({GetSqlCommandStatusString(siteId, cmd)})");
             return whereBuilder.ToString();
         }
 
-        private string GetSqlCommandStatusString(int siteId)
+        private string GetSqlCommandStatusString(int siteId, DbCommand cmd)
         {
             string statusString;
             if (string.IsNullOrEmpty(StatusName) && siteId != 0)
@@ -299,7 +276,7 @@ namespace Quantumart.QPublishing.Info
                 for (var i = 0; i < resultStatuses.Length; i++)
                 {
                     var paramName = "@status" + i;
-                    Parameters.Add(new SqlParameter(paramName, SqlDbType.NVarChar, 255) { Value = resultStatuses[i] });
+                    cmd.Parameters.AddWithValue(paramName, resultStatuses[i]);
                     statusParams[i] = paramName;
                 }
 
@@ -336,7 +313,7 @@ namespace Quantumart.QPublishing.Info
                     .Select(n => n.Trim().Replace("[", "").Replace("]", ""))
                     .Union(orderByAttrs, StringComparer.InvariantCultureIgnoreCase)
                     .Where(n => attrs.Contains(n.ToLowerInvariant()))
-                    .Select(n => "[" + n + "]")
+                    .Select(n => SqlQuerySyntaxHelper.FieldName(DbConnector.DatabaseType, n))
                     .ToArray()
                 );
             }

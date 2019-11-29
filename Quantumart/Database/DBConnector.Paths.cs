@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 // ReSharper disable once CheckNamespace
@@ -124,7 +126,7 @@ namespace Quantumart.QPublishing.Database
             return site == null ? string.Empty : (isLive || string.IsNullOrEmpty(site.StageDns) ? site.Dns : site.StageDns);
         }
 
-        public string GetSiteLibraryDirectory(int siteId) => GetUploadDir(siteId) + "\\images";
+        public string GetSiteLibraryDirectory(int siteId) => GetUploadDir(siteId) + Path.DirectorySeparatorChar + "images";
 
         public string GetSiteDirectory(int siteId, bool isLive) => GetSiteDirectory(siteId, isLive, false);
 
@@ -146,7 +148,10 @@ namespace Quantumart.QPublishing.Database
 
         public string GetSiteLiveDirectory(int siteId) => GetSiteDirectory(siteId, true);
 
-        public string GetContentLibraryDirectory(int siteId, int contentId) => GetUploadDir(siteId) + "\\contents\\" + contentId;
+        public string GetContentLibraryDirectory(int siteId, int contentId)
+        {
+            return GetUploadDir(siteId) + Path.DirectorySeparatorChar + "contents" + Path.DirectorySeparatorChar + contentId;
+        }
 
         public string GetContentLibraryDirectory(int contentId) => GetContentLibraryDirectory(GetSiteIdByContentId(contentId), contentId);
 
@@ -202,7 +207,7 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-        public string GetFieldSubFolder(int attrId) => GetFieldSubFolder(attrId, false);
+        public string GetFieldSubFolder(int attrId) => GetFieldSubFolder(attrId, !RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
 
         public string GetDirectoryForFileAttribute(int attrId)
         {

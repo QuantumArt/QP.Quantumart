@@ -1,10 +1,13 @@
 using System;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.Win32;
+using Npgsql;
+using QP.ConfigurationService.Models;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
@@ -13,7 +16,7 @@ namespace Quantumart.QP8.Assembling
     {
         internal static readonly string RegistryPath = @"Software\Quantum Art\Q-Publishing";
 
-        public DbConnector(string connectionParameter, bool isCustomerCode)
+        public DbConnector(string connectionParameter, bool isCustomerCode, DatabaseType dbType)
         {
             if (isCustomerCode)
             {
@@ -21,7 +24,8 @@ namespace Quantumart.QP8.Assembling
             }
             else
             {
-                _mConnectionString = RemoveProvider(connectionParameter);
+                _connectionString = RemoveProvider(connectionParameter);
+                DbType = dbType;
             }
         }
 
@@ -29,18 +33,20 @@ namespace Quantumart.QP8.Assembling
 
         public string CustomerCode { get; }
 
-        private string _mConnectionString;
+        private string _connectionString;
+
+        public DatabaseType DbType { get; set; }
 
         public string ConnectionString
         {
             get
             {
-                if (string.IsNullOrEmpty(_mConnectionString))
+                if (string.IsNullOrEmpty(_connectionString))
                 {
-                    _mConnectionString = GetConnectionString();
+                    _connectionString = GetConnectionString();
                 }
 
-                return _mConnectionString;
+                return _connectionString;
             }
         }
 
@@ -70,49 +76,91 @@ namespace Quantumart.QP8.Assembling
             return node.Value.Replace("Provider=SQLOLEDB;", "");
         }
 
-        public SqlConnection CreateConnection()
+        public DbConnection CreateConnection()
         {
-            var cnn = new SqlConnection(ConnectionString);
-            cnn.Open();
-            return cnn;
+            DbConnection result;
+            if (DbType == DatabaseType.Postgres)
+            {
+                result = new NpgsqlConnection(ConnectionString);
+            }
+            else
+            {
+                result = new SqlConnection(ConnectionString);
+            }
+
+            result.Open();
+            return result;
         }
 
-        public void ExecuteCmd(SqlCommand cmd)
+
+        public void ExecuteSql(string sqlQuery)
         {
             using (var cnn = CreateConnection())
             {
-                cmd.Connection = cnn;
+                var cmd = CreateCommand(sqlQuery, cnn);
                 cmd.ExecuteNonQuery();
                 cnn.Close();
             }
         }
 
-        public void ExecuteSql(string sqlQuery)
+        public DbCommand CreateCommand(string sqlQuery, DbConnection cnn)
         {
-            var cmd = new SqlCommand(sqlQuery);
-            ExecuteCmd(cmd);
+            DbCommand result;
+            if (cnn is NpgsqlConnection)
+            {
+                result = new NpgsqlCommand(sqlQuery);
+            }
+            else
+            {
+                result = new SqlCommand(sqlQuery);
+            }
+            result.CommandType = CommandType.Text;
+            result.Connection = cnn;
+            return result;
+        }
+
+        public DbCommand CreateCommand(string sqlQuery)
+        {
+            var cnn = CreateConnection();
+            return CreateCommand(sqlQuery, cnn);
+        }
+
+        public DbDataAdapter CreateDataAdapter(DbConnection cnn)
+        {
+            DbDataAdapter result;
+            if (cnn is NpgsqlConnection)
+            {
+                result = new NpgsqlDataAdapter();
+            }
+            else
+            {
+                result = new SqlDataAdapter();
+            }
+            return result;
         }
 
         public DataSet GetData(string sqlQuery)
         {
             var ds = new DataSet { Locale = CultureInfo.InvariantCulture };
-            var cnn = CreateConnection();
-            var cmd = new SqlCommand(sqlQuery, cnn);
-            var da = new SqlDataAdapter { SelectCommand = cmd };
-            da.Fill(ds);
-            cnn.Close();
-            cmd.Dispose();
+            using (var cnn = CreateConnection())
+            {
+                var cmd = CreateCommand(sqlQuery, cnn);
+                var da = CreateDataAdapter(cnn);
+                da.SelectCommand = cmd;
+                da.Fill(ds);
+            }
             return ds;
         }
 
         public void GetData(string sqlQuery, DataTable dt)
         {
-            var cnn = CreateConnection();
-            var cmd = new SqlCommand(sqlQuery, cnn);
-            var da = new SqlDataAdapter { SelectCommand = cmd };
-            da.Fill(dt);
-            cnn.Close();
-            cmd.Dispose();
+            using (var cnn = CreateConnection())
+            {
+                var cmd = CreateCommand(sqlQuery, cnn);
+                var da = CreateDataAdapter(cnn);
+                da.SelectCommand = cmd;
+                da.Fill(dt);
+            }
         }
 
         public DataTable GetDataTable(string sqlQuery)

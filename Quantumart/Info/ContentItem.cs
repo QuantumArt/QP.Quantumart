@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 
@@ -149,12 +150,12 @@ namespace Quantumart.QPublishing.Info
         private void Load()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("sp_executesql N'");
-            sb.AppendLine("select ci.*, st.status_type_name from content_item ci with (nolock) ");
+            sb.AppendLine($"select ci.*, st.status_type_name from content_item ci {_dbConnector.WithNoLock} ");
             sb.AppendLine("inner join status_type st on ci.status_type_id = st.status_type_id ");
             sb.AppendLine("where content_item_id = @id");
-            sb.AppendFormat("', N'@id NUMERIC', @id = {0}", Id);
-            var dt = _dbConnector.GetRealData(sb.ToString());
+            var cmd = _dbConnector.CreateDbCommand(sb.ToString());
+            cmd.Parameters.AddWithValue("@id", Id);
+            var dt = _dbConnector.GetRealData(cmd);
 
             if (dt.Rows.Count == 0)
             {
@@ -183,14 +184,14 @@ namespace Quantumart.QPublishing.Info
             }
 
             var sb = new StringBuilder();
-            sb.AppendLine("sp_executesql N'");
-            sb.AppendLine("select top 1 civ.content_item_version_id, civ.modified as version_modified, ci.*, st.status_type_name from content_item_version civ with (nolock) ");
-            sb.AppendLine("inner join content_item ci with(nolock) on civ.content_item_id = ci.content_item_id");
+            sb.AppendLine($"select {SqlQuerySyntaxHelper.Top(_dbConnector.DatabaseType, "1")} civ.content_item_version_id, civ.modified as version_modified, ci.*, st.status_type_name from content_item_version civ {_dbConnector.WithNoLock} ");
+            sb.AppendLine($"inner join content_item ci {_dbConnector.WithNoLock} on civ.content_item_id = ci.content_item_id");
             sb.AppendLine("inner join status_type st on ci.status_type_id = st.status_type_id ");
-            sb.AppendLine("where civ.content_item_id = @id order by content_item_version_id desc");
-            sb.AppendFormat("', N'@id NUMERIC', @id = {0}", Id);
+            sb.AppendLine($"where civ.content_item_id = @id order by content_item_version_id desc {SqlQuerySyntaxHelper.Limit(_dbConnector.DatabaseType, "1")}");
+            var cmd = _dbConnector.CreateDbCommand(sb.ToString());
+            cmd.Parameters.AddWithValue("@id", Id);
+            var dt = _dbConnector.GetRealData(cmd);
 
-            var dt = _dbConnector.GetRealData(sb.ToString());
             if (dt.Rows.Count == 0)
             {
                 throw new VersionNotFoundException($"Version is not found for article (ID = {Id}) ");
@@ -211,26 +212,28 @@ namespace Quantumart.QPublishing.Info
         private IEnumerable<int> GetRealLinkedItems(int linkId)
         {
             var linkTable = Splitted ? "item_link_united" : "item_link";
-            var sql = string.Format("EXEC sp_executesql N'SELECT linked_item_id FROM {2} WHERE item_id = @itemId AND link_id = @linkId', N'@itemId NUMERIC, @linkId NUMERIC', @itemId = {0}, @linkId = {1};", Id, linkId, linkTable);
-            var items = _dbConnector.GetRealData(sql).Select().Select(row => Convert.ToInt32(row["linked_item_id"]));
+            var sql = $@"SELECT linked_item_id FROM {linkTable} WHERE item_id = @itemId AND link_id = @linkId";
+            var cmd = _dbConnector.CreateDbCommand(sql);
+            cmd.Parameters.AddWithValue("@itemId", Id);
+            cmd.Parameters.AddWithValue("@linkId", linkId);
+            var items = _dbConnector.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["linked_item_id"]));
             return items;
         }
 
         private IEnumerable<int> GetVersionLinkedItems(int attrId)
         {
-            var sql = $"EXEC sp_executesql N'SELECT linked_item_id FROM item_to_item_version WHERE content_item_version_id = @itemId AND attribute_id = @attrId', N'@itemId NUMERIC, @attrId NUMERIC', @itemId = {VersionId}, @attrId = {attrId};";
-            var items = _dbConnector.GetRealData(sql).Select().Select(n => (int)(decimal)n["linked_item_id"]);
+            var sql = $"SELECT linked_item_id FROM item_to_item_version WHERE content_item_version_id = @itemId AND attribute_id = @attrId";
+            var cmd = _dbConnector.CreateDbCommand(sql);
+            cmd.Parameters.AddWithValue("@itemId", VersionId);
+            cmd.Parameters.AddWithValue("@attrId", attrId);
+            var items = _dbConnector.GetRealData(cmd).Select().Select(n => (int)(decimal)n["linked_item_id"]);
             return items;
         }
 
         private IEnumerable<int> GetRealRelatedItems(int contentId, string fieldName)
         {
-            var cmd = new SqlCommand
-            {
-                CommandType = CommandType.StoredProcedure,
-                CommandText = "qp_get_m2o_ids"
-            };
-
+            var cmd = _dbConnector.CreateDbCommand("qp_get_m2o_ids");
+            cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@contentId", contentId);
             cmd.Parameters.AddWithValue("@fieldName", fieldName);
             cmd.Parameters.AddWithValue("@id", Id);
@@ -261,9 +264,12 @@ namespace Quantumart.QPublishing.Info
             InitFieldValues();
             var classifierIds = new List<int>();
             var typeIds = new List<int>();
-            var dt = _dbConnector.GetRealData(VersionId != 0
-                ? $"sp_executesql N'select cd.attribute_id, case when ca.attribute_type_id in (9, 10) then cd.blob_data else cd.data end as data from version_content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_version_id = @id', N'@id NUMERIC', @id = {VersionId}"
-                : $"sp_executesql N'select cd.attribute_id, case when ca.attribute_type_id in (9, 10) then cd.blob_data else cd.data end as data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_id = @id', N'@id NUMERIC', @id = {Id}");
+            var sql = VersionId != 0
+                ? $"select cd.attribute_id, coalesce(cd.blob_data, cd.data) as data from version_content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_version_id = @id"
+                : $"select cd.attribute_id, coalesce(cd.blob_data, cd.data) as data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where content_item_id = @id";
+            var cmd = _dbConnector.CreateDbCommand(sql);
+            cmd.Parameters.AddWithValue("@id", VersionId != 0 ? VersionId : Id);
+            var dt = _dbConnector.GetRealData(cmd);
 
             foreach (DataRow dr in dt.Rows)
             {
@@ -457,33 +463,51 @@ namespace Quantumart.QPublishing.Info
 
         public IEnumerable<int> GetAggregatedArticlesIDs(int[] classfierFields, int[] types)
         {
-            const string query = @"
-            declare @attrIds table (attribute_id numeric primary key, content_id numeric, attribute_name nvarchar(255))
-            declare @attribute_id numeric, @content_id numeric, @attribute_name nvarchar(255)
+            string query;
+            if (_dbConnector.DatabaseType == DatabaseType.SqlServer)
+            {
+                query = $@"
+                    declare @attrIds table (attribute_id numeric primary key, content_id numeric, attribute_name nvarchar(255))
+                    declare @attribute_id numeric, @content_id numeric, @attribute_name nvarchar(255)
 
-            insert into @attrIds(attribute_id, content_id, attribute_name)
-            select attribute_id, content_id, attribute_name from content_attribute where classifier_attribute_id in (select id from @ids) and content_id in (select id from @cids)
-            declare @sql nvarchar(max)
-            set @sql = ''
-            while exists(select * from @attrIds)
-            begin
-                select @attribute_id = attribute_id, @content_id = content_id, @attribute_name = attribute_name from @attrIds
-                print @attribute_id
-                if @sql <> ''
-                    set @sql = @sql + ' union all '
-                set @sql = @sql + 'select content_item_id from content_' + cast(@content_id as nvarchar(30)) + '_united where [' + @attribute_name + '] = @article_id'
-                delete from @attrIds where attribute_id = @attribute_id
-            end
-            exec sp_executesql @sql, N'@article_id numeric', @article_id = @article_id";
+                    insert into @attrIds(attribute_id, content_id, attribute_name)
+                    select attribute_id, content_id, attribute_name from content_attribute where classifier_attribute_id in (select id from @ids) and content_id in (select id from @cids)
+                    declare @sql nvarchar(max)
+                    set @sql = ''
+                    while exists(select * from @attrIds)
+                    begin
+                        select @attribute_id = attribute_id, @content_id = content_id, @attribute_name = attribute_name from @attrIds
+                        print @attribute_id
+                        if @sql <> ''
+                            set @sql = @sql + ' union all '
+                        set @sql = @sql + 'select content_item_id from content_' + cast(@content_id as nvarchar(30)) + '_united where [' + @attribute_name + '] = @article_id'
+                        delete from @attrIds where attribute_id = @attribute_id
+                    end
+                    exec sp_executesql @sql, N'@article_id numeric', @article_id = @article_id
+                ";
+            }
+            else
+            {
+                query = $"select public.qp_get_aggregated_ids(@article_id, @ids, @cids, @isLive)";
+            }
+
 
             var result = new List<int>();
-            using (var cmd = new SqlCommand(query))
+            using (var cmd = _dbConnector.CreateDbCommand(query))
             {
-                cmd.CommandType = CommandType.Text;
                 cmd.Parameters.AddWithValue("@article_id", Id);
-                cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(classfierFields) });
-                cmd.Parameters.Add(new SqlParameter("@cids", SqlDbType.Structured) { TypeName = "Ids", Value = DBConnector.IdsToDataTable(types) });
-                result.AddRange(_dbConnector.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row[0])));
+                cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@ids", classfierFields, _dbConnector.DatabaseType));
+                cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@cids", types, _dbConnector.DatabaseType));
+                cmd.Parameters.AddWithValue("@isLive", false);
+                var rows = _dbConnector.GetRealData(cmd).Select();
+                if (_dbConnector.DatabaseType == DatabaseType.SqlServer)
+                {
+                    result.AddRange(rows.Select(row => Convert.ToInt32(row[0])));
+                }
+                else
+                {
+                    result.AddRange((int[])rows[0][0]);
+                }
             }
 
             return result;

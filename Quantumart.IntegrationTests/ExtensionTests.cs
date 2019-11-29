@@ -56,7 +56,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -65,7 +65,7 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString)
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType)
             {
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
@@ -99,7 +99,6 @@ namespace Quantumart.IntegrationTests
             }
         }
 
-#if !ASPNETCORE && NET4
         [Test]
         public void ContentItem_SetArchive_MoveToArchive()
         {
@@ -115,7 +114,6 @@ namespace Quantumart.IntegrationTests
             Assert.That(() => SetArchive(ids, DbConnector, false), Throws.Nothing);
             Assert.That(Global.GetIdsFromArchive(DbConnector, ids), Is.Empty);
         }
-#endif
 
         [Test]
         public void ContentItem_SetClassifier_ThrowsException()

@@ -4,17 +4,17 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
+using Content = Quantumart.QPublishing.Info.Content;
 #if ASPNETCORE || NETSTANDARD
 using Microsoft.Extensions.Caching.Memory;
 #else
 using System.IO;
 using System.Web;
 using System.Web.Caching;
-using Quantumart.QPublishing.Pages;
-
+using System.Web.UI.WebControls;
 #endif
 
 // ReSharper disable once CheckNamespace
@@ -64,36 +64,34 @@ namespace Quantumart.QPublishing.Database
 
         public DBConnector DbConnector { get; set; }
 
-#if !ASPNETCORE && !NETSTANDARD
-        public QPageEssential Page { get; set; }
-#endif
 
 #if ASPNETCORE || NETSTANDARD
         private readonly IMemoryCache _cache;
 
         public DbCacheManager(DBConnector dbConnector, IMemoryCache cache)
         {
-            DbConnector = dbConnector;
-
             _cache = cache;
-            _queries.Add(ConstraintKey, "SELECT CCR.CONSTRAINT_ID, CCR.ATTRIBUTE_ID, CC.CONTENT_ID FROM CONTENT_CONSTRAINT_RULE CCR WITH(NOLOCK) INNER JOIN CONTENT_CONSTRAINT CC WITH(NOLOCK) ON CC.CONSTRAINT_ID = CCR.CONSTRAINT_ID ");
-            _queries.Add(StatusKey, " SELECT C.SITE_ID, C.STATUS_TYPE_ID, C.STATUS_TYPE_NAME, C.WEIGHT, C.DESCRIPTION FROM STATUS_TYPE AS C WITH(NOLOCK)");
-
-            _fieldsToValidate.Add(ConstraintKey, new[] { "attribute_id" });
-            _fieldsToValidate.Add(StatusKey, new[] { "status_type_id" });
-        }
 #else
         public DbCacheManager(DBConnector dbConnector)
         {
-            DbConnector = dbConnector;
-
-            _queries.Add(ConstraintKey, "SELECT CCR.CONSTRAINT_ID, CCR.ATTRIBUTE_ID, CC.CONTENT_ID FROM CONTENT_CONSTRAINT_RULE CCR WITH(NOLOCK) INNER JOIN CONTENT_CONSTRAINT CC WITH(NOLOCK) ON CC.CONSTRAINT_ID = CCR.CONSTRAINT_ID ");
-            _queries.Add(StatusKey, " SELECT C.SITE_ID, C.STATUS_TYPE_ID, C.STATUS_TYPE_NAME, C.WEIGHT, C.DESCRIPTION FROM STATUS_TYPE AS C WITH(NOLOCK)");
-
-            _fieldsToValidate.Add(ConstraintKey, new[] { "attribute_id" });
-            _fieldsToValidate.Add(StatusKey, new[] { "status_type_id" });
-        }
 #endif
+            DbConnector = dbConnector;
+            SetInitialQueries();
+
+        }
+
+        public void SetInitialQueries()
+        {
+            _queries[ConstraintKey] = $@"
+                SELECT CCR.CONSTRAINT_ID, CCR.ATTRIBUTE_ID, CC.CONTENT_ID FROM CONTENT_CONSTRAINT_RULE CCR {DbConnector.WithNoLock}
+                INNER JOIN CONTENT_CONSTRAINT CC {DbConnector.WithNoLock} ON CC.CONSTRAINT_ID = CCR.CONSTRAINT_ID ";
+
+            _queries[StatusKey] = $@" SELECT C.SITE_ID, C.STATUS_TYPE_ID, C.STATUS_TYPE_NAME, C.WEIGHT, C.DESCRIPTION FROM STATUS_TYPE AS C {DbConnector.WithNoLock}";
+
+            _fieldsToValidate[ConstraintKey] = new [] { "attribute_id" };
+            _fieldsToValidate[StatusKey] = new [] { "status_type_id" };
+        }
+
 
         public void ResetCacheItem(string key)
         {
@@ -171,15 +169,7 @@ namespace Quantumart.QPublishing.Database
                 }
                 else
                 {
-                    var dep = GetCacheDependency(cacheKey);
-                    if (dep == null)
-                    {
-                        HttpRuntime.Cache.Insert(cacheKey, obj, null, DateTime.UtcNow.AddMinutes(cacheInterval), Cache.NoSlidingExpiration);
-                    }
-                    else
-                    {
-                        HttpRuntime.Cache.Insert(cacheKey, obj, dep);
-                    }
+                    HttpRuntime.Cache.Insert(cacheKey, obj, null, DateTime.UtcNow.AddMinutes(cacheInterval), Cache.NoSlidingExpiration);
                 }
             }
         }
@@ -220,18 +210,6 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-#if !ASPNETCORE && !NETSTANDARD
-        private CacheDependency GetCacheDependency(string cacheKey)
-        {
-            var cacheFilePath = GetCacheFilePath(cacheKey);
-            if (!string.IsNullOrEmpty(cacheFilePath) && File.Exists(cacheFilePath))
-            {
-                return new CacheDependency(cacheFilePath);
-            }
-
-            return null;
-        }
-#endif
 
         internal DataTable GetCachedTable(string key) => GetCachedTable(key, GetInternalExpirationTime(key));
 
@@ -353,31 +331,30 @@ namespace Quantumart.QPublishing.Database
         private static string GetPageTemplateQuery() => "SELECT PT.SITE_ID, PT.PAGE_TEMPLATE_ID, PT.TEMPLATE_FOLDER, PT.NET_TEMPLATE_NAME, PT.TEMPLATE_NAME, PT.CHARSET, PT.SEND_NOCACHE_HEADERS FROM PAGE_TEMPLATE PT";
 #endif
 
-        private static string GetContentQuery() => "SELECT C.CONTENT_ID, C.CONTENT_NAME, C.NET_CONTENT_NAME, C.VIRTUAL_TYPE, C.SITE_ID, C.MAX_NUM_OF_STORED_VERSIONS, S.SITE_NAME, CWB.WORKFLOW_ID FROM CONTENT AS C WITH(NOLOCK) INNER JOIN SITE AS S  WITH(NOLOCK) ON C.SITE_ID = S.SITE_ID LEFT JOIN CONTENT_WORKFLOW_BIND CWB on CWB.CONTENT_ID = C.CONTENT_ID";
+        private string GetContentQuery() => $@"
+            SELECT C.CONTENT_ID, C.CONTENT_NAME, C.NET_CONTENT_NAME, C.VIRTUAL_TYPE, C.SITE_ID, C.MAX_NUM_OF_STORED_VERSIONS, S.SITE_NAME, CWB.WORKFLOW_ID
+            FROM CONTENT AS C {DbConnector.WithNoLock} INNER JOIN SITE AS S {DbConnector.WithNoLock} ON C.SITE_ID = S.SITE_ID
+            LEFT JOIN CONTENT_WORKFLOW_BIND CWB on CWB.CONTENT_ID = C.CONTENT_ID ";
 
-        private static string GetAttributeQuery()
-        {
-            var sb = new StringBuilder();
-            sb.Append("SELECT C.SITE_ID, AT.TYPE_NAME, AT.DATABASE_TYPE, AT.INPUT_TYPE, CA.ATTRIBUTE_ID, CA.CONTENT_ID, CA.ATTRIBUTE_NAME, CA.NET_ATTRIBUTE_NAME, ");
-            sb.Append(" CA.INPUT_MASK, CA.ATTRIBUTE_SIZE, CASE WHEN ca.link_id is not null THEN dbo.qp_default_link_ids(CA.ATTRIBUTE_ID) WHEN ca.attribute_type_id in (9, 10) THEN convert(nvarchar(max), ca.DEFAULT_BLOB_VALUE) ELSE ca.DEFAULT_VALUE END as DEFAULT_VALUE, ");
-            sb.Append(" CA.ATTRIBUTE_TYPE_ID, CA.INDEX_FLAG, CA.ATTRIBUTE_ORDER, CA.DESCRIPTION, ");
-            sb.Append(" CA.REQUIRED, CA.IS_CLASSIFIER, CA.AGGREGATED, CA.READONLY_FLAG, CA.RELATED_IMAGE_ATTRIBUTE_ID, CA.PERSISTENT_ATTR_ID, CA.JOIN_ATTR_ID, CA.LINK_ID, CA.USE_SITE_LIBRARY, CA.SUBFOLDER, CA.DISABLE_VERSION_CONTROL, ");
-            sb.Append(" DIA.WIDTH, DIA.HEIGHT, DIA.TYPE, DIA.QUALITY, DIA.MAX_SIZE, DIA.ATTRIBUTE_ID AS DYNAMIC_IMAGE_ATTRIBUTE_ID, ");
-            sb.Append(" S.USE_SITE_LIBRARY AS SOURCE_USE_SITE_LIBRARY, S.CONTENT_ID AS SOURCE_CONTENT_ID, ");
-            sb.Append(" CA.BACK_RELATED_ATTRIBUTE_ID AS BASE_RELATION_ATTRIBUTE_ID, RCA.CONTENT_ID AS BASE_RELATION_CONTENT_ID, RCA.ATTRIBUTE_NAME AS BASE_RELATION_ATTRIBUTE_NAME, ");
-            sb.Append(" CL.LINKED_CONTENT_ID, COALESCE(RA.CONTENT_ID, CL.LINKED_CONTENT_ID, RCA.CONTENT_ID) AS RELATED_CONTENT_ID, CCR.CONSTRAINT_ID");
-            sb.Append(" FROM CONTENT_ATTRIBUTE AS CA WITH(NOLOCK) ");
-            sb.Append(" INNER JOIN ATTRIBUTE_TYPE AS AT WITH(NOLOCK) ON AT.ATTRIBUTE_TYPE_ID=CA.ATTRIBUTE_TYPE_ID ");
-            sb.Append(" INNER JOIN CONTENT AS C WITH(NOLOCK) ON C.CONTENT_ID = CA.CONTENT_ID ");
-            sb.Append(" LEFT JOIN DYNAMIC_IMAGE_ATTRIBUTE AS DIA WITH(NOLOCK) ON CA.ATTRIBUTE_ID=DIA.ATTRIBUTE_ID ");
-            sb.Append(" LEFT JOIN CONTENT_ATTRIBUTE S ON CA.PERSISTENT_ATTR_ID = S.ATTRIBUTE_ID ");
-            sb.Append(" LEFT JOIN CONTENT_ATTRIBUTE RA ON CA.RELATED_ATTRIBUTE_ID = RA.ATTRIBUTE_ID ");
-            sb.Append(" LEFT JOIN CONTENT_ATTRIBUTE RCA ON CA.BACK_RELATED_ATTRIBUTE_ID = RCA.ATTRIBUTE_ID ");
-            sb.Append(" LEFT JOIN CONTENT_CONSTRAINT_RULE CCR ON CA.ATTRIBUTE_ID = CCR.ATTRIBUTE_ID ");
-            sb.Append(" LEFT JOIN CONTENT_LINK CL ON CA.LINK_ID = CL.LINK_ID AND CA.CONTENT_ID = CL.CONTENT_ID");
-
-            return sb.ToString();
-        }
+        private string GetAttributeQuery() => $@"
+            SELECT C.SITE_ID, AT.TYPE_NAME, AT.DATABASE_TYPE, AT.INPUT_TYPE, CA.ATTRIBUTE_ID, CA.CONTENT_ID, CA.ATTRIBUTE_NAME, CA.NET_ATTRIBUTE_NAME,
+            CA.INPUT_MASK, CA.ATTRIBUTE_SIZE,
+            CASE WHEN ca.link_id is not null THEN {DbConnector.Schema}.qp_default_link_ids(CA.ATTRIBUTE_ID) ELSE coalesce(ca.DEFAULT_BLOB_VALUE, ca.DEFAULT_VALUE) END as DEFAULT_VALUE,
+            CA.ATTRIBUTE_TYPE_ID, CA.INDEX_FLAG, CA.ATTRIBUTE_ORDER, CA.DESCRIPTION,
+            CA.REQUIRED, CA.IS_CLASSIFIER, CA.AGGREGATED, CA.READONLY_FLAG, CA.RELATED_IMAGE_ATTRIBUTE_ID, CA.PERSISTENT_ATTR_ID, CA.JOIN_ATTR_ID, CA.LINK_ID, CA.USE_SITE_LIBRARY, CA.SUBFOLDER, CA.DISABLE_VERSION_CONTROL,
+            DIA.WIDTH, DIA.HEIGHT, DIA.TYPE, DIA.QUALITY, DIA.MAX_SIZE, DIA.ATTRIBUTE_ID AS DYNAMIC_IMAGE_ATTRIBUTE_ID,
+            S.USE_SITE_LIBRARY AS SOURCE_USE_SITE_LIBRARY, S.CONTENT_ID AS SOURCE_CONTENT_ID,
+            CA.BACK_RELATED_ATTRIBUTE_ID AS BASE_RELATION_ATTRIBUTE_ID, RCA.CONTENT_ID AS BASE_RELATION_CONTENT_ID, RCA.ATTRIBUTE_NAME AS BASE_RELATION_ATTRIBUTE_NAME,
+            CL.R_CONTENT_ID, COALESCE(RA.CONTENT_ID, CL.R_CONTENT_ID, RCA.CONTENT_ID) AS RELATED_CONTENT_ID, CCR.CONSTRAINT_ID
+            FROM CONTENT_ATTRIBUTE AS CA {DbConnector.WithNoLock}
+            INNER JOIN ATTRIBUTE_TYPE AS AT {DbConnector.WithNoLock} ON AT.ATTRIBUTE_TYPE_ID = CA.ATTRIBUTE_TYPE_ID
+            INNER JOIN CONTENT AS C {DbConnector.WithNoLock} ON C.CONTENT_ID = CA.CONTENT_ID
+            LEFT JOIN DYNAMIC_IMAGE_ATTRIBUTE AS DIA {DbConnector.WithNoLock} ON CA.ATTRIBUTE_ID = DIA.ATTRIBUTE_ID
+            LEFT JOIN CONTENT_ATTRIBUTE S ON CA.PERSISTENT_ATTR_ID = S.ATTRIBUTE_ID
+            LEFT JOIN CONTENT_ATTRIBUTE RA ON CA.RELATED_ATTRIBUTE_ID = RA.ATTRIBUTE_ID
+            LEFT JOIN CONTENT_ATTRIBUTE RCA ON CA.BACK_RELATED_ATTRIBUTE_ID = RCA.ATTRIBUTE_ID
+            LEFT JOIN CONTENT_CONSTRAINT_RULE CCR ON CA.ATTRIBUTE_ID = CCR.ATTRIBUTE_ID
+            LEFT JOIN CONTENT_TO_CONTENT CL ON CA.LINK_ID = CL.LINK_ID AND CA.CONTENT_ID = CL.L_CONTENT_ID ";
 
         public string GetQuery(string key)
         {
@@ -395,13 +372,6 @@ namespace Quantumart.QPublishing.Database
 
         internal Hashtable GetCachedHashTable(string key, double cacheInterval)
         {
-#if !ASPNETCORE && !NETSTANDARD
-            if (Page == null && IsPageSpecificKey(key))
-            {
-                throw new Exception(WebSpecificString);
-            }
-#endif
-
             return GetCachedEntity(key, cacheInterval, FillHashTable);
         }
 
@@ -409,12 +379,6 @@ namespace Quantumart.QPublishing.Database
 
         internal DualHashTable GetCachedDualHashTable(string key, double cacheInterval)
         {
-#if !ASPNETCORE && !NETSTANDARD
-            if (Page == null && IsPageSpecificKey(key))
-            {
-                throw new Exception(WebSpecificString);
-            }
-#endif
 
             return GetCachedEntity(key, cacheInterval, FillDualHashTable);
         }
@@ -471,7 +435,10 @@ namespace Quantumart.QPublishing.Database
             }
 
             var localHash = new Hashtable();
-            var dt2 = DbConnector.GetRealData($"EXEC sp_executesql N'SELECT LINK_ID, NET_LINK_NAME FROM CONTENT_TO_CONTENT CC INNER JOIN CONTENT C ON CC.L_CONTENT_ID = C.CONTENT_ID WHERE SITE_ID = @Id', N'@Id NUMERIC', @Id = {siteId}");
+
+            var cmd = DbConnector.CreateDbCommand($"SELECT LINK_ID, NET_LINK_NAME FROM CONTENT_TO_CONTENT CC INNER JOIN CONTENT C ON CC.L_CONTENT_ID = C.CONTENT_ID WHERE SITE_ID = @Id");
+            cmd.Parameters.AddWithValue("@Id", siteId);
+            var dt2 = DbConnector.GetRealData(cmd);
             foreach (DataRow row in dt2.Rows)
             {
                 var itemKey = Convert.ToString(row["NET_LINK_NAME"]);
@@ -516,7 +483,9 @@ namespace Quantumart.QPublishing.Database
 
         internal ContentAttribute AddAttributeHashEntry(string itemKey)
         {
-            var dt = DbConnector.GetRealData("EXEC sp_executesql N'SELECT CONTENT_ID FROM CONTENT_ATTRIBUTE WITH(NOLOCK) WHERE ATTRIBUTE_ID = @attrId', N'@attrId NUMERIC', @attrId = " + itemKey);
+            var cmd = DbConnector.CreateDbCommand($@"SELECT CONTENT_ID FROM CONTENT_ATTRIBUTE {DbConnector.WithNoLock} WHERE ATTRIBUTE_ID = @attrId");
+            cmd.Parameters.AddWithValue("@attrId", int.Parse(itemKey));
+            var dt = DbConnector.GetRealData(cmd);
             var contentId = dt.Rows.Count == 0 ? 0 : int.Parse(dt.Rows[0]["CONTENT_ID"].ToString());
 
             ContentAttribute result = null;
@@ -529,8 +498,13 @@ namespace Quantumart.QPublishing.Database
             RelationInfo result = null;
             var linkHash = GetCachedHashTable(LinkHashKey);
             var attributeHash = new Hashtable();
-            var dt2 = DbConnector.GetRealData($"EXEC sp_executesql N'SELECT ATTRIBUTE_NAME, LINK_ID, BACK_RELATED_ATTRIBUTE_ID FROM CONTENT_ATTRIBUTE WHERE (LINK_ID IS NOT NULL OR BACK_RELATED_ATTRIBUTE_ID IS NOT NULL) AND CONTENT_ID = @Id', N'@Id NUMERIC', @Id = {contentKey}");
-            foreach (DataRow row in dt2.Rows)
+            var cmd = DbConnector.CreateDbCommand($@"
+                SELECT ATTRIBUTE_NAME, LINK_ID, BACK_RELATED_ATTRIBUTE_ID FROM CONTENT_ATTRIBUTE
+                WHERE (LINK_ID IS NOT NULL OR BACK_RELATED_ATTRIBUTE_ID IS NOT NULL) AND CONTENT_ID = @Id"
+            );
+            cmd.Parameters.AddWithValue("@Id", int.Parse(contentKey));
+            var dt = DbConnector.GetRealData(cmd);
+            foreach (DataRow row in dt.Rows)
             {
                 var key = row["ATTRIBUTE_NAME"].ToString().ToLowerInvariant();
                 var linkId = (int?)CastDbNull.To<decimal?>(row["LINK_ID"]);
@@ -557,7 +531,9 @@ namespace Quantumart.QPublishing.Database
 
         internal int AddItemHashEntry(string itemKey)
         {
-            var dt = DbConnector.GetRealData("EXEC sp_executesql N'SELECT CONTENT_ID FROM CONTENT_ITEM WITH(NOLOCK) WHERE CONTENT_ITEM_ID = @itemId', N'@itemId NUMERIC', @itemId = " + itemKey);
+            var cmd = DbConnector.CreateDbCommand($@"SELECT CONTENT_ID FROM CONTENT_ITEM {DbConnector.WithNoLock} WHERE content_item_id = @itemId");
+            cmd.Parameters.AddWithValue("@itemId", int.Parse(itemKey));
+            var dt = DbConnector.GetRealData(cmd);
             var contentId = dt.Rows.Count == 0 ? 0 : int.Parse(dt.Rows[0]["CONTENT_ID"].ToString());
             var contentPrefetchKey = "content" + contentId;
             var hash = GetCachedHashTable(ItemHashKey);
@@ -566,7 +542,12 @@ namespace Quantumart.QPublishing.Database
                 hash[itemKey] = contentId;
                 if (!hash.ContainsKey(contentPrefetchKey))
                 {
-                    var dt2 = DbConnector.GetRealData($"EXEC sp_executesql N'SELECT TOP {GetPrefetchLimit()} CONTENT_ITEM_ID FROM CONTENT_ITEM WITH(NOLOCK) WHERE CONTENT_ID = @Id ORDER BY CONTENT_ITEM_ID DESC', N'@Id NUMERIC', @Id = {contentId}");
+                    var prefetchLimit = GetPrefetchLimit().ToString();
+                    var top = SqlQuerySyntaxHelper.Top(DbConnector.DatabaseType, prefetchLimit);
+                    var limit = SqlQuerySyntaxHelper.Limit(DbConnector.DatabaseType, prefetchLimit);
+                    var cmd2 = DbConnector.CreateDbCommand($@"SELECT {top} content_item_id FROM CONTENT_ITEM {DbConnector.WithNoLock} WHERE CONTENT_ID = @Id ORDER BY content_item_id DESC {limit}");
+                    cmd2.Parameters.AddWithValue("@Id", contentId);
+                    var dt2 = DbConnector.GetRealData(cmd2);
                     foreach (DataRow row in dt2.Rows)
                     {
                         hash[row["content_item_id"].ToString()] = contentId;
@@ -581,7 +562,9 @@ namespace Quantumart.QPublishing.Database
 
         internal Content AddContentHashEntry(string itemKey)
         {
-            var dt = DbConnector.GetRealData("EXEC sp_executesql N'SELECT SITE_ID FROM CONTENT WITH(NOLOCK) WHERE CONTENT_ID = @contentId', N'@contentId NUMERIC', @contentId = " + itemKey);
+            var cmd = DbConnector.CreateDbCommand($@"SELECT SITE_ID FROM CONTENT {DbConnector.WithNoLock} WHERE CONTENT_ID = @contentId");
+            cmd.Parameters.AddWithValue("@contentId", int.Parse(itemKey));
+            var dt = DbConnector.GetRealData(cmd);
             var siteId = dt.Rows.Count == 0 ? 0 : int.Parse(dt.Rows[0]["SITE_ID"].ToString());
             Content content = null;
             AddContentIdHashEntry(siteId.ToString(), itemKey, ref content);
@@ -600,7 +583,9 @@ namespace Quantumart.QPublishing.Database
             var localHash = new Hashtable();
             lock (GetLockObject(ContentHashKey))
             {
-                var dt2 = DbConnector.GetRealData($"EXEC sp_executesql N'{GetContentQuery()} WHERE C.SITE_ID = @Id', N'@Id NUMERIC', @Id = {siteKey}");
+                var cmd = DbConnector.CreateDbCommand($@"{GetContentQuery()} WHERE C.SITE_ID = @Id");
+                cmd.Parameters.AddWithValue("@Id", int.Parse(siteKey));
+                var dt2 = DbConnector.GetRealData(cmd);
                 foreach (DataRow row in dt2.Rows)
                 {
                     var current = new Content
@@ -613,7 +598,14 @@ namespace Quantumart.QPublishing.Database
 
                     var linqName = Convert.ToString(row["NET_CONTENT_NAME"]);
                     current.LinqName = !string.IsNullOrEmpty(linqName) ? linqName : DefaultLinqNameGenerator.GetMappedName(current.Name, current.Id, true) + "Article";
-                    current.MaxVersionNumber = (byte)row["MAX_NUM_OF_STORED_VERSIONS"];
+                    if (DbConnector.DatabaseType == DatabaseType.SqlServer)
+                    {
+                        current.MaxVersionNumber = (byte)row["MAX_NUM_OF_STORED_VERSIONS"];
+                    }
+                    else
+                    {
+                        current.MaxVersionNumber = (short)row["MAX_NUM_OF_STORED_VERSIONS"];
+                    }
                     current.WorkflowId = (int?)CastDbNull.To<decimal?>(row["WORKFLOW_ID"]);
 
                     var idKey = current.Id.ToString();
@@ -645,7 +637,9 @@ namespace Quantumart.QPublishing.Database
             lock (GetLockObject(AttributeHashKey))
             {
                 var dualHash = GetCachedDualHashTable(AttributeHashKey);
-                var dt2 = DbConnector.GetRealData($"EXEC sp_executesql N'{GetAttributeQuery()} WHERE CA.CONTENT_ID = @Id', N'@Id NUMERIC', @Id = {contentKey}");
+                var cmd = DbConnector.CreateDbCommand($@"{GetAttributeQuery()}WHERE CA.CONTENT_ID = @Id");
+                cmd.Parameters.AddWithValue("@Id", int.Parse(contentKey));
+                var dt2 = DbConnector.GetRealData(cmd);
                 var attrs = new ArrayList(dt2.Rows.Count);
                 foreach (DataRow row in dt2.Rows)
                 {
@@ -740,115 +734,6 @@ namespace Quantumart.QPublishing.Database
             return result;
         }
 
-#if !ASPNETCORE && !NETSTANDARD
-        internal Hashtable FillTemplateObjectsHashTable()
-        {
-            var dv = Page.UseMultiSiteLogic ? DbConnector.GetAllTemplateObjects(string.Empty) : DbConnector.GetTemplateObjects(string.Empty);
-
-            var templateObjects = new Hashtable(dv.Count * 5);
-            foreach (DataRowView drv in dv)
-            {
-                var url = Page.UseMultiSiteLogic ? Page.GetControlUrl(drv, int.Parse(drv["SITE_ID"].ToString())) : Page.GetControlUrl(drv);
-                var tKey = drv["TEMPLATE_NAME"].ToString().ToLowerInvariant();
-                var fKey = drv["FORMAT_NAME"].ToString().ToLowerInvariant();
-                var oKey = drv["OBJECT_NAME"].ToString().ToLowerInvariant();
-                var ofKey = $"{oKey}.{fKey}";
-                var tofKey = $"{tKey}.{oKey}.{fKey}";
-                var toKey = $"{tKey}.{oKey}";
-                var isCurrentTemplate = Page.page_template_id.ToString() == drv["PAGE_TEMPLATE_ID"].ToString();
-                var isDefaultFormat = drv["CURRENT_FORMAT_ID"].ToString() == drv["DEFAULT_FORMAT_ID"].ToString();
-                if (Page.UseMultiSiteLogic)
-                {
-                    var id = drv["PAGE_TEMPLATE_ID"].ToString();
-                    oKey = $"{id},{oKey}";
-                    ofKey = $"{id},{ofKey}";
-                    tofKey = $"{id},{tofKey}";
-                    toKey = $"{id},{toKey}";
-                    isCurrentTemplate = true;
-                }
-
-                if (!templateObjects.Contains(tofKey))
-                {
-                    templateObjects.Add(tofKey, url);
-                }
-
-                if (!templateObjects.Contains(ofKey) && isCurrentTemplate)
-                {
-                    templateObjects.Add(ofKey, url);
-                }
-
-                if (!templateObjects.Contains(toKey) && isDefaultFormat)
-                {
-                    templateObjects.Add(toKey, url);
-                }
-
-                if (!templateObjects.Contains(oKey) && isDefaultFormat && isCurrentTemplate)
-                {
-                    templateObjects.Add(oKey, url);
-                }
-            }
-
-            return templateObjects;
-        }
-#endif
-
-#if !ASPNETCORE && !NETSTANDARD
-        internal Hashtable FillPageObjectsHashTable()
-        {
-            var dv = Page.UseMultiSiteLogic ? DbConnector.GetAllPageObjects(string.Empty) : DbConnector.GetPageObjects(string.Empty);
-            var pageObjects = new Hashtable(dv.Count * 2);
-            foreach (DataRowView drv in dv)
-            {
-                var siteId = drv["SITE_ID"].ToString();
-                var url = Page.UseMultiSiteLogic ? Page.GetControlUrl(drv, int.Parse(siteId)) : Page.GetControlUrl(drv);
-                var oKey = drv["OBJECT_NAME"].ToString().ToLowerInvariant();
-                var ofKey = $"{oKey}.{drv["FORMAT_NAME"].ToString().ToLowerInvariant()}";
-                if (Page.UseMultiSiteLogic)
-                {
-                    var id = drv["PAGE_ID"].ToString();
-                    oKey = $"{id},{oKey}";
-                    ofKey = $"{id},{ofKey}";
-                }
-
-                var isDefaultFormat = drv["CURRENT_FORMAT_ID"].ToString() == drv["DEFAULT_FORMAT_ID"].ToString();
-                if (!pageObjects.Contains(ofKey))
-                {
-                    pageObjects.Add(ofKey, url);
-                }
-
-                if (!pageObjects.Contains(oKey) && isDefaultFormat)
-                {
-                    pageObjects.Add(oKey, url);
-                }
-            }
-
-            return pageObjects;
-        }
-#endif
-
-#if !ASPNETCORE && !NETSTANDARD
-        private Hashtable FillTemplateHashTable()
-        {
-            var dv = Page.UseMultiSiteLogic ? DbConnector.GetAllTemplates(string.Empty) : DbConnector.GetTemplates(string.Empty);
-            var templates = new Hashtable(dv.Count);
-            foreach (DataRowView drv in dv)
-            {
-                var key = drv["TEMPLATE_NAME"].ToString().ToLowerInvariant();
-                if (Page.UseMultiSiteLogic)
-                {
-                    var id = drv["SITE_ID"].ToString();
-                    key = $"{id},{key}";
-                }
-
-                if (!templates.Contains(key))
-                {
-                    templates.Add(key, new Template { Id = DBConnector.GetNumInt(drv["PAGE_TEMPLATE_ID"]), Folder = drv["TEMPLATE_FOLDER"].ToString() });
-                }
-            }
-
-            return templates;
-        }
-#endif
 
         private Hashtable FillPageHashTable()
         {
@@ -865,24 +750,6 @@ namespace Quantumart.QPublishing.Database
 
             return allPages;
         }
-
-#if !ASPNETCORE && !NETSTANDARD
-        private Hashtable FillPageMapping()
-        {
-            var dv = DbConnector.GetPageMapping($"[PAGE_ID1] = {Page.PageId}");
-            var pageMapping = new Hashtable(dv.Count);
-            foreach (DataRowView drv in dv)
-            {
-                var key = int.Parse(drv["SITE_ID2"].ToString());
-                if (!pageMapping.Contains(key))
-                {
-                    pageMapping.Add(key, DBConnector.GetNumInt(drv["PAGE_ID2"]));
-                }
-            }
-
-            return pageMapping;
-        }
-#endif
 
         private Hashtable FillTemplateMapping()
         {
@@ -978,28 +845,6 @@ namespace Quantumart.QPublishing.Database
             {
                 return FillTemplateMapping();
             }
-
-#if !ASPNETCORE && !NETSTANDARD
-            if (string.Equals(key, TemplateHashKey))
-            {
-                return FillTemplateHashTable();
-            }
-
-            if (string.Equals(key, PageMappingHashKey))
-            {
-                return FillPageMapping();
-            }
-
-            if (string.Equals(key, PageObjectHashKey))
-            {
-                return FillPageObjectsHashTable();
-            }
-
-            if (string.Equals(key, TemplateObjectHashKey))
-            {
-                return FillTemplateObjectsHashTable();
-            }
-#endif
 
             if (string.Equals(key, ContentIdForLinqHashKey))
             {
@@ -1175,21 +1020,16 @@ namespace Quantumart.QPublishing.Database
                 return GetShortExpirationTime();
             }
 
-            return cacheKey == ItemHashKey ? GetLongExpirationTime() : GetExpirationTime();
+            return cacheKey == ItemHashKey ? GetLongExpirationTime() : GetExpirationTime(DbConnector.DbConnectorSettings.InternalExpirationTime);
         }
 
-        private double GetShortExpirationTime() => GetExpirationTime("InternalShortExpirationTime", DefaultShortExpirationTime);
+        private double GetShortExpirationTime() => GetExpirationTime(DbConnector.DbConnectorSettings.InternalShortExpirationTime, DefaultShortExpirationTime);
 
-        private double GetLongExpirationTime() => GetExpirationTime("InternalLongExpirationTime", DefaultLongExpirationTime);
+        private double GetLongExpirationTime() => GetExpirationTime(DbConnector.DbConnectorSettings.InternalLongExpirationTime, DefaultLongExpirationTime);
 
-        private double GetExpirationTime(string key = "InternalExpirationTime", double defaultValue = DefaultExpirationTime)
+        private double GetExpirationTime(string value, double defaultValue = DefaultExpirationTime)
         {
-#if ASPNETCORE || NETSTANDARD
-            var expireInMinutes = DbConnector.DbConnectorSettings.GetType().GetProperty(key)?.GetValue(DbConnector.DbConnectorSettings).ToString();
-#else
-            var expireInMinutes = DbConnector.AppSettings[key];
-#endif
-            if (double.TryParse(expireInMinutes, out var result))
+            if (double.TryParse(value, out var result))
             {
                 if (result < MinExpirationTime)
                 {
@@ -1204,11 +1044,7 @@ namespace Quantumart.QPublishing.Database
 
         private int GetPrefetchLimit()
         {
-#if ASPNETCORE || NETSTANDARD
             var prefetchLimitString = DbConnector.DbConnectorSettings.PrefetchLimit;
-#else
-            var prefetchLimitString = DbConnector.AppSettings["PrefetchLimit"];
-#endif
             if (int.TryParse(prefetchLimitString, out var result))
             {
                 if (result < 1)
@@ -1308,108 +1144,6 @@ namespace Quantumart.QPublishing.Database
 
         public string AttributeIdForLinqHashKey => $"{CacheKeyPrefix}attributeIdForLinqHash";
 
-#if !ASPNETCORE && !NETSTANDARD
-        public string PageMappingHashKey => GetPageMappingHashKey(Page?.PageId ?? 0);
 
-        public string PageObjectKey => GetPageObjectKey(Page?.page_id ?? 0);
-
-        public string PageObjectHashKey => GetPageObjectHashKey(Page?.page_id ?? 0);
-
-        public string TemplateObjectHashKey => GetTemplateObjectHashKey(Page?.page_template_id ?? 0);
-#endif
-
-#if !ASPNETCORE && !NETSTANDARD
-        private string GetCacheFilePath(string cacheKey)
-        {
-            if (cacheKey == PageObjectKey || cacheKey == PageObjectHashKey)
-            {
-                return PageObjectCacheFile;
-            }
-
-            if (cacheKey == TemplateObjectKey || cacheKey == TemplateObjectHashKey)
-            {
-                return TemplateObjectCacheFile;
-            }
-
-            if (cacheKey == AllPageObjectsKey || cacheKey == AllPageObjectsHashKey)
-            {
-                return AllPageObjectsCacheFile;
-            }
-
-            if (cacheKey == AllTemplateObjectsKey || cacheKey == AllTemplateObjectsHashKey)
-            {
-                return AllTemplateObjectsCacheFile;
-            }
-
-            if (cacheKey == AllTemplatesKey || cacheKey == AllPagesKey || cacheKey == AllTemplatesHashKey || cacheKey == AllPagesHashKey || cacheKey == TemplateMappingKey || cacheKey == PageMappingKey || cacheKey == TemplateMappingHashKey || cacheKey == PageMappingHashKey)
-            {
-                return AllStructureCacheFile;
-            }
-
-            if (cacheKey == TemplateKey || cacheKey == PageKey || cacheKey == PageHashKey || cacheKey == TemplateHashKey)
-            {
-                return StructureCacheFile;
-            }
-
-            if (cacheKey.Contains(FileContentsCacheKeyPrefix))
-            {
-                return cacheKey.Replace(FileContentsCacheKeyPrefix, string.Empty);
-            }
-
-            return string.Empty;
-        }
-
-        public string CacheFilePath => $"{DbConnector.GetSiteDirectory(Page.site_id, !Page.IsStage, Page.IsTest)}\\dependencies";
-
-        public string AllTemplateObjectsCacheFile => $"{CacheFilePath}\\\\all_templates.dep";
-
-        public string AllTemplateObjectsCacheDataFile => $"{CacheFilePath}\\\\all_templates.dat";
-
-        public string AllPageObjectsCacheFile => $"{CacheFilePath}\\\\all_pages.dep";
-
-        public string TemplateObjectCacheFile => $"{CacheFilePath}\\\\templates.dep";
-
-        public string PageObjectCacheFile => $"{CacheFilePath}\\\\{Page.page_id}.dep";
-
-        public string StructureCacheFile => $"{CacheFilePath}\\\\structure.dep";
-
-        public string AllStructureCacheFile => $"{CacheFilePath}\\\\all_structure.dep";
-
-        public void SetWebSpecificInformation(QPageEssential page)
-        {
-            Page = page;
-            _queries.Add(TemplateKey, $"EXEC sp_executesql N'{GetPageTemplateQuery()} WHERE PT.SITE_ID = @siteId', N'@siteId NUMERIC', @siteId = {page.site_id}");
-            _queries.Add(PageKey, $"EXEC sp_executesql N'{GetPageQuery()} WHERE PT.SITE_ID = @siteId', N'@siteId NUMERIC', @siteId = {page.site_id}");
-
-            _fieldsToValidate.Add(TemplateKey, new[] { "siteId" });
-            _fieldsToValidate.Add(PageKey, new[] { "page_name" });
-
-            if (!page.UseMultiSiteLogic)
-            {
-                _queries.Add(PageObjectKey, $"EXEC sp_executesql N'{GetBaseObjectsQuery()} WHERE PT.SITE_ID = @siteId AND OBJ.PAGE_ID = @pageId', N'@siteId NUMERIC, @pageId NUMERIC', @siteId = {page.site_id}, @pageId = {page.page_id}");
-                _queries.Add(TemplateObjectKey, $"EXEC sp_executesql N'{GetBaseObjectsQuery()} WHERE PT.SITE_ID = @siteId AND OBJ.PAGE_ID IS NULL', N'@siteId NUMERIC', @siteId = {page.site_id}");
-
-                _fieldsToValidate.Add(PageObjectKey, new[] { "siteId" });
-                _fieldsToValidate.Add(TemplateObjectKey, new[] { "siteId" });
-            }
-            else
-            {
-                _queries.Add(AllPageObjectsKey, $"{GetBaseObjectsQuery()} WHERE OBJ.PAGE_ID IS NOT NULL ");
-                _queries.Add(AllTemplateObjectsKey, $"{GetBaseObjectsQuery()} WHERE OBJ.PAGE_ID IS NULL ");
-                _queries.Add(AllTemplatesKey, GetPageTemplateQuery());
-                _queries.Add(AllPagesKey, GetPageQuery());
-                _queries.Add(TemplateMappingKey, "SELECT PT1.TEMPLATE_NAME, PT1.PAGE_TEMPLATE_ID AS PAGE_TEMPLATE_ID1, PT1.SITE_ID AS SITE_ID1, PT2.PAGE_TEMPLATE_ID AS PAGE_TEMPLATE_ID2, PT2.SITE_ID AS SITE_ID2 FROM PAGE_TEMPLATE PT1 INNER JOIN PAGE_TEMPLATE PT2 ON PT1.TEMPLATE_NAME = PT2.TEMPLATE_NAME AND PT1.PAGE_TEMPLATE_ID <> PT2.PAGE_TEMPLATE_ID AND PT1.TEMPLATE_NAME <> 'Default Notification Template'");
-                _queries.Add(PageMappingKey, "SELECT P1.PAGE_NAME, PT1.TEMPLATE_NAME, P1.PAGE_ID AS PAGE_ID1, P2.PAGE_ID AS PAGE_ID2, PT1.PAGE_TEMPLATE_ID AS PAGE_TEMPLATE_ID1, PT2.PAGE_TEMPLATE_ID AS PAGE_TEMPLATE_ID2, PT1.SITE_ID AS SITE_ID1, PT2.SITE_ID AS SITE_ID2 FROM PAGE P1 INNER JOIN PAGE_TEMPLATE PT1 ON P1.PAGE_TEMPLATE_ID = PT1.PAGE_TEMPLATE_ID INNER JOIN PAGE P2 ON P1.PAGE_NAME = P2.PAGE_NAME AND P1.PAGE_ID <> P2.PAGE_ID INNER JOIN PAGE_TEMPLATE PT2 ON PT1.TEMPLATE_NAME = PT2.TEMPLATE_NAME AND P2.PAGE_TEMPLATE_ID = PT2.PAGE_TEMPLATE_ID AND PT1.SITE_ID <> PT2.SITE_ID WHERE PT1.TEMPLATE_NAME <> 'Default Notification Template'");
-
-                _fieldsToValidate.Add(AllPageObjectsKey, new[] { "siteId" });
-                _fieldsToValidate.Add(AllTemplateObjectsKey, new[] { "siteId" });
-                _fieldsToValidate.Add(TemplateMappingKey, new[] { "template_name" });
-                _fieldsToValidate.Add(PageMappingKey, new[] { "template_name" });
-                _fieldsToValidate.Add(AllTemplatesKey, new[] { "siteId" });
-
-                _fieldsToValidate.Add(AllPagesKey, new[] { "page_name" });
-            }
-        }
-#endif
     }
 }

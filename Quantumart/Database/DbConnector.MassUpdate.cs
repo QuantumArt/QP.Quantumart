@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using Npgsql;
+using NpgsqlTypes;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
 
@@ -64,7 +68,7 @@ namespace Quantumart.QPublishing.Database
             var versionIdsToRemove = GetVersionIdsToRemove(existingIds, content.MaxVersionNumber);
             var createVersions = options.CreateVersions && content.UseVersionControl;
 
-            CreateInternalConnection(true);
+            CreateInternalConnection();
             try
             {
                 var doc = GetImportContentItemDocument(arrValues, content);
@@ -79,8 +83,8 @@ namespace Quantumart.QPublishing.Database
                 var dataDoc = GetMassUpdateContentDataDocument(arrValues, resultAttrs, newIds, content, options.ReplaceUrls);
                 ImportContentData(dataDoc);
 
-                var attrString = string.Join(",", resultAttrs.Select(n => n.Id.ToString()).ToArray());
-                ReplicateData(arrValues, attrString);
+                var attrIds = resultAttrs.Select(n => n.Id).ToArray();
+                ReplicateData(arrValues, attrIds);
 
                 var manyToManyAttrs = resultAttrs.Where(n => n.Type == AttributeType.Relation && n.LinkId.HasValue).ToArray();
                 if (manyToManyAttrs.Any())
@@ -160,12 +164,17 @@ namespace Quantumart.QPublishing.Database
                 .ToDictionary(kRow => Convert.ToInt32(kRow["content_item_id"]), vRow => Convert.ToDateTime(vRow["modified"]));
 
             var newHash = new HashSet<int>(newIds);
+            var format = "MM/dd/yyyy HH:mm:ss.fff";
+            if (DatabaseType == DatabaseType.Postgres)
+            {
+                format += "fff";
+            }
             foreach (var value in arrValues)
             {
                 var id = int.Parse(value[SystemColumnNames.Id]);
                 if (id != 0 && arrModified.TryGetValue(id, out var modified))
                 {
-                    value[SystemColumnNames.Modified] = modified.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture);
+                    value[SystemColumnNames.Modified] = modified.ToString(format, CultureInfo.InvariantCulture);
                     if (newHash.Contains(id))
                     {
                         value[SystemColumnNames.Created] = value[SystemColumnNames.Modified];
@@ -174,45 +183,35 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private SqlCommand GetUpdateModifiedCommand(IEnumerable<int> existingIds, int[] newIds, int contentId)
+        private DbCommand GetUpdateModifiedCommand(IEnumerable<int> existingIds, int[] newIds, int contentId)
         {
-            return new SqlCommand
-            {
-                CommandText = $"select content_item_id, Modified from content_{contentId}_united with(nolock) where content_item_id in (select id from @ids)",
-                CommandType = CommandType.Text,
-                Parameters =
-                {
-                    new SqlParameter("@ids", SqlDbType.Structured)
-                    {
-                        TypeName = "Ids",
-                        Value = IdsToDataTable(existingIds.Union(newIds))
-                    }
-                }
-            };
+            var cmd = CreateDbCommand($@"
+                select content_item_id, modified from content_{contentId}_united {WithNoLock}
+                where content_item_id in (select id from {IdList()})
+            ");
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@ids", newIds.Union(existingIds), DatabaseType));
+            return cmd;
         }
 
-        private int[] GetVersionIdsToRemove(int[] ids, int maxNumber)
+        public int[] GetVersionIdsToRemove(int[] ids, int maxNumber)
         {
             var cmd = GetVersionIdsToRemoveCommand(ids, maxNumber);
             return GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_version_id"])).ToArray();
         }
 
-        private SqlCommand GetVersionIdsToRemoveCommand(int[] ids, int maxNumber)
+        private DbCommand GetVersionIdsToRemoveCommand(int[] ids, int maxNumber)
         {
-            var cmd = new SqlCommand(@"  select content_item_version_id from
+            var cmd = CreateDbCommand($@"  select content_item_version_id from
                 (
                     select content_item_id, content_item_version_id,
                     row_number() over(partition by civ.content_item_id order by civ.content_item_version_id desc) as num
                     from content_item_version civ
-                    where content_item_id in (select id from @ids)
+                    where content_item_id in (select id from {IdList()})
                     ) c
-                    where c.num >= @maxNumber")
-            {
-                CommandType = CommandType.Text
-            };
+                    where c.num >= @maxNumber");
 
             cmd.Parameters.AddWithValue("@maxNumber", maxNumber);
-            cmd.Parameters.Add(new SqlParameter("@ids", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(ids) });
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@ids", ids, DatabaseType));
             return cmd;
         }
 
@@ -387,7 +386,7 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private SqlCommand GetValidateConstraintCommand(XContainer validatedDataDoc, IReadOnlyList<ContentAttribute> attrs, out string attrNames)
+        private DbCommand GetValidateConstraintCommand(XContainer validatedDataDoc, IReadOnlyList<ContentAttribute> attrs, out string attrNames)
         {
             var sb = new StringBuilder();
             var validatedIds = validatedDataDoc
@@ -397,44 +396,65 @@ namespace Quantumart.QPublishing.Database
                 .ToArray();
 
             var contentId = attrs[0].ContentId;
-            attrNames = string.Join(", ", attrs.Select(n => n.Name));
-            sb.AppendLine("declare @default_num int, @default_date datetime;");
-            sb.AppendLine("set @default_num = -2147483648;");
-            sb.AppendLine("set @default_date = getdate();");
+            attrNames = string.Join(", ", attrs.Select(n => SqlQuerySyntaxHelper.FieldName(DatabaseType, n.Name)));
 
-            sb.AppendLine($"WITH X(CONTENT_ITEM_ID, {attrNames})");
-            sb.AppendLine(@"AS (SELECT doc.col.value('./@id', 'int') CONTENT_ITEM_ID");
-            foreach (var attr in attrs)
+            if (DatabaseType == DatabaseType.SqlServer)
             {
-                sb.AppendLine($",doc.col.value('(DATA)[@id={attr.Id}][1]', 'nvarchar(max)') {attr.Name}");
+
+                sb.AppendLine("declare @default_num int, @default_date datetime;");
+                sb.AppendLine("set @default_num = -2147483648;");
+                sb.AppendLine("set @default_date = getdate();");
+
+                sb.AppendLine($"WITH X(CONTENT_ITEM_ID, {attrNames})");
+                sb.AppendLine(@"AS (SELECT doc.col.value('./@id', 'int') CONTENT_ITEM_ID");
+                foreach (var attr in attrs)
+                {
+                    var aName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
+                    sb.AppendLine($",doc.col.value('(DATA)[@id={attr.Id}][1]', 'nvarchar(max)') {aName}");
+                }
+
+                sb.AppendLine("FROM @xmlParameter.nodes('/ITEMS/ITEM') doc(col))");
+            }
+            else
+            {
+                sb.AppendLine($@"WITH X AS(
+                            select xml.* from XMLTABLE('/ITEMS/ITEM' PASSING @xmlParameter COLUMNS
+			                content_item_id int PATH '@id'");
+
+                foreach (var attr in attrs)
+                {
+                    var aName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
+                    sb.AppendLine($@", {aName} text PATH 'DATA[@id={attr.Id}]'");
+                }
+                sb.AppendLine(") xml )");
             }
 
-            sb.AppendLine("FROM @xmlParameter.nodes('/ITEMS/ITEM') doc(col))");
-            sb.AppendLine($" SELECT c.CONTENT_ITEM_ID FROM dbo.CONTENT_{contentId}_UNITED c with(nolock) INNER JOIN X ON c.CONTENT_ITEM_ID NOT IN (select id from @validatedIds)");
-            foreach (var attr in attrs)
-            {
-                if (attr.IsNumeric)
-                {
-                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], @default_num) = case when X.[{attr.Name}] = '' then @default_num else cast (X.[{attr.Name}] as numeric(18, {attr.Size})) end");
-                }
-                else if (attr.IsDateTime)
-                {
-                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], @default_date) = case when X.[{attr.Name}] = '' then @default_date else cast (X.[{attr.Name}] as datetime) end");
-                }
-                else
-                {
-                    sb.AppendLine($"AND ISNULL(c.[{attr.Name}], '') = ISNULL(X.[{attr.Name}], '')");
-                }
-            }
+            var defaultDate = (DatabaseType == DatabaseType.SqlServer) ? "@default_date" : "now()";
+            var defaultNum = (DatabaseType == DatabaseType.SqlServer) ? "@default_num" :"-2147483648";
 
-            var cmd = new SqlCommand(sb.ToString())
-            {
-                CommandTimeout = 120,
-                CommandType = CommandType.Text
-            };
+            sb.AppendLine($" SELECT c.CONTENT_ITEM_ID FROM CONTENT_{contentId}_UNITED c {WithNoLock} INNER JOIN X ON c.CONTENT_ITEM_ID NOT IN (select v.id from {IdList("@validatedIds", "v")})");
+                foreach (var attr in attrs)
+                {
+                    var attrName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
+                    if (attr.IsNumeric)
+                    {
+                        sb.AppendLine($"AND coalesce(c.{attrName}, {defaultNum}) = case when X.{attrName} = '' then {defaultNum} else cast (X.{attrName} as numeric(18, {attr.Size})) end");
+                    }
+                    else if (attr.IsDateTime)
+                    {
+                        sb.AppendLine($"AND coalesce(c.{attrName}, {defaultDate}) = case when X.{attrName} = '' then {defaultDate} else cast (X.{attrName} as timestamp without time zone) end");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"AND coalesce(c.{attrName}, '') = coalesce(X.{attrName}, '')");
+                    }
+                }
 
-            cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = validatedDataDoc.ToString(SaveOptions.None) });
-            cmd.Parameters.Add(new SqlParameter("@validatedIds", SqlDbType.Structured) { TypeName = "Ids", Value = IdsToDataTable(validatedIds) });
+            var xml = validatedDataDoc.ToString(SaveOptions.None);
+            var cmd = CreateDbCommand(sb.ToString());
+            cmd.CommandTimeout = 120;
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetXmlParam("@xmlParameter", xml, DatabaseType));
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetIdsDatatableParam("@validatedIds", validatedIds, DatabaseType));
 
             return cmd;
         }
@@ -541,7 +561,7 @@ namespace Quantumart.QPublishing.Database
             return newIds;
         }
 
-        private SqlCommand GetMassUpdateContentItemCommand(int contentId, int lastModifiedBy, XDocument doc, bool createVersions)
+        private DbCommand GetMassUpdateContentItemCommand(int contentId, int lastModifiedBy, XDocument doc, bool createVersions)
         {
             var createVersionsString = createVersions
                 ? "exec qp_create_content_item_versions @OldIds, @lastModifiedBy"
@@ -607,11 +627,22 @@ namespace Quantumart.QPublishing.Database
 
                 SELECT ID FROM @NewArticles                ";
 
-            var cmd = new SqlCommand(insertInto) { CommandType = CommandType.Text };
-            cmd.Parameters.Add(new SqlParameter("@xmlParameter", SqlDbType.Xml) { Value = doc.ToString(SaveOptions.None) });
+            var cmd = CreateDbCommand(insertInto);
+            var xml = doc.ToString(SaveOptions.None);
+            if (DatabaseType != DatabaseType.SqlServer)
+            {
+                cmd.CommandText = "select id from qp_mass_update_content_item(@xmlParameter, @contentId, @lastModifiedBy, @notForReplication, @createVersions, @importOnly);";
+            }
+
+            cmd.Parameters.Add(SqlQuerySyntaxHelper.GetXmlParam("@xmlParameter", xml, DatabaseType));
             cmd.Parameters.AddWithValue("@contentId", contentId);
             cmd.Parameters.AddWithValue("@lastModifiedBy", lastModifiedBy);
             cmd.Parameters.AddWithValue("@notForReplication", 1);
+            if (DatabaseType != DatabaseType.SqlServer)
+            {
+                cmd.Parameters.AddWithValue("@createVersions", createVersions);
+                cmd.Parameters.AddWithValue("@importOnly", false);
+            }
 
             return cmd;
         }

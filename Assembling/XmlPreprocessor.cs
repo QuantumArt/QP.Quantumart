@@ -792,53 +792,57 @@ namespace Quantumart.QP8.Assembling
 
         private void ImportMappedContent(decimal contentId, object mappedName, object mappedPluralName)
         {
-            using (var cmd = new SqlCommand())
+            using (var conn = Controller.Cnn.CreateConnection())
             {
-                cmd.CommandText = "update content set map_as_class = 1, use_default_filtration = 1, net_content_name = @mapped_name, net_plural_content_name = @mapped_plural_name where content_id = @content_id";
-                cmd.Parameters.Add("@mapped_name", SqlDbType.NVarChar, 255).Value = mappedName;
-                cmd.Parameters.Add("@mapped_plural_name", SqlDbType.NVarChar, 255).Value = mappedPluralName;
-                cmd.Parameters.Add("@content_id", SqlDbType.Decimal).Value = contentId;
-                Controller.Cnn.ExecuteCmd(cmd);
+                var sql = "update content set map_as_class = 1, use_default_filtration = 1, net_content_name = @mapped_name, net_plural_content_name = @mapped_plural_name where content_id = @content_id";
+                var cmd = Controller.Cnn.CreateCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@mapped_name", mappedName);
+                cmd.Parameters.AddWithValue("@mapped_plural_name", mappedPluralName);
+                cmd.Parameters.AddWithValue("@content_id", contentId);
+                cmd.ExecuteNonQuery();
             }
         }
 
         private void ImportMappedField(decimal contentId, string fieldName, object mappedFieldName, object mappedBackFieldName)
         {
-            using (var cmd = new SqlCommand())
+            using (var conn = Controller.Cnn.CreateConnection())
             {
-                cmd.CommandText = "update content_attribute set map_as_property = 1, net_attribute_name = @mapped_name, net_back_attribute_name = @mapped_back_name where content_id = @content_id and attribute_name = @attribute_name";
-                cmd.Parameters.Add("@mapped_name", SqlDbType.NVarChar, 255).Value = mappedFieldName;
-                cmd.Parameters.Add("@mapped_back_name", SqlDbType.NVarChar, 255).Value = mappedBackFieldName;
-                cmd.Parameters.Add("@content_id", SqlDbType.Decimal).Value = contentId;
-                cmd.Parameters.Add("@attribute_name", SqlDbType.NVarChar, 255).Value = fieldName;
-                Controller.Cnn.ExecuteCmd(cmd);
+                var sql = "update content_attribute set map_as_property = 1, net_attribute_name = @mapped_name, net_back_attribute_name = @mapped_back_name where content_id = @content_id and attribute_name = @attribute_name";
+                var cmd = Controller.Cnn.CreateCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@mapped_name", mappedFieldName);
+                cmd.Parameters.AddWithValue("@mapped_back_name", mappedBackFieldName);
+                cmd.Parameters.AddWithValue("@content_id", contentId);
+                cmd.Parameters.AddWithValue("@attribute_name", fieldName);
+                cmd.ExecuteNonQuery();
             }
         }
 
         private void ImportMappedLink(decimal linkId, object mappedName, object mappedPluralName)
         {
-            using (var cmd = new SqlCommand())
+            using (var conn = Controller.Cnn.CreateConnection())
             {
-                cmd.CommandText = "update content_to_content set map_as_class = 1, net_link_name = @mapped_name, net_plural_link_name = @mapped_plural_name where link_id = @link_id";
-                cmd.Parameters.Add("@mapped_name", SqlDbType.NVarChar, 255).Value = mappedName;
-                cmd.Parameters.Add("@mapped_plural_name", SqlDbType.NVarChar, 255).Value = mappedPluralName;
-                cmd.Parameters.Add("@link_id", SqlDbType.Decimal).Value = linkId;
-                Controller.Cnn.ExecuteCmd(cmd);
+                var sql = "update content_to_content set map_as_class = 1, net_link_name = @mapped_name, net_plural_link_name = @mapped_plural_name where link_id = @link_id";
+                var cmd = Controller.Cnn.CreateCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@mapped_name", mappedName);
+                cmd.Parameters.AddWithValue("@mapped_plural_name", mappedPluralName);
+                cmd.Parameters.AddWithValue("@link_id", linkId);
+                cmd.ExecuteNonQuery();
             }
         }
 
         private void ImportMappedRoot(decimal siteId, object generatedNamespace, bool replaceUrls, bool useLongUrls, object cnnStringName, object generatedClass)
         {
-            using (var cmd = new SqlCommand())
+            using (var conn = Controller.Cnn.CreateConnection())
             {
-                cmd.CommandText = "update site set import_mapping_to_db = 0, proceed_mapping_with_db = 1, replace_urls = @replace_urls, use_long_urls = @use_long_urls, namespace = @namespace, context_class_name = @context_class_name, connection_string_name = @connection_string_name where site_id = @site_id";
-                cmd.Parameters.Add("@replace_urls", SqlDbType.Bit).Value = replaceUrls;
-                cmd.Parameters.Add("@use_long_urls", SqlDbType.Bit).Value = useLongUrls;
-                cmd.Parameters.Add("@namespace", SqlDbType.NVarChar, 255).Value = generatedNamespace;
-                cmd.Parameters.Add("@context_class_name", SqlDbType.NVarChar, 255).Value = generatedClass;
-                cmd.Parameters.Add("@connection_string_name", SqlDbType.NVarChar, 255).Value = cnnStringName;
-                cmd.Parameters.Add("@site_id", SqlDbType.Decimal).Value = siteId;
-                Controller.Cnn.ExecuteCmd(cmd);
+                var sql = "update site set import_mapping_to_db = 0, proceed_mapping_with_db = 1, replace_urls = @replace_urls, use_long_urls = @use_long_urls, namespace = @namespace, context_class_name = @context_class_name, connection_string_name = @connection_string_name where site_id = @site_id";
+                var cmd = Controller.Cnn.CreateCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@replace_urls", replaceUrls);
+                cmd.Parameters.AddWithValue("@use_long_urls", useLongUrls);
+                cmd.Parameters.AddWithValue("@namespace", generatedNamespace.ToString());
+                cmd.Parameters.AddWithValue("@context_class_name", generatedClass.ToString());
+                cmd.Parameters.AddWithValue("@connection_string_name", cnnStringName);
+                cmd.Parameters.AddWithValue("@site_id", siteId);
+                cmd.ExecuteNonQuery();
             }
         }
 

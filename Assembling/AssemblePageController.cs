@@ -2,6 +2,7 @@ using System;
 using System.Data;
 using System.IO;
 using System.Text;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -30,13 +31,13 @@ namespace Quantumart.QP8.Assembling
         }
 
         public AssemblePageController(int pageId, string connectionParameter, bool firstInBatch)
-            : base(connectionParameter)
+            : base(connectionParameter, DatabaseType.SqlServer)
         {
             FillController(pageId, null, firstInBatch);
         }
 
         public AssemblePageController(int pageId, string connectionParameter)
-            : base(connectionParameter)
+            : base(connectionParameter, DatabaseType.SqlServer)
         {
             FillController(pageId, null, true);
         }

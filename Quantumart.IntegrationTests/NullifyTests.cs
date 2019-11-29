@@ -32,7 +32,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -40,7 +40,7 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString) { ForceLocalCache = true };
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
 #endif
             Clear();
 
@@ -106,7 +106,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(parentAfter, Is.Null);
             Assert.That(dateAfter, Is.Null);
             Assert.That(flagAfter, Is.Null);
-        }    
+        }
 
 
         [Test]
@@ -166,7 +166,7 @@ namespace Quantumart.IntegrationTests
             Assert.That(dateAfter, Is.Null);
             Assert.That(flagAfter, Is.Null);
         }
-    
+
 
         [Test]
         public void MassUpdate_SaveNull_ForEmpty([DBConnectorContextValues] IDBConnectorContext context)

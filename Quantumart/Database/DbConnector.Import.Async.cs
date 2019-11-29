@@ -15,9 +15,9 @@ namespace Quantumart.QPublishing.Database
             await ProcessDataAsync(cmd, cancellationToken);
         }
 
-        private async Task ReplicateDataAsync(IEnumerable<Dictionary<string, string>> values, string attrString, CancellationToken cancellationToken)
+        private async Task ReplicateDataAsync(IEnumerable<Dictionary<string, string>> values, int[] attrIds, CancellationToken cancellationToken)
         {
-            var cmd = GetReplicateDataCommand(values, attrString);
+            var cmd = GetReplicateDataCommand(values, attrIds);
             await ProcessDataAsync(cmd);
         }
     }

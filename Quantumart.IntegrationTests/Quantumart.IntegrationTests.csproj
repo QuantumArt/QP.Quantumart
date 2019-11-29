@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
@@ -41,7 +41,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
+    <ProjectReference Include="..\Assembling\Assembling.csproj" />
   </ItemGroup>
+
 
   <ItemGroup>
     <None Update="TestData\batchupdate.xml">
@@ -69,5 +71,4 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
 </Project>

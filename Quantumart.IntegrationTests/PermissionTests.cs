@@ -16,7 +16,7 @@ namespace Quantumart.IntegrationTests
     [TestFixture]
     public class PermissionFixture
     {
-        private const string Username = "test";
+        private const string Username = "test54321";
         private const string Password = "1Qaz2Wsx";
         private const string FirstName = "testFirstName";
         private const string LastName = "testLastName";
@@ -31,7 +31,7 @@ namespace Quantumart.IntegrationTests
         {
 #if ASPNETCORE
             DbConnector = new DBConnector(
-                new DbConnectorSettings { ConnectionString = Global.ConnectionString },
+                new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
                 new HttpContextAccessor { HttpContext = new DefaultHttpContext { Session = Mock.Of<ISession>() } }
             )
@@ -39,8 +39,9 @@ namespace Quantumart.IntegrationTests
                 ForceLocalCache = true
             };
 #else
-            DbConnector = new DBConnector(Global.ConnectionString) { ForceLocalCache = true };
+            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
 #endif
+            Clear();
         }
 
         [Test]

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Data;
+using System.Linq;
 using System.Text;
 
 // ReSharper disable once CheckNamespace
@@ -9,6 +10,18 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
+        public DbCacheManager CacheManager { get; internal set; }
+
+        public bool ForceLocalCache { get; set; }
+
+        public bool UseLocalCache => ForceLocalCache;
+
+        public bool CacheData { get; set; }
+
+        private string _instanceCachePrefix;
+
+        public string InstanceCachePrefix => _instanceCachePrefix ?? (_instanceCachePrefix = ExtractCachePrefix(InstanceConnectionString));
+
         private static string AppendFilter(string rowFilter, string key, int value)
         {
             var sb = new StringBuilder(rowFilter);
@@ -20,10 +33,6 @@ namespace Quantumart.QPublishing.Database
             sb.Append($"{key} = {value}");
             return sb.ToString();
         }
-
-#if !ASPNETCORE && !NETSTANDARD
-        internal DataView GetPageObjects(string rowFilter) => GetDataView(CacheManager.PageObjectKey, rowFilter);
-#endif
 
         public DataTable GetDataTable(string key) => CacheManager.GetDataTable(key);
 
@@ -54,14 +63,6 @@ namespace Quantumart.QPublishing.Database
         internal DataView GetTemplateMapping(string rowFilter) => GetDataView(CacheManager.TemplateMappingKey, rowFilter);
 
         internal DataView GetPageMapping(string rowFilter) => GetDataView(CacheManager.PageMappingKey, rowFilter);
-
-#if !ASPNETCORE && !NETSTANDARD
-        internal Hashtable GetPageMappingHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageMappingHashKey);
-
-        internal Hashtable GetTemplateObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.TemplateObjectHashKey);
-
-        internal Hashtable GetPageObjectHashTable() => CacheManager.GetCachedHashTable(CacheManager.PageObjectHashKey);
-#endif
 
         internal Hashtable GetContentHashTable() => CacheManager.GetCachedDualHashTable(CacheManager.ContentHashKey).Items;
 
@@ -106,5 +107,37 @@ namespace Quantumart.QPublishing.Database
 
         public T GetCachedEntity<T>(string key, double interval, Func<T> fillAction)
             where T : class => CacheManager.GetCachedEntity(key, interval, fillAction);
+
+        private static string ExtractCachePrefix(string cnnString)
+        {
+            var result = string.Empty;
+            if (!string.IsNullOrEmpty(cnnString))
+            {
+                var cnnParams = cnnString.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries).AsEnumerable().Select(s => new { Key = s.Split('=')[0], Value = s.Split('=')[1] }).ToArray();
+                var dbName = cnnParams
+                    .Where(n => new[] { "initial catalog", "database" }.Contains(n.Key.ToLowerInvariant()))
+                    .Select(n => n.Value)
+                    .FirstOrDefault();
+
+                if (dbName == null)
+                {
+                    throw new ArgumentException("The connection supplied string should contain at least 'Initial Catalog' or 'Database' keyword.");
+                }
+
+                var serverName = cnnParams
+                    .Where(n => new[] { "data source", "server", "host" }.Contains(n.Key.ToLowerInvariant()))
+                    .Select(n => n.Value)
+                    .FirstOrDefault();
+
+                if (serverName == null)
+                {
+                    throw new ArgumentException("The connection string supplied should contain at least 'Data Source', 'Server' or 'Host' keyword.");
+                }
+
+                result = $"{dbName}.{serverName}.";
+            }
+
+            return result;
+        }
     }
 }

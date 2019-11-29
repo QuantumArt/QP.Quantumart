@@ -1,4 +1,5 @@
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,13 +12,17 @@ namespace Quantumart.QPublishing.Database
     {
         public async Task<DataTable> GetRealDataAsync(string queryString, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var cmd = new SqlCommand(queryString);
+            var cmd = CreateDbCommand(queryString);
             return await GetRealDataAsync(cmd, cancellationToken);
         }
 
-        public async Task<DataTable> GetRealDataAsync(SqlCommand cmd, CancellationToken cancellationToken = default(CancellationToken)) => await GetRealDataAsync(cmd, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection, cancellationToken);
+        public async Task<DataTable> GetRealDataAsync(
+            DbCommand cmd, CancellationToken cancellationToken = default(CancellationToken)
+        ) => await GetRealDataAsync(
+            cmd, GetActualConnection(), GetActualTransaction(), NeedToDisposeActualConnection, cancellationToken
+         );
 
-        public async Task<DataTable> GetRealDataAsync(SqlCommand cmd, SqlConnection cn, SqlTransaction tr, bool disposeConnection, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<DataTable> GetRealDataAsync(DbCommand cmd, DbConnection cn, DbTransaction tr, bool disposeConnection, CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
@@ -47,16 +52,16 @@ namespace Quantumart.QPublishing.Database
 
         public async Task ProcessDataAsync(string queryString, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var command = new SqlCommand(queryString);
+            var command = CreateDbCommand(queryString);
             await ProcessDataAsync(command, cancellationToken);
         }
 
-        public async Task ProcessDataAsync(SqlCommand command, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task ProcessDataAsync(DbCommand command, CancellationToken cancellationToken = default(CancellationToken))
         {
-            await ProcessDataAsync(command, GetActualSqlConnection(), GetActualSqlTransaction(), NeedToDisposeActualSqlConnection, cancellationToken);
+            await ProcessDataAsync(command, GetActualConnection(), GetActualTransaction(), NeedToDisposeActualConnection, cancellationToken);
         }
 
-        public async Task ProcessDataAsync(SqlCommand command, SqlConnection cnn, SqlTransaction tr, bool disposeConnection, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task ProcessDataAsync(DbCommand command, DbConnection cnn, DbTransaction tr, bool disposeConnection, CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {

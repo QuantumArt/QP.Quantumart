@@ -1,20 +1,27 @@
 using Quantumart.QPublishing.Database;
 using System;
+using System.Data.Common;
 using System.Data.SqlClient;
+using QP.ConfigurationService.Models;
 
 namespace Quantumart.QPublishing.Authentication
 {
     public class AuthenticationService : IAuthenticationService
     {
-        private const string ClearSIDQuery = "UPDATE sessions_log SET sid = NULL output inserted.USER_ID, inserted.SESSION_ID WHERE sid = @sid";
-
-        private const string AuthenticationQuery = @"declare @date datetime = getdate() + cast(@interval as datetime);
+        private readonly string _clearSIDQuery;
+        private readonly string _sqlAuthenticationQuery = @"declare @date datetime = getdate() + cast(@interval as datetime);
 if exists (select null from access_token where UserId = @userId and SessionId = @sessionId and Application = @application)
 	update access_token set ExpirationDate = @date output inserted.$rowguid Token, inserted.ExpirationDate where UserId = @userId and SessionId = @sessionId and Application = @application
 else
 	insert into access_token(UserId, SessionId, Application, ExpirationDate) output inserted.$rowguid Token, inserted.ExpirationDate values(@userId, @sessionId, @application, @date)";
 
-        private const string TokenQuery = "select UserId, ExpirationDate from access_token where $rowguid = @token and Application = @application and getdate() < ExpirationDate";
+        private readonly string _pgAuthenticationQuery = @"INSERT INTO access_token(UserId, SessionId, Application, ExpirationDate)
+            VALUES(@userId, @sessionId, @application, NOW() + CAST(@interval AS time))
+            ON CONFLICT (UserId, SessionId, Application) DO
+                UPDATE SET ExpirationDate = NOW() + CAST(@interval AS time)
+            RETURNING Token, ExpirationDate;";
+
+        private readonly string _tokenQuery;
 
         private const string SettingsQuery = "select use_tokens from db";
 
@@ -23,6 +30,14 @@ else
         public AuthenticationService(DBConnector connector)
         {
             _connector = connector;
+            _clearSIDQuery = $@"UPDATE sessions_log SET sid = NULL {
+                    SqlQuerySyntaxHelper.Output(_connector.DatabaseType, new[] { "USER_ID", "SESSION_ID" })
+                } WHERE sid = @sid {SqlQuerySyntaxHelper.Returning(_connector.DatabaseType, new[] { "USER_ID", "SESSION_ID" })}";
+            _tokenQuery = $@"select UserId, ExpirationDate
+                    from access_token
+                    where Token = @token and Application = @application and {
+                            SqlQuerySyntaxHelper.Now(_connector.DatabaseType)
+                         } < ExpirationDate";
         }
         public AuthenticationToken Authenticate(string sid, TimeSpan interval, string application)
         {
@@ -37,23 +52,21 @@ else
             }
 
             CheckSettings();
-
-            var sqlCommand = new SqlCommand(ClearSIDQuery);
-            sqlCommand.Parameters.AddWithValue("@sid", sid);
-            var dt = _connector.GetRealData(sqlCommand);
+            var dbCommand = _connector.CreateDbCommand(_clearSIDQuery);
+            dbCommand.Parameters.AddWithValue("@sid", sid);
+            var dt = _connector.GetRealData(dbCommand);
 
             if (dt.Rows.Count > 0)
             {
                 var userId = (int)(decimal)dt.Rows[0]["User_id"];
                 var sessionId = (int)(decimal)dt.Rows[0]["Session_id"];
 
-                sqlCommand = new SqlCommand(AuthenticationQuery);
-                sqlCommand.Parameters.AddWithValue("@sid", sid);
-                sqlCommand.Parameters.AddWithValue("@userId", userId);
-                sqlCommand.Parameters.AddWithValue("@sessionId", sessionId);
-                sqlCommand.Parameters.AddWithValue("@interval", interval);
-                sqlCommand.Parameters.AddWithValue("@application", application);
-                dt = _connector.GetRealData(sqlCommand);
+                dbCommand = _connector.CreateDbCommand(_connector.DatabaseType == DatabaseType.Postgres ? _pgAuthenticationQuery : _sqlAuthenticationQuery);
+                dbCommand.Parameters.AddWithValue("@userId", userId);
+                dbCommand.Parameters.AddWithValue("@sessionId", sessionId);
+                dbCommand.Parameters.AddWithValue("@interval", interval);
+                dbCommand.Parameters.AddWithValue("@application", application);
+                dt = _connector.GetRealData(dbCommand);
 
                 if (dt.Rows.Count > 0)
                 {
@@ -67,7 +80,7 @@ else
                         ExpirationDate = date,
                         Application = application
                     };
-                }               
+                }
             }
 
             return null;
@@ -82,14 +95,14 @@ else
 
             CheckSettings();
 
-            var sqlCommand = new SqlCommand(TokenQuery);
-            sqlCommand.Parameters.AddWithValue("@token", token);
-            sqlCommand.Parameters.AddWithValue("@application", application);
+            var dbCommand = _connector.CreateDbCommand(_tokenQuery);
+            dbCommand.Parameters.AddWithValue("@token", token);
+            dbCommand.Parameters.AddWithValue("@application", application);
 
-            var dt = _connector.GetRealData(sqlCommand);
+            var dt = _connector.GetRealData(dbCommand);
             if (dt.Rows.Count > 0)
             {
-                var userId = (int)dt.Rows[0]["UserId"];                
+                var userId = (int)dt.Rows[0]["UserId"];
                 var date = (DateTime)dt.Rows[0]["ExpirationDate"];
 
                 return new AuthenticationToken
@@ -106,9 +119,9 @@ else
 
         private void CheckSettings()
         {
-            var sqlCommand = new SqlCommand(SettingsQuery);
+            var dbCommand = _connector.CreateDbCommand(SettingsQuery);
 
-            if (!(bool)_connector.GetRealScalarData(sqlCommand))
+            if (!(bool)_connector.GetRealScalarData(dbCommand))
             {
                 throw new AuthenticationException("Option 'Use authentication tokens' must be on");
             }

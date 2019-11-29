@@ -1,4 +1,5 @@
 using System.Data;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -9,7 +10,7 @@ namespace Quantumart.QP8.Assembling
         public string Ids { get; }
 
         public AssembleSelectedObjectsController(string ids, string connectionParameter)
-            : base(connectionParameter)
+            : base(connectionParameter, DatabaseType.SqlServer)
         {
             Ids = ids;
             CurrentAssembleMode = AssembleMode.SelectedObjects;

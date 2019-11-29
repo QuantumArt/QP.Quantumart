@@ -8,11 +8,11 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Xml.Linq;
+using NLog;
+using NLog.Fluent;
+using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
-#if NET4
-using System.Diagnostics;
 using Quantumart.QP8.Assembling;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -20,6 +20,9 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
+
+        public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
 
         public bool DisableInternalNotifications { get; set; }
@@ -125,13 +128,12 @@ namespace Quantumart.QPublishing.Database
 
         private void InternalExceptionHandler(Exception ex, string code, WebRequest request)
         {
-            var errorMessage = $"DbConnector.Notifications.cs, {code}, URL: {request?.RequestUri}, MESSAGE: {ex.Message}, STACK TRACE: {ex.StackTrace}";
-#if NET4
-            EventLog.WriteEntry("Application", errorMessage);
-#endif
+            var message = $"Unhandled exception occurs. Code: {code}, URL: {request?.RequestUri}";
+            _logger.Error().Exception(ex).Message(message).Write();
+
             if (ThrowNotificationExceptions)
             {
-                throw new Exception(errorMessage, ex);
+                throw new Exception(message, ex);
             }
         }
 
@@ -171,11 +173,7 @@ namespace Quantumart.QPublishing.Database
                 if (!DisableInternalNotifications)
                 {
                     var internalNotifications = notifications.Except(dataRows);
-#if ASPNETCORE || NETSTANDARD
                     if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(DbConnectorSettings.MailHost))
-#else
-                    if (string.Equals(AppSettings["MailComponent"], "qa_mail", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(AppSettings["MailHost"]))
-#endif
                     {
                         if (internalNotifications.Any())
                         {
@@ -195,11 +193,8 @@ namespace Quantumart.QPublishing.Database
                                 var objectId = GetNumInt(notifyRow["OBJECT_ID"]);
                                 var contentId = GetNumInt(notifyRow["CONTENT_ID"]);
                                 var objectFormatId = GetNumInt(notifyRow["FORMAT_ID"]);
-#if ASPNETCORE || NETSTANDARD
-                                if (string.Equals(DbConnectorSettings.MailAssemble, "yes", StringComparison.InvariantCultureIgnoreCase))
-#else
-                                if (string.Equals(AppSettings["MailAssemble"], "yes", StringComparison.InvariantCultureIgnoreCase))
-#endif
+                                if (DbConnectorSettings.MailAssemble)
+
                                 {
 #if NET4
                                     switch (platform)
@@ -244,11 +239,8 @@ namespace Quantumart.QPublishing.Database
                                     }
                                     catch (Exception ex)
                                     {
-                                        body = $"An error has occurred while getting url data: {targetUrl}. Error message: {ex.Message}";
-#if NET4
-                                        var errorMessage = $"DbConnector.cs, SendNotification, MESSAGE: {ex.Message} STACK TRACE: {ex.StackTrace}";
-                                        EventLog.WriteEntry("Application", errorMessage);
-#endif
+                                        body = $"An error has occurred while getting nofication url data: {targetUrl}. Error message: {ex.Message}";
+                                        _logger.Error().Exception(ex).Message("Error while getting nofication url").Write();
                                         doAttachFiles = false;
                                     }
 
@@ -352,11 +344,7 @@ namespace Quantumart.QPublishing.Database
 
         private string GetNotifyDirectory(int siteId)
         {
-#if ASPNETCORE || NETSTANDARD
             var notifyUrl = GetSiteUrl(siteId, true) + DbConnectorSettings.RelNotifyUrl;
-#else
-            var notifyUrl = GetSiteUrl(siteId, true) + AppSettings["RelNotifyUrl"];
-#endif
             return notifyUrl.ToLowerInvariant().Replace("notify.asp", "");
         }
 
@@ -415,36 +403,32 @@ namespace Quantumart.QPublishing.Database
         private string GetAspWrapperUrl(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive)
         {
             var liveString = isLive ? "1" : "0";
-#if ASPNETCORE || NETSTANDARD
             return $"{GetSiteUrl(siteId, isLive)}{DbConnectorSettings.RelNotifyUrl}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
-#else
-            return $"{GetSiteUrl(siteId, isLive)}{AppSettings["RelNotifyUrl"]}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
-#endif
         }
 
         private DataTable GetNotificationsTable(string notificationOn, int contentItemId)
         {
-            var testcmd = new SqlCommand("select count(*) From information_schema.columns where column_name = 'USE_SERVICE' and table_name = 'NOTIFICATIONS'") { CommandType = CommandType.Text };
-            var colCount = (int)GetRealScalarData(testcmd);
-            var serviceString = colCount == 0 ? "" : ", n.USE_SERVICE";
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
-            sb.Append("EXEC sp_executesql N'");
-            sb.AppendFormat("select n.NOTIFICATION_ID{0}, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID, n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER, n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, ", serviceString);
-            sb.Append(" f.object_id, c.site_id, n.is_external, coalesce(n.external_url, s.external_url) as external_url FROM notifications AS n with(nolock)");
-            sb.Append(" INNER JOIN content AS c with(nolock) ON c.content_id = n.content_id");
-            sb.Append(" INNER JOIN site AS s with(nolock) ON c.site_id = s.site_id");
-            sb.Append(" LEFT OUTER JOIN object_format AS f with(nolock) ON f.object_format_id = n.format_id");
-            sb.Append(" WHERE n.content_id = @contentId");
-            sb.AppendFormat(" AND n.{0} = 1", notificationOn);
+            var nolock = DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
+            var on = DatabaseType == DatabaseType.SqlServer ? " = 1" : "";
+            sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
+            sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
+            sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
+            sb.Append($" f.object_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url");
+            sb.Append($" FROM notifications AS n {nolock}");
+            sb.Append($" INNER JOIN content AS c {nolock} ON c.content_id = n.content_id");
+            sb.Append($" INNER JOIN site AS s {nolock} ON c.site_id = s.site_id");
+            sb.Append($" LEFT OUTER JOIN object_format AS f {nolock} ON f.object_format_id = n.format_id");
+            sb.Append($" WHERE n.content_id = {contentId}");
+            sb.Append($" AND n.{notificationOn}{on}");
             if (notificationOn.ToLowerInvariant() == NotificationEvent.StatusChanged)
             {
-                var dt = GetRealData($"EXEC sp_executesql N'select status_type_id from content_item where content_item_id = @id', N'@id NUMERIC', @id = {contentItemId}");
+                var stSql = $"select status_type_id from content_item where content_item_id = {contentItemId}";
+                var dt = GetRealData(stSql);
                 var status = dt.Rows[0]["status_type_id"].ToString();
-                sb.AppendFormat(" AND (n.notify_on_status_type_id IS NULL OR n.notify_on_status_type_id = {0})", status);
+                sb.Append($" AND (n.notify_on_status_type_id IS NULL OR n.notify_on_status_type_id = {status})");
             }
-
-            sb.AppendFormat("', N'@contentId NUMERIC', @contentId = {0}", contentId);
             return GetCachedData(sb.ToString());
         }
 
@@ -504,11 +488,7 @@ namespace Quantumart.QPublishing.Database
             var from = string.Empty;
             if ((bool)notifyRow["FROM_DEFAULT_NAME"])
             {
-#if ASPNETCORE || NETSTANDARD
                 fromName = DbConnectorSettings.MailFromName;
-#else
-                fromName = AppSettings["MailFromName"];
-#endif
             }
             else
             {
@@ -547,7 +527,7 @@ namespace Quantumart.QPublishing.Database
             var currentDir = GetUploadDir(siteId) + "\\contents\\" + contentId;
             foreach (DataRow fileRow in rstData.Rows)
             {
-                var fileName = currentDir + "\\" + fileRow["data"];
+                var fileName = currentDir + Path.DirectorySeparatorChar + fileRow["data"];
                 if (File.Exists(fileName))
                 {
                     mailMess.Attachments.Add(new Attachment(fileName));
@@ -557,11 +537,7 @@ namespace Quantumart.QPublishing.Database
 
         private void SendMail(MailMessage mailMess)
         {
-#if ASPNETCORE || NETSTANDARD
             var mailHost = DbConnectorSettings.MailHost;
-#else
-            var mailHost = AppSettings["MailHost"];
-#endif
             var smtpMail = new SmtpClient { UseDefaultCredentials = false };
             if (string.IsNullOrEmpty(mailHost))
             {
@@ -569,21 +545,12 @@ namespace Quantumart.QPublishing.Database
             }
 
             smtpMail.Host = mailHost;
-#if ASPNETCORE || NETSTANDARD
             if (!string.IsNullOrEmpty(DbConnectorSettings.MailLogin))
-#else
-            if (!string.IsNullOrEmpty(AppSettings["MailLogin"]))
-#endif
             {
                 var credentials = new NetworkCredential
                 {
-#if ASPNETCORE || NETSTANDARD
                     UserName = DbConnectorSettings.MailLogin,
                     Password = DbConnectorSettings.MailPassword
-#else
-                    UserName = AppSettings["MailLogin"],
-                    Password = AppSettings["MailPassword"]
-#endif
                 };
 
                 smtpMail.Credentials = credentials;

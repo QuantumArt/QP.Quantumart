@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Data.SqlClient;
 using Quantumart.QPublishing.Database;
 
@@ -24,7 +25,7 @@ namespace Quantumart.QPublishing.Info
 
         string GetKey(string prefix);
 
-        SqlCommand GetSqlCommand();
+        DbCommand GetDbCommand();
 
         string OutputParamName { get; }
     }

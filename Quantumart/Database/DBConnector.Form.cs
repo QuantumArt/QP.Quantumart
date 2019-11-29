@@ -2,11 +2,18 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using Npgsql;
+using NpgsqlTypes;
+using NLog.Fluent;
+using QP.ConfigurationService.Models;
+using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
@@ -22,6 +29,64 @@ namespace Quantumart.QPublishing.Database
     // ReSharper disable once InconsistentNaming
     public partial class DBConnector
     {
+        private const string IdentityParamString = "@itemId";
+
+        public IDynamicImageCreator DynamicImageCreator { get; set; }
+
+        public bool UpdateManyToMany { get; set; }
+
+        public bool UpdateManyToOne { get; set; }
+
+
+        public IFileSystem FileSystem { get; set; }
+
+        private int? _lastModifiedBy;
+
+        public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
+
+
+#if ASPNETCORE || NETSTANDARD
+        public int LastModifiedBy
+        {
+            get
+            {
+                var result = 1;
+                if (_lastModifiedBy.HasValue)
+                {
+                    result = _lastModifiedBy.Value;
+                }
+#if ASPNETCORE
+                else if (HttpContext?.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
+                {
+                    result = (int)HttpContext.Items[LastModifiedByKey];
+                }
+#endif
+
+                return result;
+            }
+            set => _lastModifiedBy = value;
+        }
+#else
+        public int LastModifiedBy
+        {
+            get
+            {
+                var result = 1;
+                if (_lastModifiedBy.HasValue)
+                {
+                    result = _lastModifiedBy.Value;
+                }
+                else if (HttpContext.Current != null && HttpContext.Current.Items.Contains(LastModifiedByKey))
+                {
+                    result = (int)HttpContext.Current.Items[LastModifiedByKey];
+                }
+
+                return result;
+            }
+            set => _lastModifiedBy = value;
+        }
+#endif
+
         private int FieldId(int contentId, string fieldName)
         {
             return contentId == 0 ? 0 : GetContentAttributeObjects(contentId).Where(n => n.Name.Equals(fieldName, StringComparison.InvariantCultureIgnoreCase)).Select(n => n.Id).FirstOrDefault();
@@ -127,8 +192,14 @@ namespace Quantumart.QPublishing.Database
                 throw new Exception($"Cannot modify virtual content (ID = {contentId})");
             }
 
+
+
             int statusTypeId;
-            var command = new SqlCommand();
+            var cmd = CreateDbCommand();
+            var command = cmd as SqlCommand;
+            var xDoc = new XDocument(new XElement("items"));
+            var xItem = new XElement("item");
+            xDoc?.Root?.Add(xItem);
 
             var sqlStringBuilder = new StringBuilder();
             var dynamicImagesList = new List<DynamicImageInfo>();
@@ -149,14 +220,13 @@ namespace Quantumart.QPublishing.Database
                     throw new ArgumentException("status_name parameter is null or empty");
                 }
 
-                var cmd = new SqlCommand("select status_type_id from content_item where content_item_id = @id")
-                {
-                    CommandType = CommandType.Text
-                };
-
+                cmd.CommandText = "select status_type_id from content_item where content_item_id = @id";
                 cmd.Parameters.AddWithValue("@id", contentItemId);
                 statusTypeId = (int)CastDbNull.To<decimal>(GetRealScalarData(cmd));
             }
+
+            if (DatabaseType == DatabaseType.SqlServer)
+            {
 
 #if !ASPNETCORE && !NETSTANDARD
             var actualFieldName = string.Empty;
@@ -196,61 +266,92 @@ namespace Quantumart.QPublishing.Database
             }
 #endif
 
-            command.Parameters.Add("@statusId", SqlDbType.Decimal).Value = statusTypeId;
-            command.Parameters.Add("@archive", SqlDbType.Decimal).Value = Convert.ToInt32(archive);
-            command.Parameters.Add("@visible", SqlDbType.Decimal).Value = Convert.ToInt32(visible);
-            command.Parameters.Add("@lastModifiedId", SqlDbType.Decimal).Value = Convert.ToInt32(lastModifiedId);
-            command.Parameters.Add("@delayed", SqlDbType.Bit).Value = delayedSchedule;
-            sqlStringBuilder.AppendLine("declare @splitted numeric;");
+                command.Parameters.AddWithValue("@statusId", statusTypeId);
+                command.Parameters.Add("@archive", SqlDbType.Decimal).Value = Convert.ToInt32(archive);
+                command.Parameters.Add("@visible", SqlDbType.Decimal).Value = Convert.ToInt32(visible);
+                command.Parameters.Add("@lastModifiedId", SqlDbType.Decimal).Value = Convert.ToInt32(lastModifiedId);
+                command.Parameters.Add("@delayed", SqlDbType.Bit).Value = delayedSchedule;
+                sqlStringBuilder.AppendLine("declare @splitted numeric;");
 
-            const string strSql = "insert into content_item (CONTENT_ID, STATUS_TYPE_ID, VISIBLE, ARCHIVE, NOT_FOR_REPLICATION, LAST_MODIFIED_BY, SCHEDULE_NEW_VERSION_PUBLICATION) Values(@contentId, @statusId, @visible, @archive, 1, @lastModifiedId, @delayed);";
-            if (contentItemId == 0)
-            {
-                command.Parameters.Add("@contentId", SqlDbType.Decimal).Value = contentId;
-                sqlStringBuilder.AppendLine(GetSqlInsertDataWithIdentity(command, strSql));
+                const string strSql = "insert into content_item (CONTENT_ID, STATUS_TYPE_ID, VISIBLE, ARCHIVE, NOT_FOR_REPLICATION, LAST_MODIFIED_BY, SCHEDULE_NEW_VERSION_PUBLICATION) Values(@contentId, @statusId, @visible, @archive, 1, @lastModifiedId, @delayed);";
+                if (contentItemId == 0)
+                {
+                    command.Parameters.Add("@contentId", SqlDbType.Decimal).Value = contentId;
+                    sqlStringBuilder.AppendLine(GetSqlInsertDataWithIdentity(command, strSql));
+                }
+                else
+                {
+                    command.Parameters.Add("@itemId", SqlDbType.Decimal).Value = contentItemId;
+                    sqlStringBuilder.AppendLine("exec create_content_item_version @lastModifiedId, @itemId;");
+
+                    var flagsString = updateFlags ? ", VISIBLE = @visible, ARCHIVE = @archive" : "";
+                    var delayedString = updateDelayed ? ", SCHEDULE_NEW_VERSION_PUBLICATION = @delayed" : "";
+                    sqlStringBuilder.AppendLine($"update content_item set modified = getdate(), last_modified_by = @lastModifiedId, STATUS_TYPE_ID = @statusId{flagsString}{delayedString} where content_item_id = @itemId;");
+                }
+
+                sqlStringBuilder.AppendLine("select @splitted = splitted from content_item where content_item_id = @itemId;");
+
             }
+
             else
             {
-                command.Parameters.Add("@itemId", SqlDbType.Decimal).Value = contentItemId;
-                sqlStringBuilder.AppendLine("exec create_content_item_version @lastModifiedId, @itemId;");
-
-                var flagsString = updateFlags ? ", VISIBLE = @visible, ARCHIVE = @archive" : "";
-                var delayedString = updateDelayed ? ", SCHEDULE_NEW_VERSION_PUBLICATION = @delayed" : "";
-                sqlStringBuilder.AppendLine($"update content_item set modified = getdate(), last_modified_by = @lastModifiedId, STATUS_TYPE_ID = @statusId{flagsString}{delayedString} where content_item_id = @itemId;");
+                if (DatabaseType == DatabaseType.Postgres)
+                {
+                    xItem.Add(new XAttribute("id", contentItemId),
+                        new XAttribute("content_id", contentId),
+                        new XAttribute("last_modified_by", lastModifiedId),
+                        new XAttribute("status_type_id", statusTypeId),
+                        new XAttribute("archive", Convert.ToInt32(archive)),
+                        new XAttribute("visible", Convert.ToInt32(visible))
+                    );
+                }
             }
-
-            sqlStringBuilder.AppendLine("select @splitted = splitted from content_item where content_item_id = @itemId;");
 
             //inserting sql for updating field values (trigger on content_item already created all field in content_data)
             //also create a list of all dynamic images that need to be created
             //also create sql for updating dynamic image fields
             sqlStringBuilder.AppendLine(attributeId > 0
-                ? GetSqlUpdateAttributes(command, contentItemId, new List<ContentAttribute> { GetContentAttributeObject(attributeId) }, values, true, dynamicImagesList, contentId, actualSiteId)
-                : GetSqlUpdateAttributes(command, contentItemId, GetContentAttributeObjects(contentId), values, updateEmpty, dynamicImagesList, contentId, actualSiteId));
+                ? GetSqlUpdateAttributes(command, xItem, contentItemId, new List<ContentAttribute> { GetContentAttributeObject(attributeId) }, values, true, dynamicImagesList, contentId, actualSiteId)
+                : GetSqlUpdateAttributes(command, xItem,  contentItemId, GetContentAttributeObjects(contentId), values, updateEmpty, dynamicImagesList, contentId, actualSiteId));
 
             //***********************
             // START *** update process
             //***********************
             CreateAllDynamicImages(dynamicImagesList);
 
-            command.CommandText = sqlStringBuilder.ToString();
-
             var isOldArticle = contentItemId != 0;
             var content = GetContentObject(contentId);
             var isVersionOverflow = isOldArticle && content.UseVersionControl && GetVersionsCount(contentItemId) == content.MaxVersionNumber;
             var oldVersionId = isVersionOverflow ? GetEarliestVersionId(contentItemId) : 0;
-            ProcessDataAsNewTransaction(command);
+            var result = contentItemId;
 
-            var result = contentItemId != 0 ? contentItemId : GetIdentityId(command);
-            if (returnModified)
+            if (DatabaseType == DatabaseType.SqlServer)
             {
-                var cmd = new SqlCommand("select modified From content_item where content_item_id = @itemId")
-                {
-                    CommandType = CommandType.Text
-                };
+                command.CommandText = sqlStringBuilder.ToString();
 
-                cmd.Parameters.AddWithValue("@itemId", result);
-                modified = (DateTime)GetRealScalarData(cmd);
+                ProcessDataAsNewTransaction(command);
+
+                if (contentItemId == 0)
+                {
+                    result = GetIdentityId(command);
+                }
+
+                if (returnModified)
+                {
+                    cmd = CreateDbCommand("select modified From content_item where content_item_id = @itemId");
+                    cmd.Parameters.AddWithValue("@itemId", result);
+                    modified = (DateTime)GetRealScalarData(cmd);
+                }
+            }
+            else
+            {
+                if (result != 0)
+                {
+                    ProcessData($"call qp_create_content_item_versions(array[{result}], {lastModifiedId});");
+                }
+                var pgResult = PersistArticle(xDoc);
+                result = pgResult.Item1;
+                modified = pgResult.Item2;
             }
 
             if (content.UseVersionControl)
@@ -263,6 +364,31 @@ namespace Quantumart.QPublishing.Database
             }
 
             return result;
+        }
+
+        private Tuple<int, DateTime> PersistArticle(XDocument doc)
+        {
+            var sql = "select id, modified from public.qp_persist_article(@xml);";
+            var xml = doc.ToString();
+            using (var cmd = (NpgsqlCommand)CreateDbCommand(sql))
+            {
+                cmd.Parameters.Add(new NpgsqlParameter("@xml", NpgsqlDbType.Xml) { Value = xml });
+                var dt = new DataTable();
+                try
+                {
+                    new NpgsqlDataAdapter(cmd).Fill(dt);
+                }
+                catch (PostgresException ex)
+                {
+                    _logger.Error()
+                        .Exception(ex)
+                        .Message("Error while persisting article with xml: {xml}\n Query: {sql}", xml, sql)
+                        .Write();
+
+                    throw;
+                }
+                return new Tuple<int, DateTime>((int)dt.Rows[0]["id"], (DateTime)dt.Rows[0]["modified"]);
+            }
         }
 
 #if ASPNETCORE || NETSTANDARD
@@ -350,7 +476,9 @@ namespace Quantumart.QPublishing.Database
 
         public void DeleteContentItem(int contentItemId)
         {
-            ProcessData("DELETE FROM CONTENT_ITEM WITH(ROWLOCK) WHERE CONTENT_ITEM_ID = " + contentItemId);
+            var cmd = CreateDbCommand($@"DELETE FROM CONTENT_ITEM {SqlQuerySyntaxHelper.WithRowLock(DatabaseType)} WHERE CONTENT_ITEM_ID = @id");
+            cmd.Parameters.AddWithValue("@id", contentItemId);
+            ProcessData(cmd);
         }
 
         private static string GetDataValueWithDefault(ContentAttribute attr, string data, bool isNewArticle)
@@ -440,8 +568,8 @@ namespace Quantumart.QPublishing.Database
                 contentId = GetNumInt(dv2[0]["CONTENT_ID"]);
             }
 
-            var cmd = new SqlCommand { CommandType = CommandType.Text };
-            cmd.Parameters.Add("@itemId", SqlDbType.Decimal).Value = id;
+            var cmd = CreateDbCommand();
+            cmd.Parameters.AddWithValue("@itemId", id);
 
             var sqls = new List<string>();
             var msgs = new List<string>();
@@ -451,9 +579,10 @@ namespace Quantumart.QPublishing.Database
                 var attr = GetContentAttributeObject(currentId);
 
                 string value;
+                var attrName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
                 if (attributeId > 0 && !dataValues.ContainsKey(FieldName(currentId)))
                 {
-                    var data = GetRealData($"EXEC sp_executesql N'select [{attr.Name}] as DATA from content_{contentId}_united where content_item_id = @itemId', N'@itemId NUMERIC', @itemId = {id}");
+                    var data = GetRealData($"select {attrName} as DATA from content_{contentId}_united where content_item_id = {id}");
                     value = data.Rows[0]["DATA"].ToString();
                 }
                 else
@@ -464,15 +593,14 @@ namespace Quantumart.QPublishing.Database
                 var paramName = "@" + FieldName(currentId);
                 if (string.IsNullOrEmpty(value))
                 {
-                    sqls.Add($"([{attr.Name}] IS NULL)");
+                    sqls.Add($"({attrName} IS NULL)");
                 }
                 else
                 {
-                    sqls.Add($"([{attr.Name}] = {paramName})");
+                    sqls.Add($"({attrName} = {paramName})");
                     cmd.Parameters.Add(GetSqlParameter(paramName, attr, value));
                 }
-
-                msgs.Add($"[{attr.Name}] = '{value}'");
+                msgs.Add($"{attrName} = '{value}'");
             }
 
             cmd.CommandText = $"SELECT CONTENT_ITEM_ID FROM CONTENT_{contentId}_UNITED WHERE {string.Join(" AND ", sqls.ToArray())} AND CONTENT_ITEM_ID <> @itemId";
@@ -498,15 +626,9 @@ namespace Quantumart.QPublishing.Database
             throw new QpInvalidAttributeException($"Error updating attribute '{attributeName}': {comment}");
         }
 
-        private static SqlParameter GetSqlParameter(string name, ContentAttribute attr, string value)
+        private DbParameter GetSqlParameter(string name, ContentAttribute attr, string value)
         {
-            var result = new SqlParameter
-            {
-                ParameterName = name,
-                SqlDbType = GetSqlParameterType(attr.DbTypeName),
-                Value = value
-            };
-
+            var result = SqlQuerySyntaxHelper.CreateDbParameter(DatabaseType, name, value);
             if (attr.DbTypeName == "NVARCHAR")
             {
                 result.Size = attr.Size;
@@ -657,7 +779,7 @@ namespace Quantumart.QPublishing.Database
             return queryString + Environment.NewLine + "SELECT " + IdentityParamString + " = SCOPE_IDENTITY();" + Environment.NewLine;
         }
 
-        private string GetSqlUpdateAttributes(SqlCommand command, int contentItemId, IEnumerable<ContentAttribute> attrs, Hashtable values, bool updateEmpty, List<DynamicImageInfo> dynamicImagesList, int contentId, int siteId)
+        private string GetSqlUpdateAttributes(SqlCommand command, XElement xItem, int contentItemId, IEnumerable<ContentAttribute> attrs, Hashtable values, bool updateEmpty, List<DynamicImageInfo> dynamicImagesList, int contentId, int siteId)
         {
             var oSb = new StringBuilder();
             string inputName;
@@ -701,6 +823,8 @@ namespace Quantumart.QPublishing.Database
             {
                 inputName = FieldName(attr.Id);
                 var data = dataValues[inputName];
+                var xData = new XElement("data", new XAttribute("field_id", attr.Id));
+
                 if (updateEmpty || !IsEmptyData(data))
                 {
                     if (replaceUrlsInDB && (attr.Type == AttributeType.String || attr.Type == AttributeType.Textbox || attr.Type == AttributeType.VisualEdit))
@@ -731,20 +855,19 @@ namespace Quantumart.QPublishing.Database
 
                         if (attr.LinkId.HasValue && UpdateManyToMany)
                         {
-                            command.Parameters.AddWithValue(linkParamName, attr.LinkId);
-                            command.Parameters.Add(new SqlParameter(linkValueParamName, SqlDbType.NVarChar, -1) { Value = !string.IsNullOrEmpty(data) ? (object)data : DBNull.Value });
+                            command?.Parameters.AddWithValue(linkParamName, attr.LinkId);
+                            command?.Parameters.Add(new SqlParameter(linkValueParamName, SqlDbType.NVarChar, -1) { Value = !string.IsNullOrEmpty(data) ? (object)data : DBNull.Value });
                             oSb.AppendLine($"exec qp_update_m2m @itemId, {linkParamName}, {linkValueParamName}, @splitted;");
                         }
 
                         if (attr.BackRelation != null && UpdateManyToOne)
                         {
-                            command.Parameters.AddWithValue(backFieldParamName, attr.BackRelation.Id);
-                            command.Parameters.AddWithValue(backFieldParamName, attr.BackRelation.Id);
-                            command.Parameters.Add(new SqlParameter(backFieldValueParamName, SqlDbType.NVarChar, -1) { Value = !string.IsNullOrEmpty(data) ? (object)data : DBNull.Value });
+                            command?.Parameters.AddWithValue(backFieldParamName, attr.BackRelation.Id);
+                            command?.Parameters.Add(new SqlParameter(backFieldValueParamName, SqlDbType.NVarChar, -1) { Value = !string.IsNullOrEmpty(data) ? (object)data : DBNull.Value });
                             oSb.AppendLine($"exec qp_update_m2o @itemId, {backFieldParamName}, {backFieldValueParamName};");
                         }
 
-                        command.Parameters.AddWithValue(idParamName, attr.Id);
+                        command?.Parameters.AddWithValue(idParamName, attr.Id);
                         object dataValue = DBNull.Value;
                         object blobDataValue = DBNull.Value;
                         if (attr.LinkId.HasValue)
@@ -764,15 +887,20 @@ namespace Quantumart.QPublishing.Database
                             dataValue = data;
                         }
 
-                        command.Parameters.Add(new SqlParameter(dataParamName, SqlDbType.NVarChar, 3500) { Value = dataValue });
-                        command.Parameters.Add(new SqlParameter(blobDataParamName, SqlDbType.NVarChar, -1) { Value = blobDataValue });
+                        command?.Parameters.Add(new SqlParameter(dataParamName, SqlDbType.NVarChar, 3500) { Value = dataValue });
+                        command?.Parameters.Add(new SqlParameter(blobDataParamName, SqlDbType.NVarChar, -1) { Value = blobDataValue });
+                        if (updateEmpty || !String.IsNullOrEmpty(data))
+                        {
+                            xData.Add(data ?? String.Empty);
+                            xItem.Add(xData);
+                        }
                     }
                 }
 
                 counter = counter + 1;
             }
 
-            oSb.AppendLine(GetSqlDynamicImages(command, dynamicImagesList));
+            oSb.AppendLine(GetSqlDynamicImages(command, xItem, dynamicImagesList));
             oSb.AppendLine(" exec qp_replicate @itemId;");
 
             if (UpdateManyToOne)
@@ -784,23 +912,34 @@ namespace Quantumart.QPublishing.Database
             return oSb.ToString();
         }
 
-        private static string GetSqlDynamicImages(SqlCommand command, IEnumerable<DynamicImageInfo> imagesList)
+        private string GetSqlDynamicImages(SqlCommand command, XElement xItem, IEnumerable<DynamicImageInfo> imagesList)
         {
             var i = 0;
             var sb = new StringBuilder(string.Empty);
             foreach (var image in imagesList)
             {
+                var xData = new XElement("data", new XAttribute("field_id", image.AttrId));
+                xItem.Add(xData);
                 var dataParamName = $"@url{i}";
                 var fieldParamName = $"@dynamic{i}";
+                object value;
                 if (string.Equals(image.DynamicUrl, "NULL"))
                 {
-                    command.Parameters.Add(dataParamName, SqlDbType.NVarChar).Value = DBNull.Value;
+                    xData.Add(String.Empty);
+                    value = DBNull.Value;
                 }
                 else
                 {
-                    command.Parameters.Add(dataParamName, SqlDbType.NVarChar).Value = image.DynamicUrl;
+                    xData.Add(image.DynamicUrl);
+                    value = image.DynamicUrl;
                 }
 
+                if (DatabaseType == DatabaseType.Postgres)
+                {
+                    continue;
+                }
+
+                command.Parameters.Add(dataParamName, SqlDbType.NVarChar).Value = value;
                 command.Parameters.Add(fieldParamName, SqlDbType.Decimal).Value = image.AttrId;
                 sb.Append($"update content_data set data = {dataParamName}, modified = getdate(), not_for_replication = 1 where content_item_id = @itemId and attribute_id = {fieldParamName};");
                 sb.AppendLine();
@@ -842,5 +981,13 @@ namespace Quantumart.QPublishing.Database
 
             return list;
         }
+
+        public int InsertDataWithIdentity(string queryString)
+        {
+            return Convert.ToInt32(GetRealData(CreateDbCommand(queryString)).Rows[0][0]);
+;
+        }
+
+        public int GetIdentityId(SqlCommand command) => command.Parameters.Contains(IdentityParamString) ? GetNumInt(command.Parameters[IdentityParamString].Value) : 0;
     }
 }
