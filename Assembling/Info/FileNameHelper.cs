@@ -11,13 +11,13 @@ namespace Quantumart.QP8.Assembling.Info
 
         public bool ProceedMappingWithDb { get; set; }
 
-        public string AppDataFolder => $@"{SiteRoot}\App_Data";
+        public string AppDataFolder => $@"{SiteRoot}{Path.DirectorySeparatorChar}App_Data";
 
-        public string AppCodeFolder => $@"{SiteRoot}\App_Code";
+        public string AppCodeFolder => $@"{SiteRoot}{Path.DirectorySeparatorChar}App_Code";
 
-        private string AppDataFile(string fileName) => $@"{AppDataFolder}\{fileName}";
+        private string AppDataFile(string fileName) => $@"{AppDataFolder}{Path.DirectorySeparatorChar}{fileName}";
 
-        private string AppCodeFile(string fileName) => $@"{AppCodeFolder}\{fileName}";
+        private string AppCodeFile(string fileName) => $@"{AppCodeFolder}{Path.DirectorySeparatorChar}{fileName}";
 
         private string GetPrefixedFileName(string fileName) => $"{DataContextClass}{fileName}";
 
