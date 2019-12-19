@@ -769,8 +769,8 @@ namespace Quantumart.QPublishing.Database
 
         private Hashtable FillStatusHashTable()
         {
-            const string weightSql = "SELECT MAX(WEIGHT) AS MAX_WEIGHT, SITE_ID FROM STATUS_TYPE WITH(NOLOCK) GROUP BY SITE_ID";
-            var sql = $"WITH WEIGHTS AS({weightSql}) SELECT ST.SITE_ID, STATUS_TYPE_ID AS ID, STATUS_TYPE_NAME AS NAME FROM STATUS_TYPE ST WITH(NOLOCK) INNER JOIN WEIGHTS W ON ST.SITE_ID = W.SITE_ID AND ST.WEIGHT = W.MAX_WEIGHT";
+            var weightSql = $"SELECT MAX(WEIGHT) AS MAX_WEIGHT, SITE_ID FROM STATUS_TYPE {DbConnector.WithNoLock} GROUP BY SITE_ID";
+            var sql = $"WITH WEIGHTS AS({weightSql}) SELECT ST.SITE_ID, STATUS_TYPE_ID AS ID, STATUS_TYPE_NAME AS NAME FROM STATUS_TYPE ST {DbConnector.WithNoLock} INNER JOIN WEIGHTS W ON ST.SITE_ID = W.SITE_ID AND ST.WEIGHT = W.MAX_WEIGHT";
             var dt = DbConnector.GetRealData(sql);
             var statuses = new Hashtable(dt.Rows.Count);
             foreach (DataRow row in dt.Rows)
