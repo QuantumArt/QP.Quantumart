@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0</TargetFrameworks>
-    <Version>4.0.0</Version>
+    <Version>4.0.2</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -18,7 +18,6 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
     <RootNamespace>Quantumart.QPublishing</RootNamespace>
-    <PackageVersion>4.0.0</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
