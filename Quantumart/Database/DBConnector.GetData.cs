@@ -247,23 +247,12 @@ namespace Quantumart.QPublishing.Database
                 long totalRecords;
                 if (obj.GetCount)
                 {
-                    if (obj.GetCount && obj.GetCountInTable)
-                    {
-                        totalRecords = result.Rows.Count > 0 ? (int)result.Rows[0]["ROWS_COUNT"] : 0;
-                        if (!obj.IsFirstPage && totalRecords == 0)
-                        {
-                            var countCmd = CreateDbCommand(obj.CountSql);
-                            var dbParameters = new DbParameter[cmd.Parameters.Count];
-                            cmd.Parameters.CopyTo(dbParameters, 0);
-                            cmd.Parameters.Clear();
-                            countCmd.Parameters.AddRange(dbParameters);
-                            totalRecords = (long)GetRealScalarData(countCmd);
-                        }
-                    }
-                    else
-                    {
-                        totalRecords = (int)adapter.SelectCommand.Parameters[obj.OutputParamName].Value;
-                    }
+                    var countCmd = CreateDbCommand(obj.CountSql);
+                    var dbParameters = new DbParameter[cmd.Parameters.Count];
+                    cmd.Parameters.CopyTo(dbParameters, 0);
+                    cmd.Parameters.Clear();
+                    countCmd.Parameters.AddRange(dbParameters);
+                    totalRecords = (long)GetRealScalarData(countCmd);
                 }
                 else
                 {
@@ -502,7 +491,7 @@ namespace Quantumart.QPublishing.Database
                             command.Transaction.Commit();
                         }
                     }
-                    catch (DbException e)
+                    catch (DbException)
                     {
                         try
                         {
