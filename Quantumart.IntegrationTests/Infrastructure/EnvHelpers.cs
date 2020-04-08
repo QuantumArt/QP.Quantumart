@@ -16,9 +16,9 @@ namespace Quantumart.IntegrationTests.Infrastructure
         private static readonly string CiPgPasswordParam = $"{CiDbNameParamPrefix}pg_password";
 
 
-        private static readonly string CiLocalDbName = $"{CiDbNameParamPrefix}{Environment.MachineName.ToLowerInvariant()}";
+        private static readonly string CiLocalDbName = $"{CiDbNameParamPrefix}{Environment.MachineName}";
 
-        internal static string DbNameToRunTests => TestContext.Parameters.Get(CiDbNameParam, CiLocalDbName);
+        internal static string DbNameToRunTests => TestContext.Parameters.Get(CiDbNameParam, CiLocalDbName).ToLowerInvariant();
 
         internal static string DbServerToRunTests => TestContext.Parameters.Get(CiDbServerParam);
 
