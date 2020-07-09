@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -412,12 +413,11 @@ namespace Quantumart.QP8.Assembling
 
         private void GenerateMain()
         {
-#if NETSTANDARD
-            throw new PlatformNotSupportedException();
-#else
-
             if (UseT4)
             {
+#if NETSTANDARD
+                throw new PlatformNotSupportedException();
+#else
                 var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
                 try
                 {
@@ -428,12 +428,19 @@ namespace Quantumart.QP8.Assembling
                 {
                     throw new ApplicationException($"Error while proceeding T4 template for file {FileNameHelper.DbmlFilePath}: {e.Message}", e);
                 }
+#endif
             }
             else
             {
-                RunSqlMetal();
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    RunSqlMetal();
+                }
+                else
+                {
+                    throw new PlatformNotSupportedException();
+                }
             }
-#endif
         }
 
         private void RunSqlMetal()
