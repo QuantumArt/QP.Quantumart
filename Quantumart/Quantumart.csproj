@@ -42,6 +42,10 @@
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'!='net471'">
+    <DefineConstants>NETCORE</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
   </PropertyGroup>
