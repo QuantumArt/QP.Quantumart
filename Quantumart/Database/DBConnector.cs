@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
 #else
 using System.Collections.Specialized;
 using System.Configuration;

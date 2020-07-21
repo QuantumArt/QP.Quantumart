@@ -11,7 +11,7 @@ using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
 #endif
@@ -247,7 +247,7 @@ namespace Quantumart.IntegrationTests
                     new MemoryCache(new MemoryCacheOptions()),
                     new HttpContextAccessor()
                 );
-#elif NETSTANDARD
+#elif NETCORE
                 var localConnector = new DBConnector(cn, tr,
                     new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                     new MemoryCache(new MemoryCacheOptions())
@@ -290,7 +290,7 @@ namespace Quantumart.IntegrationTests
                 var tr = cn.BeginTransaction();
 #if ASPNETCORE
                 var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor());
-#elif NETSTANDARD
+#elif NETCORE
                 var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()));
 #else
                 var localConnector = new DBConnector(cn, tr);

@@ -4,7 +4,7 @@ using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Resizer;
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
 using System.Data.SqlClient;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
@@ -30,7 +30,7 @@ namespace Quantumart.QPublishing.Database
     public partial class DBConnector
     {
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         static DBConnector()
         {
             if (ConfigurationManager.ConnectionStrings["qp_database"] != null)
@@ -92,7 +92,7 @@ namespace Quantumart.QPublishing.Database
             HttpContext = httpContextAccessor?.HttpContext;
             WithTransaction = true;
         }
-#elif NETSTANDARD
+#elif NETCORE
         public DBConnector(DbConnectorSettings dbConnectorSettings, IMemoryCache cache)
             : this(dbConnectorSettings.ConnectionString, dbConnectorSettings, cache)
         {
