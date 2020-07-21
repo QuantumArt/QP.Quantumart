@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net471;netcoreapp2.2</TargetFrameworks>
+    <TargetFrameworks>net471;netcoreapp3.1</TargetFrameworks>
     <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
   </PropertyGroup>
 
@@ -20,8 +20,8 @@
     <DefineConstants>NET4</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
-    <DefineConstants>NETSTANDARD</DefineConstants>
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
+    <DefineConstants>NETCORE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
@@ -33,13 +33,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="2.0.0" />
-    <Compile Remove="QPageEssentialTests.cs" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.6" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netstandard2.0' OR '$(Configuration)|$(TargetFramework)'=='Release|netstandard2.0'">
+  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp3.1' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp3.1'">
     <Compile Remove="**" />
   </ItemGroup>
 

@@ -45,7 +45,7 @@ namespace Quantumart.QPublishing.Database
         public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
 
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int LastModifiedBy
         {
             get
@@ -105,7 +105,7 @@ namespace Quantumart.QPublishing.Database
 
         internal string FieldName(int attributeId) => "field_" + attributeId;
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty)
         {
             var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
@@ -119,7 +119,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId) =>
             AddFormToContent(siteId, contentName, statusName, ref values, contentItemId, true);
 #else
@@ -127,7 +127,7 @@ namespace Quantumart.QPublishing.Database
             AddFormToContent(siteId, contentName, statusName, ref values, ref files, contentItemId, true);
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values) =>
             AddFormToContent(siteId, contentName, statusName, ref values, 0);
 #else
@@ -135,7 +135,7 @@ namespace Quantumart.QPublishing.Database
             AddFormToContent(siteId, contentName, statusName, ref values, ref files, 0);
 #endif
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId)
         {
             HttpFileCollection files = null;
@@ -143,7 +143,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified)
         {
             HttpFileCollection files = null;
@@ -151,7 +151,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId)
         {
             var modified = DateTime.MinValue;
@@ -165,7 +165,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified) =>
             AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, attributeId, visible, archive, returnModified, ref modified, true);
 #else
@@ -173,7 +173,7 @@ namespace Quantumart.QPublishing.Database
             AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, returnModified, ref modified, true);
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified, bool updateFlags) =>
             AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false, returnModified, ref modified, updateFlags, false);
 #else
@@ -181,7 +181,7 @@ namespace Quantumart.QPublishing.Database
             AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false, returnModified, ref modified, updateFlags, false);
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, int lastModifiedId, bool delayedSchedule, bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
 #else
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, int lastModifiedId, bool delayedSchedule, bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
@@ -228,7 +228,7 @@ namespace Quantumart.QPublishing.Database
             if (DatabaseType == DatabaseType.SqlServer)
             {
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
             var actualFieldName = string.Empty;
             if (attributeId > 0)
             {
@@ -391,7 +391,7 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public void UpdateContentItemField(int siteId, string contentName, string fieldName, int contentItemId, ref Hashtable values)
         {
             var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
@@ -421,7 +421,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         public void UpdateContentItemField(int siteId, string contentName, string fieldName, int contentItemId, ref Hashtable values)
         {
             HttpFileCollection files = null;
@@ -429,7 +429,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId)
         {
             HttpFileCollection files = null;
@@ -449,7 +449,7 @@ namespace Quantumart.QPublishing.Database
         }
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId) =>
             UpdateContentItem(siteId, contentId, ref values, contentItemId, true);
 #else
@@ -458,7 +458,7 @@ namespace Quantumart.QPublishing.Database
 
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty) =>
             UpdateContentItem(siteId, contentId, ref values, contentItemId, updateEmpty, string.Empty);
 #else
@@ -466,7 +466,7 @@ namespace Quantumart.QPublishing.Database
             UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, updateEmpty, string.Empty);
 #endif
 
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty, string statusName) =>
             AddFormToContent(siteId, contentId, statusName, ref values, contentItemId, updateEmpty, 0);
 #else
@@ -674,7 +674,7 @@ namespace Quantumart.QPublishing.Database
             throw new Exception("Unknown DB type");
         }
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
         public string ShortFileName(string fileName)
         {
             var pos = fileName.IndexOf("\\", StringComparison.Ordinal);

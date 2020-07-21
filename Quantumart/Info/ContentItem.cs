@@ -379,12 +379,12 @@ namespace Quantumart.QPublishing.Info
                 values.Add(_dbConnector.FieldName(attr.Id), value);
             }
 
-#if !ASPNETCORE && !NETSTANDARD
+#if !ASPNETCORE && !NETCORE
             HttpFileCollection files = null;
 #endif
             var modified = DateTime.MinValue;
             var notificationEvent = IsNew ? NotificationEvent.Create : NotificationEvent.Modify;
-#if ASPNETCORE || NETSTANDARD
+#if ASPNETCORE || NETCORE
             Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
 #else
             Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, ref files, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
