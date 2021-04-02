@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net471;netstandard2.0;netcoreapp3.1</TargetFrameworks>
-    <Version>4.0.5</Version>
+    <Version>4.0.6</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -102,7 +102,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.6.0" />
     <PackageReference Include="NLog" Version="4.6.8" />
-    <PackageReference Include="Npgsql" Version="4.0.7" />
+    <PackageReference Include="Npgsql" Version="5.0.4" />
     <PackageReference Include="QP.ConfigurationService.Client" Version="0.2.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.7.0" />
   </ItemGroup>
