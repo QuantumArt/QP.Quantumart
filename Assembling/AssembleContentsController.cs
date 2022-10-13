@@ -83,6 +83,7 @@ namespace Quantumart.QP8.Assembling
                     qb.Append($"select c.*, {split} as split_articles from content c ");
                     qb.Append(" left join content_workflow_bind cwb on c.content_id = cwb.content_id ");
                     qb.Append($" where site_id = {SiteId}");
+                    qb.Append($" order by c.content_id");
                     _contentsTable = Cnn.GetDataTable(qb.ToString());
                 }
                 return _contentsTable;
