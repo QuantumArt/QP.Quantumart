@@ -52,7 +52,7 @@ namespace Quantumart.QP8.Assembling
 
         public DataRow SiteRow => _siteRow ?? (_siteRow = Cnn.GetDataTable("select * from site where site_id = " + SiteId).Rows[0]);
 
-        public DataTable StatusTable => _statusTable ?? (_statusTable = Cnn.GetDataTable("select * from status_type"));
+        public DataTable StatusTable => _statusTable ?? (_statusTable = Cnn.GetDataTable("select * from status_type order by status_type_id"));
 
         public DataTable AdditionalContextClassNameTable => _contentGroupTable ?? (_contentGroupTable = Cnn.GetDataTable("select distinct add_context_class_name from content where add_context_class_name is not null and site_id = " + SiteId));
 
@@ -83,6 +83,7 @@ namespace Quantumart.QP8.Assembling
                     qb.Append($"select c.*, {split} as split_articles from content c ");
                     qb.Append(" left join content_workflow_bind cwb on c.content_id = cwb.content_id ");
                     qb.Append($" where site_id = {SiteId}");
+                    qb.Append($" order by c.content_id");
                     _contentsTable = Cnn.GetDataTable(qb.ToString());
                 }
                 return _contentsTable;
@@ -116,9 +117,9 @@ namespace Quantumart.QP8.Assembling
 
         public DataTable FieldsInfoTable => _fieldsInfoTable ?? (_fieldsInfoTable = Cnn.GetDataTable("select COLUMN_NAME, TABLE_NAME, DATA_TYPE from INFORMATION_SCHEMA.COLUMNS"));
 
-        public DataTable LinkTable => _linkTable ?? (_linkTable = Cnn.GetDataTable("select link_id, l_content_id as content_id, r_content_id as linked_content_id from content_to_content"));
+        public DataTable LinkTable => _linkTable ?? (_linkTable = Cnn.GetDataTable("select link_id, l_content_id as content_id, r_content_id as linked_content_id from content_to_content order by link_id"));
 
-        public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca)"));
+        public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca) order by cc.link_id"));
 
         public AssembleContentsController(int siteId, string connectionParameter, DatabaseType dbType = DatabaseType.SqlServer)
             : base(connectionParameter, dbType)

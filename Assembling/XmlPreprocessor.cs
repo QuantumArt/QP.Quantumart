@@ -219,7 +219,7 @@ namespace Quantumart.QP8.Assembling
                     .Distinct());
 
             var definedLinks = new HashSet<string>(doc.Descendants("link").Select(el => el.Attribute("id")?.Value));
-            var undefinedLinks = usedLinks.Where(n => !definedLinks.Contains(n)).ToArray();
+            var undefinedLinks = usedLinks.Where(n => !definedLinks.Contains(n)).Select(int.Parse).OrderBy(n => n).ToArray();
             var unusedLinks = new HashSet<string>(definedLinks.Where(n => !usedLinks.Contains(n)));
             var equalCounts = doc.Descendants("link")
                 .GroupBy(n => $"{n.Attribute("content_id")}_{n.Attribute("linked_content_id")}")
