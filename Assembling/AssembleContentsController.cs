@@ -117,7 +117,23 @@ namespace Quantumart.QP8.Assembling
 
         public DataTable FieldsInfoTable => _fieldsInfoTable ?? (_fieldsInfoTable = Cnn.GetDataTable("select COLUMN_NAME, TABLE_NAME, DATA_TYPE from INFORMATION_SCHEMA.COLUMNS"));
 
-        public DataTable LinkTable => _linkTable ?? (_linkTable = Cnn.GetDataTable("select link_id, l_content_id as content_id, r_content_id as linked_content_id from content_to_content order by link_id"));
+        public DataTable LinkTable
+        {
+            get
+            {
+                if (null == _linkTable)
+                {
+                    var qb = new StringBuilder();
+                    qb.Append("SELECT link_id, l_content_id AS content_id, r_content_id as linked_content_id FROM content_to_content");
+                    qb.Append(" union ");
+                    qb.Append("SELECT link_id, r_content_id AS content_id, l_content_id as linked_content_id FROM content_to_content");
+
+                    _linkTable = Cnn.GetDataTable(qb.ToString());
+                }
+
+                return _linkTable;
+            }
+        }
 
         public DataTable ContentToContentTable => _contentToContentTable ?? (_contentToContentTable = Cnn.GetDataTable($"select cc.* from content_to_content cc inner join CONTENT c on l_content_id = c.CONTENT_ID INNER JOIN CONTENT c2 on r_content_id = c2.CONTENT_ID WHERE c.SITE_ID = {SiteId} and c2.SITE_ID = {SiteId} and cc.link_id in (select link_id from content_attribute ca) order by cc.link_id"));
 
