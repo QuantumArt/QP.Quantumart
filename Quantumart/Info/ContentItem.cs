@@ -10,15 +10,7 @@ using System.Xml.Linq;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
-
-#if ASPNETCORE || NET4
 using Quantumart.QPublishing.OnScreen;
-#endif
-
-#if !ASPNETCORE
-using System.Web;
-
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Info
@@ -379,16 +371,9 @@ namespace Quantumart.QPublishing.Info
                 values.Add(_dbConnector.FieldName(attr.Id), value);
             }
 
-#if !ASPNETCORE && !NETCORE
-            HttpFileCollection files = null;
-#endif
             var modified = DateTime.MinValue;
             var notificationEvent = IsNew ? NotificationEvent.Create : NotificationEvent.Modify;
-#if ASPNETCORE || NETCORE
             Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
-#else
-            Id = _dbConnector.AddFormToContent(SiteId, ContentId, StatusName, ref values, ref files, Id, true, 0, Visible, Archive, LastModifiedBy, DelayedSchedule, false, ref modified, true, true);
-#endif
 
             _dbConnector.SendNotification(Id, notificationEvent);
             if (!IsNew && StatusChanged)
@@ -399,14 +384,12 @@ namespace Quantumart.QPublishing.Info
 
         public void LoadLastModifiedFromCustomTab()
         {
-#if ASPNETCORE || NET4
             var qscreen = new QScreen(_dbConnector);
             var id = qscreen.GetCustomTabUserId();
             if (id != 0)
             {
                 LastModifiedBy = id;
             }
-#endif
         }
 
         internal XDocument GetXDocument()

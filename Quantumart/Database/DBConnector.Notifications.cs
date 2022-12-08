@@ -12,7 +12,6 @@ using NLog;
 using NLog.Fluent;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
-using Quantumart.QP8.Assembling;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -183,9 +182,6 @@ namespace Quantumart.QPublishing.Database
                     else
                     {
                         var strSqlRegisterNotifForUsers = string.Empty;
-#if NET4
-                        var platform = GetSitePlatform(siteId);
-#endif
                         foreach (var notifyRow in internalNotifications)
                         {
                             if (!ReferenceEquals(notifyRow["OBJECT_ID"], DBNull.Value))
@@ -194,23 +190,8 @@ namespace Quantumart.QPublishing.Database
                                 var contentId = GetNumInt(notifyRow["CONTENT_ID"]);
                                 var objectFormatId = GetNumInt(notifyRow["FORMAT_ID"]);
                                 if (DbConnectorSettings.MailAssemble)
-
                                 {
-#if NET4
-                                    switch (platform)
-                                    {
-                                        case SitePlatform.Aspnet:
-                                            var fixedLocation = isLive ? AssembleLocation.Live : AssembleLocation.Stage;
-                                            var cnt = new AssembleFormatController(objectFormatId, AssembleMode.Notification, InstanceConnectionString, false, fixedLocation);
-                                            cnt.Assemble();
-                                            break;
-                                        case SitePlatform.Asp:
-                                            AssembleFormatToFile(siteId, objectFormatId);
-                                            break;
-                                    }
-#else
-                                    throw new NotImplementedException("Not implemented at .net core app framework");
-#endif
+                                    throw new NotImplementedException("Not implemented for ASP.NET Core");
                                 }
 
                                 var targetUrl = GetNotificationBodyUrl(siteId, objectId, contentItemId, isLive, notificationOn);

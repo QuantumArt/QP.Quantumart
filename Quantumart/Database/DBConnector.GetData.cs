@@ -5,9 +5,6 @@ using System.Data.SqlClient;
 using System.Globalization;
 using Quantumart.QPublishing.Info;
 using NLog.Fluent;
-#if !ASPNETCORE && NET4
-using System.Web.Caching;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -96,34 +93,6 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-#if !ASPNETCORE && NET4
-        public DataTable GetRealDataWithDependency(string queryString, ref SqlCacheDependency dependency)
-        {
-            var connection = GetActualConnection();
-            try
-            {
-                if (connection.State == ConnectionState.Closed)
-                {
-                    connection.Open();
-                }
-
-                var adapter = CreateDbAdapter();
-                var cmd = CreateDbCommand(queryString, connection);
-                cmd.Transaction = GetActualTransaction();
-                dependency = new SqlCacheDependency((SqlCommand)cmd);
-                adapter.SelectCommand = cmd;
-                return GetFilledDataTable(adapter);
-            }
-            finally
-            {
-                if (NeedToDisposeActualConnection)
-                {
-                    connection.Dispose();
-                }
-            }
-        }
-#endif
-
         public object GetRealScalarData(DbCommand command)
         {
             var connection = GetActualConnection();
@@ -163,17 +132,6 @@ namespace Quantumart.QPublishing.Database
         private DataTable GetCachedData(string queryString, double cacheInterval, bool useDefaultInterval) => useDefaultInterval
             ? CacheManager.GetCachedTable(CacheManager.GetDataKeyPrefix + queryString)
             : CacheManager.GetCachedTable(CacheManager.GetDataKeyPrefix + queryString, cacheInterval);
-
-#if !ASPNETCORE && NET4
-        public DataTable GetCachedData(string queryString, bool useDependency) =>
-            GetCachedData(queryString, 0, false, true);
-#endif
-
-#if !ASPNETCORE && NET4
-        private DataTable GetCachedData(string queryString, double cacheInterval, bool useDefaultInterval, bool useDependency) => useDependency
-            ? CacheManager.GetCachedTable(CacheManager.GetDataKeyPrefix + queryString, 0, true)
-            : GetCachedData(queryString, cacheInterval, useDefaultInterval);
-#endif
 
         public string GetSecuritySql(int contentId, long userId, long groupId, long startLevel, long endLevel)
         {

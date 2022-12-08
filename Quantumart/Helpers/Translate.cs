@@ -1,12 +1,6 @@
-#if ASPNETCORE || NET4
 
 using Quantumart.QPublishing.Database;
-#if ASPNETCORE
 using Microsoft.AspNetCore.Http;
-#else
-using System.Web;
-
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
@@ -22,15 +16,9 @@ namespace Quantumart.QPublishing.Helpers
 
         public string Translate(string phrase) => Translate(phrase, false);
 
-#if ASPNETCORE // ReSharper disable once PossibleInvalidOperationException
         public string Translate(string phrase, bool forJavaScript) => _dbConnector.HttpContext.Session.GetInt32("CurrentLanguageID") == 1
             ? phrase
             : GetTranslation(int.Parse(GetPhraseId(phrase)), _dbConnector.HttpContext.Session.GetInt32("CurrentLanguageID").Value, phrase);
-#else
-        public string Translate(string phrase, bool forJavaScript) => HttpContext.Current.Session["CurrentLanguageID"].ToString() == "1"
-            ? phrase
-            : GetTranslation(int.Parse(GetPhraseId(phrase)), (int)HttpContext.Current.Session["CurrentLanguageID"], phrase);
-#endif
 
         public string ReplaceForJavaScript(string input, bool forJavaScript) => forJavaScript
             ? input.Replace("\"", "\\\"").Replace("'", "\\'")
@@ -54,4 +42,3 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
-#endif

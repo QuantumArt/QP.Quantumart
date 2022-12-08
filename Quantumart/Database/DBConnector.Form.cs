@@ -18,11 +18,6 @@ using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
 
-#if !ASPNETCORE
-using System.IO;
-using System.Web;
-#endif
-
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
@@ -45,7 +40,6 @@ namespace Quantumart.QPublishing.Database
         public static readonly string LastModifiedByKey = "QP_LAST_MODIFIED_BY_KEY";
 
 
-#if ASPNETCORE || NETCORE
         public int LastModifiedBy
         {
             get
@@ -55,37 +49,15 @@ namespace Quantumart.QPublishing.Database
                 {
                     result = _lastModifiedBy.Value;
                 }
-#if ASPNETCORE
                 else if (HttpContext?.Items != null && HttpContext.Items.ContainsKey(LastModifiedByKey))
                 {
                     result = (int)HttpContext.Items[LastModifiedByKey];
                 }
-#endif
 
                 return result;
             }
             set => _lastModifiedBy = value;
         }
-#else
-        public int LastModifiedBy
-        {
-            get
-            {
-                var result = 1;
-                if (_lastModifiedBy.HasValue)
-                {
-                    result = _lastModifiedBy.Value;
-                }
-                else if (HttpContext.Current != null && HttpContext.Current.Items.Contains(LastModifiedByKey))
-                {
-                    result = (int)HttpContext.Current.Items[LastModifiedByKey];
-                }
-
-                return result;
-            }
-            set => _lastModifiedBy = value;
-        }
-#endif
 
         private int FieldId(int contentId, string fieldName)
         {
@@ -105,87 +77,32 @@ namespace Quantumart.QPublishing.Database
 
         internal string FieldName(int attributeId) => "field_" + attributeId;
 
-#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty)
         {
             var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
             return AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, 0);
         }
-#else
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty)
-        {
-            var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
-            return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
-        }
-#endif
 
-#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId) =>
             AddFormToContent(siteId, contentName, statusName, ref values, contentItemId, true);
-#else
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId) =>
-            AddFormToContent(siteId, contentName, statusName, ref values, ref files, contentItemId, true);
-#endif
 
-#if ASPNETCORE || NETCORE
         public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values) =>
             AddFormToContent(siteId, contentName, statusName, ref values, 0);
-#else
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, ref HttpFileCollection files) =>
-            AddFormToContent(siteId, contentName, statusName, ref values, ref files, 0);
-#endif
 
-#if !ASPNETCORE && !NETCORE
-        public int AddFormToContent(int siteId, string contentName, string statusName, ref Hashtable values, int contentItemId)
-        {
-            HttpFileCollection files = null;
-            return AddFormToContent(siteId, contentName, statusName, ref values, ref files, contentItemId);
-        }
-#endif
 
-#if !ASPNETCORE && !NETCORE
-        public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified)
-        {
-            HttpFileCollection files = null;
-            return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, returnModified, ref modified, true);
-        }
-#endif
-
-#if ASPNETCORE || NETCORE
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId)
         {
             var modified = DateTime.MinValue;
             return AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, attributeId, true, false, false, ref modified, false);
         }
-#else
-        public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId)
-        {
-            var modified = DateTime.MinValue;
-            return AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, true, false, false, ref modified, false);
-        }
-#endif
 
-#if ASPNETCORE || NETCORE
         public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified) =>
             AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, attributeId, visible, archive, returnModified, ref modified, true);
-#else
-        public int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified) =>
-            AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, returnModified, ref modified, true);
-#endif
 
-#if ASPNETCORE || NETCORE
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified, bool updateFlags) =>
             AddFormToContent(actualSiteId, contentId, statusName, ref values, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false, returnModified, ref modified, updateFlags, false);
-#else
-        internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, bool returnModified, ref DateTime modified, bool updateFlags) =>
-            AddFormToContent(actualSiteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, attributeId, visible, archive, LastModifiedBy, false, returnModified, ref modified, updateFlags, false);
-#endif
 
-#if ASPNETCORE || NETCORE
         internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, int lastModifiedId, bool delayedSchedule, bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
-#else
-        internal int AddFormToContent(int actualSiteId, int contentId, string statusName, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, int attributeId, bool visible, bool archive, int lastModifiedId, bool delayedSchedule, bool returnModified, ref DateTime modified, bool updateFlags, bool updateDelayed)
-#endif
         {
             if (GetContentVirtualType(contentId) > 0)
             {
@@ -228,43 +145,6 @@ namespace Quantumart.QPublishing.Database
             if (DatabaseType == DatabaseType.SqlServer)
             {
 
-#if !ASPNETCORE && !NETCORE
-            var actualFieldName = string.Empty;
-            if (attributeId > 0)
-            {
-                actualFieldName = FieldName(attributeId);
-            }
-
-            //saving uploaded files first
-            if (files != null)
-            {
-                HttpPostedFile file;
-                if (attributeId > 0)
-                {
-                    //only one field is being updated
-                    foreach (string item in files)
-                    {
-                        if (item == actualFieldName)
-                        {
-                            file = files[item];
-                            CheckFileExistence(file, item, values, contentId);
-                        }
-                    }
-                }
-                else
-                {
-                    //all fields being updated
-                    foreach (string item in files)
-                    {
-                        file = files[item];
-                        if (!string.IsNullOrEmpty(file?.FileName))
-                        {
-                            CheckFileExistence(file, item, values, contentId);
-                        }
-                    }
-                }
-            }
-#endif
 
                 command.Parameters.AddWithValue("@statusId", statusTypeId);
                 command.Parameters.Add("@archive", SqlDbType.Decimal).Value = Convert.ToInt32(archive);
@@ -391,7 +271,6 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-#if ASPNETCORE || NETCORE
         public void UpdateContentItemField(int siteId, string contentName, string fieldName, int contentItemId, ref Hashtable values)
         {
             var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
@@ -405,74 +284,16 @@ namespace Quantumart.QPublishing.Database
                 HandleInvalidAttributeValue(fieldName, "Field '" + fieldName + "' does not exist in content: '" + contentName + "'");
             }
         }
-#else
-        public void UpdateContentItemField(int siteId, string contentName, string fieldName, int contentItemId, ref Hashtable values, ref HttpFileCollection files)
-        {
-            var contentId = GetDynamicContentId(contentName, 0, siteId, out var actualSiteId);
-            var attributeId = FieldId(contentId, fieldName);
-            if (attributeId > 0)
-            {
-                AddFormToContent(actualSiteId, contentId, string.Empty, ref values, ref files, contentItemId, true, attributeId);
-            }
-            else
-            {
-                HandleInvalidAttributeValue(fieldName, "Field '" + fieldName + "' does not exist in content: '" + contentName + "'");
-            }
-        }
-#endif
 
-#if !ASPNETCORE && !NETCORE
-        public void UpdateContentItemField(int siteId, string contentName, string fieldName, int contentItemId, ref Hashtable values)
-        {
-            HttpFileCollection files = null;
-            UpdateContentItemField(siteId, contentName, fieldName, contentItemId, ref values, ref files);
-        }
-#endif
 
-#if !ASPNETCORE && !NETCORE
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId)
-        {
-            HttpFileCollection files = null;
-            return UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, true);
-        }
-
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty)
-        {
-            HttpFileCollection files = null;
-            return UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, updateEmpty, "");
-        }
-
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty, string statusName)
-        {
-            HttpFileCollection files = null;
-            return AddFormToContent(siteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
-        }
-#endif
-
-#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId) =>
             UpdateContentItem(siteId, contentId, ref values, contentItemId, true);
-#else
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId) =>
-            UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, true);
 
-#endif
-
-#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty) =>
             UpdateContentItem(siteId, contentId, ref values, contentItemId, updateEmpty, string.Empty);
-#else
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty) =>
-            UpdateContentItem(siteId, contentId, ref values, ref files, contentItemId, updateEmpty, string.Empty);
-#endif
 
-#if ASPNETCORE || NETCORE
         public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, int contentItemId, bool updateEmpty, string statusName) =>
             AddFormToContent(siteId, contentId, statusName, ref values, contentItemId, updateEmpty, 0);
-#else
-        public int UpdateContentItem(int siteId, int contentId, ref Hashtable values, ref HttpFileCollection files, int contentItemId, bool updateEmpty, string statusName) =>
-            AddFormToContent(siteId, contentId, statusName, ref values, ref files, contentItemId, updateEmpty, 0);
-#endif
 
         public void DeleteContentItem(int contentItemId)
         {
@@ -674,54 +495,6 @@ namespace Quantumart.QPublishing.Database
             throw new Exception("Unknown DB type");
         }
 
-#if !ASPNETCORE && !NETCORE
-        public string ShortFileName(string fileName)
-        {
-            var pos = fileName.IndexOf("\\", StringComparison.Ordinal);
-            return fileName.Substring(pos + 1, fileName.Length - pos);
-        }
-
-        public void CheckFileExistence(HttpPostedFile fileToSave, string valueFieldName, Hashtable values, int contentId)
-        {
-            var attrId = GetValidContentAttributeId(valueFieldName, contentId);
-            if (attrId == 0)
-            {
-                return;
-            }
-
-            var fileName = ShortFileName(fileToSave.FileName);
-            var actualFieldName = FieldName(attrId);
-            if (values[actualFieldName].ToString().ToLowerInvariant() != fileName.ToLowerInvariant())
-            {
-                return;
-            }
-
-            var fileDir = GetDirectoryForFileAttribute(attrId);
-            if (File.Exists(fileDir + "\\" + fileName))
-            {
-                var dotPos = fileName.IndexOf(".", StringComparison.Ordinal);
-                var fileNameWithoutExtension = fileName.Substring(1, dotPos - 1);
-                var fileExtension = fileName.Substring(dotPos + 1, fileName.Length - dotPos);
-                var index = 1;
-                fileName = fileNameWithoutExtension + "[" + index + "]" + "." + fileExtension;
-
-                while (true)
-                {
-                    if (!File.Exists(fileDir + "\\" + fileName))
-                    {
-                        break;
-                    }
-
-                    index = index + 1;
-                    fileName = fileNameWithoutExtension + "[" + index + "]" + "." + fileExtension;
-                }
-
-                values[actualFieldName] = fileName;
-            }
-
-            fileToSave.SaveAs(fileDir + "\\" + fileName);
-        }
-#endif
 
         private void GetDynamicImagesForImage(int attributeId, int contentItemId, string imageName, ICollection<DynamicImageInfo> imagesList)
         {

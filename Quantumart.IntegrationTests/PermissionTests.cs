@@ -4,12 +4,9 @@ using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Helpers;
 
-#if ASPNETCORE
 using Moq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
-
-#endif
 
 namespace Quantumart.IntegrationTests
 {
@@ -29,7 +26,6 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-#if ASPNETCORE
             DbConnector = new DBConnector(
                 new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
@@ -38,9 +34,6 @@ namespace Quantumart.IntegrationTests
             {
                 ForceLocalCache = true
             };
-#else
-            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
-#endif
             Clear();
         }
 

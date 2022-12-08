@@ -13,9 +13,6 @@ using System.Xml.XPath;
 using System.Xml.Xsl;
 using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
-#if !NETSTANDARD
-using Quantumart.QP8.Assembling.T4;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QP8.Assembling
@@ -415,32 +412,15 @@ namespace Quantumart.QP8.Assembling
         {
             if (UseT4)
             {
-#if NETSTANDARD
                 throw new PlatformNotSupportedException();
-#else
-                var generator = new LinqToSqlGenerator(FileNameHelper.DbmlFilePath, NameSpace, !ProceedDbIndependentGeneration);
-                try
-                {
-                    var result = generator.TransformText();
-                    File.WriteAllText(FileNameHelper.MainCodeFilePath, result);
-                }
-                catch (Exception e)
-                {
-                    throw new ApplicationException($"Error while proceeding T4 template for file {FileNameHelper.DbmlFilePath}: {e.Message}", e);
-                }
-#endif
             }
-            else
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    RunSqlMetal();
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException();
-                }
+                throw new PlatformNotSupportedException();
             }
+
+            RunSqlMetal();
         }
 
         private void RunSqlMetal()

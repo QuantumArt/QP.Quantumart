@@ -43,11 +43,7 @@ namespace Quantumart.IntegrationTests
         public void TestAssembling()
         {
             var cnt = new AssembleContentsController(Global.SiteId, Global.ConnectionString, Global.DBType);
-#if NET4
-            Assert.That(() => { cnt.Assemble(); }, Throws.Nothing);
-#else
             Assert.That(() => { cnt.Assemble(); }, Throws.Exception.InstanceOf(typeof(PlatformNotSupportedException)));
-#endif
         }
 
         [Test]

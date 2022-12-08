@@ -1,14 +1,8 @@
-#if ASPNETCORE || NET4
 using System;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
-#if ASPNETCORE
 using System.Net;
 using Microsoft.AspNetCore.Http;
-#else
-using System.Web;
-
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.OnScreen
@@ -30,11 +24,7 @@ namespace Quantumart.QPublishing.OnScreen
 
         public int ObjectBorderTypeMask { get; set; }
 
-#if ASPNETCORE
         public string QpBackendUrl => _dbConnector.HttpContext.Session.GetString("qp_backend_url") ?? string.Empty;
-#else
-        public string QpBackendUrl => HttpContext.Current.Session["qp_backend_url"]?.ToString() ?? string.Empty;
-#endif
 
         public int OnFlyObjCount { get; set; } = 0;
 
@@ -46,7 +36,6 @@ namespace Quantumart.QPublishing.OnScreen
             }
         }
 
-#if ASPNETCORE
         internal bool SessionEnabled() => _dbConnector.HttpContext.Session != null && _dbConnector.HttpContext.Session.IsAvailable;
 
         private void SaveInSession(string key, int value)
@@ -58,18 +47,9 @@ namespace Quantumart.QPublishing.OnScreen
         {
             _dbConnector.HttpContext.Session.SetString(key, value);
         }
-#else
-        internal bool SessionEnabled() => HttpContext.Current.Session != null;
-
-        private void SaveInSession(string key, object value)
-        {
-            HttpContext.Current.Session[key] = value;
-        }
-#endif
 
         private string GetQueryParameter(string key)
         {
-#if ASPNETCORE
             var request = _dbConnector.HttpContext.Request;
             var value = request.Query[key].ToString();
             if (string.IsNullOrEmpty(value) && request.HasFormContentType)
@@ -77,9 +57,6 @@ namespace Quantumart.QPublishing.OnScreen
                 value = request.Form[key].ToString();
             }
             return value;
-#else
-            return HttpContext.Current.Request[key] ?? string.Empty;
-#endif
         }
 
         public int AuthenticateForCustomTab(DBConnector cnn, string backendSid)
@@ -117,11 +94,7 @@ namespace Quantumart.QPublishing.OnScreen
             var backendSid = GetQueryParameter("backend_sid").Replace("'", "''");
             if (string.IsNullOrEmpty(backendSid))
             {
-#if ASPNETCORE
                 return _dbConnector.HttpContext.Session.GetInt32(AuthenticationKey).HasValue;
-#else
-                return HttpContext.Current.Session[AuthenticationKey] != null;
-#endif
             }
 
             var result = AuthenticateForCustomTab(dbConnector);
@@ -130,31 +103,13 @@ namespace Quantumart.QPublishing.OnScreen
                 return false;
             }
 
-#if ASPNETCORE
             _dbConnector.HttpContext.Session.SetInt32(AuthenticationKey, result);
-#else
-            HttpContext.Current.Session[AuthenticationKey] = result;
-#endif
             return true;
         }
 
-#if ASPNETCORE
         public bool CheckCustomTabAuthentication() => CheckCustomTabAuthentication(_dbConnector);
 
         public int GetCustomTabUserId() => _dbConnector.HttpContext.Session?.GetInt32(AuthenticationKey) ?? 0;
-#else
-        public bool CheckCustomTabAuthentication() => CheckCustomTabAuthentication(new DBConnector());
-
-        public int GetCustomTabUserId()
-        {
-            if (HttpContext.Current != null && HttpContext.Current.Session != null && HttpContext.Current.Session[AuthenticationKey] != null)
-            {
-                return (int)HttpContext.Current.Session[AuthenticationKey];
-            }
-
-            return 0;
-        }
-#endif
 
         internal void GetBackendAuthentication()
         {
@@ -188,11 +143,7 @@ namespace Quantumart.QPublishing.OnScreen
 
         public string GetObjectStageRedirectHref(string redirect, int templateId, int pageId, int objectId, int formatId)
         {
-#if ASPNETCORE
             var queryString = _dbConnector.HttpContext.Request.QueryString.ToString();
-#else
-            var queryString = HttpContext.Current.Request.Url.Query;
-#endif
             return QpBackendUrl + "?redirect=" + redirect + "&page_template_id=" + templateId + "&page_id=" + pageId + "&object_id=" + objectId + "&format_id=" + formatId + "&ret_stage_url=" + RemoveIisErrorCode(queryString);
         }
 
@@ -278,11 +229,7 @@ namespace Quantumart.QPublishing.OnScreen
 
         public string GetUrlPort()
         {
-#if ASPNETCORE
             var serverPort = _dbConnector.HttpContext.Request.Headers["SERVER_PORT"];
-#else
-            var serverPort = HttpContext.Current.Request.ServerVariables["SERVER_PORT"];
-#endif
             if (!string.IsNullOrEmpty(serverPort) && serverPort != "80")
             {
                 return ":" + serverPort;
@@ -291,27 +238,14 @@ namespace Quantumart.QPublishing.OnScreen
             return string.Empty;
         }
 
-#if ASPNETCORE
         public string GetReturnStageUrl() =>
             WebUtility.UrlEncode("http://" + _dbConnector.HttpContext.Request.Headers["SERVER_NAME"] + GetUrlPort() + _dbConnector.HttpContext.Request.Headers["SCRIPT_NAME"] + "?" + _dbConnector.HttpContext.Request.Headers["QUERY_STRING"]);
-#else
-        public string GetReturnStageUrl() =>
-            HttpContext.Current.Server.UrlEncode("http://" + HttpContext.Current.Request.ServerVariables["SERVER_NAME"] + GetUrlPort() + HttpContext.Current.Request.ServerVariables["SCRIPT_NAME"] + "?" + HttpContext.Current.Request.ServerVariables["QUERY_STRING"]);
-#endif
 
-#if ASPNETCORE
         public bool IsBrowseServerMode() => SessionEnabled() && int.TryParse(_dbConnector.HttpContext.Session.GetString("BrowseServerSessionID"), out int _);
-#else
-        public bool IsBrowseServerMode() => SessionEnabled() && int.TryParse(HttpContext.Current.Session["BrowseServerSessionID"] as string, out int _);
-#endif
 
         public string GetBrowserInfo()
         {
-#if ASPNETCORE
             var agent = _dbConnector.HttpContext.Request.Headers["User-Agent"].ToString();
-#else
-            var agent = HttpContext.Current.Request.ServerVariables["HTTP_USER_AGENT"];
-#endif
             if (agent.IndexOf("Opera", StringComparison.Ordinal) >= 0)
             {
                 return "opera";
@@ -340,11 +274,6 @@ namespace Quantumart.QPublishing.OnScreen
             return agent.IndexOf("Mozilla", StringComparison.Ordinal) >= 0 ? "ns" : "unknown";
         }
 
-#if ASPNETCORE
         public bool UserAuthenticated() => SessionEnabled() && _dbConnector.HttpContext.Session.GetString("uid") != null;
-#else
-        public bool UserAuthenticated() => SessionEnabled() && HttpContext.Current.Session["uid"] != null;
-#endif
     }
 }
-#endif

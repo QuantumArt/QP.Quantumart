@@ -1,25 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlClient;
 using System.Globalization;
-using Npgsql;
 using NUnit.Framework;
-using QP.ConfigurationService.Models;
 using Quantumart.IntegrationTests.Constants;
 using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.Info;
-
-#if ASPNETCORE || NETCORE
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
-#endif
-
-#if ASPNETCORE
-
 using Microsoft.AspNetCore.Http;
-#endif
 
 namespace Quantumart.IntegrationTests
 {
@@ -37,7 +26,6 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-#if ASPNETCORE
             DbConnector = new DBConnector(
                 new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
@@ -46,9 +34,6 @@ namespace Quantumart.IntegrationTests
             {
                 ForceLocalCache = true
             };
-#else
-            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
-#endif
             Clear();
 
             Global.ReplayXml(@"TestData/unique.xml");
@@ -241,20 +226,11 @@ namespace Quantumart.IntegrationTests
             {
                 cn.Open();
                 var tr = cn.BeginTransaction();
-#if ASPNETCORE
                 var localConnector = new DBConnector(cn, tr,
                     new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                     new MemoryCache(new MemoryCacheOptions()),
                     new HttpContextAccessor()
                 );
-#elif NETCORE
-                var localConnector = new DBConnector(cn, tr,
-                    new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
-                    new MemoryCache(new MemoryCacheOptions())
-                );
-#else
-                var localConnector = new DBConnector(cn, tr);
-#endif
 
                 Assert.DoesNotThrow(() => localConnector.MassUpdate(ContentId, values, 1));
                 Assert.That(() => { localConnector.MassUpdate(ContentId, values2, 1); }, Throws.Exception);
@@ -288,13 +264,7 @@ namespace Quantumart.IntegrationTests
             {
                 cn.Open();
                 var tr = cn.BeginTransaction();
-#if ASPNETCORE
                 var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()), new HttpContextAccessor());
-#elif NETCORE
-                var localConnector = new DBConnector(cn, tr, new DbConnectorSettings { ConnectionString = Global.ConnectionString }, new MemoryCache(new MemoryCacheOptions()));
-#else
-                var localConnector = new DBConnector(cn, tr);
-#endif
 
                 Assert.DoesNotThrow(() => { localConnector.AddFormToContent(Global.SiteId, ContentName, "Published", ref article1, BaseArticlesIds[0]); }, "Update existing data");
 

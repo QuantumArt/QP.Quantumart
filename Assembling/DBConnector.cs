@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.Win32;
@@ -52,17 +53,22 @@ namespace Quantumart.QP8.Assembling
 
         private string GetConnectionString()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return null;
+            }
+
             var localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
             var qKey = localKey.OpenSubKey(RegistryPath);
             if (qKey == null)
             {
-                throw new InvalidOperationException("QP7 is not installed");
+                throw new InvalidOperationException("QP is not installed");
             }
 
             var regValue = qKey.GetValue("Configuration File");
             if (regValue == null)
             {
-                throw new InvalidOperationException("QP7 records in the registry are inconsistent or damaged");
+                throw new InvalidOperationException("QP records in the registry are inconsistent or damaged");
             }
 
             var doc = new XmlDocument();
@@ -70,7 +76,7 @@ namespace Quantumart.QP8.Assembling
             var node = doc.SelectSingleNode("configuration/customers/customer[@customer_name='" + CustomerCode + "']/db/text()");
             if (node == null)
             {
-                throw new InvalidOperationException("Cannot load connection string for ASP.NET in QP7 configuration file");
+                throw new InvalidOperationException("Cannot load connection string for ASP.NET in QP configuration file");
             }
 
             return node.Value.Replace("Provider=SQLOLEDB;", "");

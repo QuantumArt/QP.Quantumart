@@ -8,14 +8,7 @@ using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
 using Content = Quantumart.QPublishing.Info.Content;
-#if ASPNETCORE || NETCORE
 using Microsoft.Extensions.Caching.Memory;
-#else
-using System.IO;
-using System.Web;
-using System.Web.Caching;
-using System.Web.UI.WebControls;
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -35,10 +28,6 @@ namespace Quantumart.QPublishing.Database
         private static readonly object Locklock = new object();
 
         private bool _storeInDictionary;
-
-#if !ASPNETCORE && !NETCORE
-        private const string WebSpecificString = "DbConnector should be provided with page-specific information.";
-#endif
 
         private readonly Hashtable _localCache = new Hashtable();
 
@@ -65,16 +54,11 @@ namespace Quantumart.QPublishing.Database
         public DBConnector DbConnector { get; set; }
 
 
-#if ASPNETCORE || NETCORE
         private readonly IMemoryCache _cache;
 
         public DbCacheManager(DBConnector dbConnector, IMemoryCache cache)
         {
             _cache = cache;
-#else
-        public DbCacheManager(DBConnector dbConnector)
-        {
-#endif
             DbConnector = dbConnector;
             SetInitialQueries();
 
@@ -111,19 +95,11 @@ namespace Quantumart.QPublishing.Database
             _localCache.Clear();
         }
 
-#if !ASPNETCORE && !NETCORE
-        private static bool IsPageSpecificKey(string key) => string.IsNullOrEmpty(key);
-#endif
 
         private T GetDataFromCache<T>(string key) => (T)GetDataFromCache(key);
 
-#if ASPNETCORE || NETCORE
         private object GetDataFromCache(string key) => DbConnector.UseLocalCache ? _localCache[key] : _cache.Get(key);
-#else
-        private object GetDataFromCache(string key) => DbConnector.UseLocalCache ? _localCache[key] : HttpRuntime.Cache[key];
-#endif
 
-#if ASPNETCORE || NETCORE
         private void AddEntityToCache<T>(string cacheKey, T ht, double cacheInterval)
             where T : class
         {
@@ -147,33 +123,6 @@ namespace Quantumart.QPublishing.Database
                 });
             }
         }
-#else
-        private void AddEntityToCache<T>(string cacheKey, T ht, double cacheInterval, SqlCacheDependency extDep)
-            where T : class
-        {
-            object obj = ht;
-            if (ht == null)
-            {
-                obj = NullObject;
-            }
-
-            if (DbConnector.UseLocalCache)
-            {
-                _localCache[cacheKey] = obj;
-            }
-            else
-            {
-                if (extDep != null)
-                {
-                    HttpRuntime.Cache.Insert(cacheKey, obj, extDep);
-                }
-                else
-                {
-                    HttpRuntime.Cache.Insert(cacheKey, obj, null, DateTime.UtcNow.AddMinutes(cacheInterval), Cache.NoSlidingExpiration);
-                }
-            }
-        }
-#endif
 
         private void RemoveDataFromCache(string key)
         {
@@ -183,11 +132,7 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-#if ASPNETCORE || NETCORE
                 _cache.Remove(key);
-#else
-                HttpRuntime.Cache.Remove(key);
-#endif
             }
         }
 
@@ -215,50 +160,9 @@ namespace Quantumart.QPublishing.Database
 
         internal DataTable GetCachedTable(string key, double cacheInterval) => GetCachedEntity(key, cacheInterval, GetRealData);
 
-#if !ASPNETCORE && !NETCORE
-        internal DataTable GetCachedTable(string key, double cacheInterval, bool useDependency) => useDependency
-            ? GetCachedTableWithDependency(key)
-            : GetCachedTable(key, cacheInterval);
-#endif
 
         private DataTable GetRealData(string key) => DbConnector.GetRealData(GetQuery(key));
 
-#if !ASPNETCORE && !NETCORE
-        public DataTable GetCachedTableWithDependency(string key)
-        {
-            DataTable ht;
-            if (!DbConnector.CacheData)
-            {
-                SqlCacheDependency dep = null;
-                ht = DbConnector.GetRealDataWithDependency(GetQuery(key), ref dep);
-            }
-            else
-            {
-                var obj = GetDataFromCache(key);
-                if (obj == NullObject)
-                {
-                    return null;
-                }
-
-                ht = (DataTable)obj;
-                if (ht == null)
-                {
-                    lock (GetLockObject(key))
-                    {
-                        ht = GetDataFromCache<DataTable>(key);
-                        if (ht == null)
-                        {
-                            SqlCacheDependency dep = null;
-                            ht = DbConnector.GetRealDataWithDependency(GetQuery(key), ref dep);
-                            AddEntityToCache(key, ht, 0, dep);
-                        }
-                    }
-                }
-            }
-
-            return ht;
-        }
-#endif
 
         internal DataTable GetDataTable(string key)
         {
@@ -281,17 +185,11 @@ namespace Quantumart.QPublishing.Database
             }
             catch (EvaluateException)
             {
-#if NET4
-                Dump.DumpDataTable(dv.ToTable(), key);
-#endif
                 dv = ReGetDataView(key, rowFilter);
             }
 
             if (!ValidateView(dv, key))
             {
-#if NET4
-                Dump.DumpDataTable(dv.ToTable(), key);
-#endif
                 dv = ReGetDataView(key, rowFilter);
             }
 
@@ -322,14 +220,6 @@ namespace Quantumart.QPublishing.Database
 
             return new string[0];
         }
-
-#if !ASPNETCORE && !NETCORE
-        private static string GetBaseObjectsQuery() => "SELECT PT.TEMPLATE_NAME, PT.NET_TEMPLATE_NAME, PT.SITE_ID, PT.PAGE_TEMPLATE_ID, P.PAGE_ID, OBJ.[OBJECT_NAME], OBJ.[OBJECT_ID], OBJ.NET_OBJECT_NAME, OBJF.FORMAT_NAME, OBJF.NET_FORMAT_NAME, OBJ.OBJECT_FORMAT_ID AS DEFAULT_FORMAT_ID, P.PAGE_FOLDER, OBJF.OBJECT_FORMAT_ID AS CURRENT_FORMAT_ID FROM OBJECT AS OBJ INNER JOIN OBJECT_FORMAT AS OBJF ON OBJ.OBJECT_ID = OBJF.OBJECT_ID INNER JOIN PAGE_TEMPLATE PT ON OBJ.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID LEFT JOIN PAGE AS P ON P.PAGE_ID = OBJ.PAGE_ID";
-
-        private static string GetPageQuery() => "SELECT P.PAGE_ID, P.PAGE_TEMPLATE_ID, P.PAGE_NAME, PAGE_FILENAME, P.PROXY_CACHE, P.CACHE_HOURS, P.CHARSET, P.GENERATE_TRACE, P.PAGE_FOLDER, P.DISABLE_BROWSE_SERVER, P.SET_LAST_MODIFIED_HEADER, P.SEND_NOCACHE_HEADERS FROM PAGE P INNER JOIN PAGE_TEMPLATE PT ON P.PAGE_TEMPLATE_ID = PT.PAGE_TEMPLATE_ID";
-
-        private static string GetPageTemplateQuery() => "SELECT PT.SITE_ID, PT.PAGE_TEMPLATE_ID, PT.TEMPLATE_FOLDER, PT.NET_TEMPLATE_NAME, PT.TEMPLATE_NAME, PT.CHARSET, PT.SEND_NOCACHE_HEADERS FROM PAGE_TEMPLATE PT";
-#endif
 
         private string GetContentQuery() => $@"
             SELECT C.CONTENT_ID, C.CONTENT_NAME, C.NET_CONTENT_NAME, C.VIRTUAL_TYPE, C.SITE_ID, C.MAX_NUM_OF_STORED_VERSIONS, S.SITE_NAME, CWB.WORKFLOW_ID
@@ -406,18 +296,6 @@ namespace Quantumart.QPublishing.Database
                         var linqKey = attr.LinqName.ToLowerInvariant();
                         resultHash[linqKey] = attr.Id;
                     }
-                    else if (attr == null)
-                    {
-#if NET4
-                        Dump.DumpStr($"{DateTime.Now}: Attribute returned for key '{key}' is null");
-#endif
-                    }
-                }
-                else
-                {
-#if NET4
-                    Dump.DumpStr($"{DateTime.Now}: Item in arraylist for key '{key}' is null");
-#endif
                 }
             }
 
@@ -929,11 +807,7 @@ namespace Quantumart.QPublishing.Database
                         if (ht == null)
                         {
                             ht = fillAction.Invoke(key);
-#if ASPNETCORE || NETCORE
                             AddEntityToCache(key, ht, cacheInterval);
-#else
-                            AddEntityToCache(key, ht, cacheInterval, null);
-#endif
                         }
                     }
                 }
@@ -967,11 +841,7 @@ namespace Quantumart.QPublishing.Database
                         if (ht == null)
                         {
                             ht = fillAction.Invoke();
-#if ASPNETCORE || NETCORE
                             AddEntityToCache(key, ht, cacheInterval);
-#else
-                            AddEntityToCache(key, ht, cacheInterval, null);
-#endif
                         }
                     }
                 }
@@ -999,11 +869,7 @@ namespace Quantumart.QPublishing.Database
                         if (qr == null || obj.WithReset)
                         {
                             qr = DbConnector.GetFilledDataTable(obj);
-#if ASPNETCORE || NETCORE
                             AddEntityToCache(key, qr, obj.CacheInterval);
-#else
-                            AddEntityToCache(key, qr, obj.CacheInterval, null);
-#endif
                         }
                     }
                 }
@@ -1068,13 +934,7 @@ namespace Quantumart.QPublishing.Database
 
         public string StatusKey => $"{CacheKeyPrefix}statusList";
 
-#if !ASPNETCORE && !NETCORE
-        private string GetPageObjectKey(int pageId) => $"{CacheKeyPrefix}pageObjects{pageId}";
-#endif
 
-#if !ASPNETCORE && !NETCORE
-        private string GetPageObjectHashKey(int pageId) => $"{CacheKeyPrefix}pageObjectsHash{pageId}";
-#endif
 
         public string AllPageObjectsKey => $"{CacheKeyPrefix}allPageObjects";
 
@@ -1086,9 +946,6 @@ namespace Quantumart.QPublishing.Database
 
         public string TemplateObjectKey => $"{CacheKeyPrefix}templateObjects";
 
-#if !ASPNETCORE && !NETCORE
-        private string GetTemplateObjectHashKey(int pageTemplateId) => $"{CacheKeyPrefix}templateObjectsHash{pageTemplateId}";
-#endif
 
         public string TemplateKey => $"{CacheKeyPrefix}templates";
 
@@ -1111,10 +968,6 @@ namespace Quantumart.QPublishing.Database
         public string TemplateMappingHashKey => $"{CacheKeyPrefix}templateMappingHash";
 
         public string PageMappingKey => $"{CacheKeyPrefix}pageMapping";
-
-#if !ASPNETCORE && !NETCORE
-        private string GetPageMappingHashKey(int pageId) => $"{CacheKeyPrefix}pageMappingHash{pageId}";
-#endif
 
         public string ContentHashKey => $"{CacheKeyPrefix}contentHash";
 

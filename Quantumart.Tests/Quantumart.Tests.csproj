@@ -1,43 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net471;netcoreapp3.1</TargetFrameworks>
-    <Configurations>Debug;Debug_AspnetCore;Release;Release_AspnetCore</Configurations>
+    <TargetFramework>net6.0</TargetFramework>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-    <PackageReference Include="NUnit" Version="3.9.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.0" />
+    <PackageReference Include="NUnit" Version="3.13.3" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
     <ProjectReference Include="..\Quantumart\Quantumart.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Assembling\Assembling.csproj" />
-  </ItemGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='net471'">
-    <DefineConstants>NET4</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
-    <DefineConstants>NETCORE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
-    <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|net471' OR '$(Configuration)|$(TargetFramework)'=='Release|net471'">
-    <Reference Include="System.Web" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)'=='Debug_AspnetCore' OR '$(Configuration)'=='Release_AspnetCore'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.6" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)|$(TargetFramework)'=='Debug|netcoreapp3.1' OR '$(Configuration)|$(TargetFramework)'=='Release|netcoreapp3.1'">
-    <Compile Remove="**" />
   </ItemGroup>
 
 </Project>
