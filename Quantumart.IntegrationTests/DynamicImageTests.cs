@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -11,12 +10,8 @@ using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Resizer;
-
-#if ASPNETCORE
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
-
-#endif
 
 namespace Quantumart.IntegrationTests
 {
@@ -41,7 +36,6 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-#if ASPNETCORE
             DbConnector = new DBConnector(
                 new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
@@ -51,14 +45,6 @@ namespace Quantumart.IntegrationTests
                 FileSystem = new FakeFileSystem(),
                 ForceLocalCache = true
             };
-#else
-            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType)
-            {
-                DynamicImageCreator = new FakeDynamicImageCreator(),
-                FileSystem = new FakeFileSystem(),
-                ForceLocalCache = true
-            };
-#endif
 
             Clear();
             Global.ReplayXml(@"TestData/files.xml");

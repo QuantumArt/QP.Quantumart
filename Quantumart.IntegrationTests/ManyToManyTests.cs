@@ -9,13 +9,8 @@ using Quantumart.IntegrationTests.Constants;
 using Quantumart.IntegrationTests.Infrastructure;
 using Quantumart.QPublishing.Database;
 using Quantumart.QPublishing.FileSystem;
-#if ASPNETCORE
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
-#else
-using System.Web;
-
-#endif
 
 namespace Quantumart.IntegrationTests
 {
@@ -56,7 +51,6 @@ namespace Quantumart.IntegrationTests
         [OneTimeSetUp]
         public static void Init()
         {
-#if ASPNETCORE
             DbConnector = new DBConnector(
                 new DbConnectorSettings { ConnectionString = Global.ConnectionString, DbType = Global.DBType},
                 new MemoryCache(new MemoryCacheOptions()),
@@ -65,9 +59,6 @@ namespace Quantumart.IntegrationTests
             {
                 ForceLocalCache = true
             };
-#else
-            DbConnector = new DBConnector(Global.ConnectionString, Global.DBType) { ForceLocalCache = true };
-#endif
             Clear();
 
             Global.ReplayXml(@"TestData/m2m.xml");
@@ -1077,12 +1068,7 @@ namespace Quantumart.IntegrationTests
             var titleBefore = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var catBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
 
-#if ASPNETCORE || NETCORE
             Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentId, "Published", ref article2, id, true, mainCatId); }, "Update article");
-#else
-            var files = (HttpFileCollection)null;
-            Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentId, "Published", ref article2, ref files, id, true, mainCatId); }, "Update article");
-#endif
 
             var titleAfter = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var catAfter = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
@@ -1115,12 +1101,8 @@ namespace Quantumart.IntegrationTests
             var catBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
             var numBefore = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "Number", ids)[0];
 
-#if ASPNETCORE || NETCORE
             Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentName, "Published", ref article2, id, false); }, "Update article");
-#else
-            var files = (HttpFileCollection)null;
-            Assert.DoesNotThrow(() => { id = DbConnector.AddFormToContent(Global.SiteId, ContentName, "Published", ref article2, ref files, id, false); }, "Update article");
-#endif
+
             var titleAfter = Global.GetFieldValues<string>(DbConnector, ContentId, "Title", ids)[0];
             var catAfter = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "MainCategory", ids)[0];
             var numAfter = (int)Global.GetFieldValues<decimal>(DbConnector, ContentId, "Number", ids)[0];

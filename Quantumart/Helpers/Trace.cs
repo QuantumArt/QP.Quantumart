@@ -1,13 +1,8 @@
-#if ASPNETCORE || NET4
 using System;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Quantumart.QPublishing.Database;
-#if !ASPNETCORE
-using System.Web;
-
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
@@ -32,11 +27,7 @@ namespace Quantumart.QPublishing.Helpers
         public int InitTrace(int pageId)
         {
             int functionReturnValue;
-#if ASPNETCORE
             var query = _dbConnector.HttpContext.Request.QueryString.Value.Replace("'", "''");
-#else
-            var query = HttpContext.Current.Request.ServerVariables["QUERY_STRING"].Replace("'", "''");
-#endif
             var traceSql = $"select * from page_trace where query_string = \'{query}\' and page_id = {pageId}";
             var dt = _dbConnector.GetRealData(traceSql);
             if (dt.Rows.Count == 0)
@@ -59,11 +50,7 @@ namespace Quantumart.QPublishing.Helpers
 
         public void DoneTrace(TimeSpan duration, bool allowUserSessions, Hashtable values)
         {
-#if ASPNETCORE
             var dp = new DebugPrint(_dbConnector);
-#else
-            var dp = new DebugPrint();
-#endif
             var traceSession = allowUserSessions ? string.Empty : dp.GetSessionString();
             var traceCookies = dp.GetCookiesString();
             var traceValues = dp.GetSimpleDictionaryString(ref values);
@@ -209,4 +196,3 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
-#endif

@@ -211,7 +211,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
 
         public static void ReplayXml(string filePath)
         {
-            var assemblyDirLocation = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase) ?? string.Empty).AbsolutePath;
+            var assemblyDirLocation = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty).AbsolutePath;
             var exitCode = ProcessHelpers.ExecuteFileAndReadOutput(new ProcessExecutionSettings
             {
                 ProcessExePath = Path.Combine(assemblyDirLocation, QpDbUpdateToolPath),
@@ -260,7 +260,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
 
         private static void ReplayDynamicXml(string standardInputData)
         {
-            var assemblyDirLocation = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase) ?? string.Empty).AbsolutePath;
+            var assemblyDirLocation = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty).AbsolutePath;
             var exitCode = ProcessHelpers.ExecuteFileAndReadOutput(new ProcessExecutionSettings
             {
                 ProcessExePath = Path.Combine(assemblyDirLocation, QpDbUpdateToolPath),

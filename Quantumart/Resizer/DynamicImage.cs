@@ -1,4 +1,3 @@
-#if !NET4
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -10,9 +9,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.Primitives;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable once CheckNamespace
@@ -140,7 +137,7 @@ namespace Quantumart.QPublishing.Resizer
 
             if (!_info.ImageName.ToUpper().EndsWith(SVG_EXTENSION))
             {
-                using (Image<Rgba32> image = Image.Load(baseImagePath))
+                using (var image = Image.Load(baseImagePath))
                 {
                     var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
                     image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
@@ -210,4 +207,3 @@ namespace Quantumart.QPublishing.Resizer
         }
     }
 }
-#endif

@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quantumart.Tests", "Quantum
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Quantumart.IntegrationTests", "Quantumart.IntegrationTests\Quantumart.IntegrationTests.csproj", "{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembling.T4", "Assembling.T4\Assembling.T4.csproj", "{965B3608-90AF-4ECF-B689-A8463DA2B6CD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_AspnetCore|Any CPU = Debug_AspnetCore|Any CPU
@@ -57,14 +55,6 @@ Global
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Debug_AspnetCore|Any CPU.Build.0 = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Release_AspnetCore|Any CPU.ActiveCfg = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Release_AspnetCore|Any CPU.Build.0 = Debug|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{965B3608-90AF-4ECF-B689-A8463DA2B6CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -8,16 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Quantumart.QPublishing.Helpers;
 using Quantumart.QPublishing.Info;
-#if ASPNETCORE || NETCORE
-#else
-using System.Collections.Specialized;
-using System.Configuration;
-using System.Web;
-#endif
-
-#if ASPNETCORE
 using Microsoft.AspNetCore.Http;
-#endif
 
 using Quantumart.QP8.Assembling;
 
@@ -32,9 +23,7 @@ namespace Quantumart.QPublishing.Database
 
         internal static readonly int LegacyNotFound = -1;
 
-#if ASPNETCORE
         public HttpContext HttpContext { get; }
-#endif
 
         public static string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 

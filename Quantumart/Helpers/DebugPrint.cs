@@ -1,30 +1,20 @@
-#if ASPNETCORE || NET4
 using System.Collections;
 using System.Text;
-#if ASPNETCORE
 using Microsoft.AspNetCore.Http;
 using Quantumart.QPublishing.Database;
-#else
-using System.Collections.Specialized;
-using System.Web;
-
-#endif
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Helpers
 {
     public class DebugPrint
     {
-#if ASPNETCORE
         private readonly DBConnector _dbConnector;
 
         public DebugPrint(DBConnector dbConnector)
         {
             _dbConnector = dbConnector;
         }
-#endif
 
-#if ASPNETCORE
         public string GetSessionString()
         {
             var result = new StringBuilder();
@@ -38,23 +28,9 @@ namespace Quantumart.QPublishing.Helpers
 
             return result.ToString();
         }
-#else
-        public string GetSessionString()
-        {
-            var result = new StringBuilder();
-            foreach (string key in HttpContext.Current.Session.Contents)
-            {
-                result.Append(GetElementString(key, HttpContext.Current.Session[key]));
-            }
-
-            return result.ToString();
-        }
-
-#endif
 
         public string GetElementString(string key, object value) => key + "=" + value.GetType().FullName + "; ";
 
-#if ASPNETCORE
         public string GetCookiesString()
         {
             var result = new StringBuilder();
@@ -73,36 +49,6 @@ namespace Quantumart.QPublishing.Helpers
 
             return result.ToString();
         }
-#else
-        public string GetCookiesString()
-        {
-            var result = new StringBuilder();
-            foreach (string key in HttpContext.Current.Request.Cookies)
-            {
-                result.Append(key + ": ");
-                var cookie = HttpContext.Current.Request.Cookies[key];
-                if (cookie != null)
-                {
-                    if (cookie.HasKeys)
-                    {
-                        var subCookieValues = new NameValueCollection(cookie.Values);
-                        foreach (string subkey in subCookieValues)
-                        {
-                            result.Append(subkey + "=" + cookie[subkey] + "; ");
-                        }
-
-                        result.Append("<br>");
-                    }
-                    else
-                    {
-                        result.Append(key + "=" + cookie.Value + ";<br>");
-                    }
-                }
-            }
-
-            return result.ToString();
-        }
-#endif
 
         public string GetSimpleDictionaryString(ref Hashtable values)
         {
@@ -117,4 +63,3 @@ namespace Quantumart.QPublishing.Helpers
         }
     }
 }
-#endif
