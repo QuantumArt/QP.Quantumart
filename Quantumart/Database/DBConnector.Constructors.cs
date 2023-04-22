@@ -42,13 +42,13 @@ namespace Quantumart.QPublishing.Database
         }
 
         public DBConnector(string connectionString, DatabaseType dbType = DatabaseType.SqlServer):
-            this(connectionString, new DbConnectorSettings() {DbType = dbType}, new MemoryCache(new MemoryCacheOptions()), null)
+            this(connectionString, new DbConnectorSettings() {DbType = dbType}, DefaultMemoryCache, null)
         {
         }
 
 
          public DBConnector(IDbConnection connection):
-         this(connection, new DbConnectorSettings(), new MemoryCache(new MemoryCacheOptions()), null)
+         this(connection, new DbConnectorSettings(), DefaultMemoryCache, null)
         {
 
         }
@@ -70,6 +70,8 @@ namespace Quantumart.QPublishing.Database
         }
 
         private static DatabaseType ResolveDbType(IDbConnection cnn) => cnn is NpgsqlConnection ? DatabaseType.Postgres : DatabaseType.SqlServer;
+
+        private static readonly MemoryCache DefaultMemoryCache = new MemoryCache(new MemoryCacheOptions());
 
     }
 }
