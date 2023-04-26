@@ -208,12 +208,14 @@ namespace Quantumart.QPublishing.Database
                                     From = GetFromAddress(notifyRow)
                                 };
 
-                                SetToMail(notifyRow,
+                                SetToMail(
+                                    notifyRow,
                                     contentItemId,
                                     notificationOn,
                                     notificationEmail,
                                     mailMess,
-                                    ref strSqlRegisterNotifyForUsers);
+                                    ref strSqlRegisterNotifyForUsers
+                                );
 
                                 mailMess.IsBodyHtml = true;
 
@@ -236,10 +238,7 @@ namespace Quantumart.QPublishing.Database
 
                                 if (doAttachFiles)
                                 {
-                                    AttachFiles(mailMess,
-                                        siteId,
-                                        contentId,
-                                        contentItemId);
+                                    AttachFiles(mailMess, siteId, contentId, contentItemId);
                                 }
 
                                 SendMail(mailMess);
@@ -293,10 +292,10 @@ namespace Quantumart.QPublishing.Database
 
             return (
                 result.FieldValues
-                   .Where(x => x.Key == "SingleArticleTheme")
+                   .Where(x => x.Key == "SingleArticleMessageSubjectTemplate")
                    .Select(x => x.Value.Data).Single(),
                 result.FieldValues
-                   .Where(x => x.Key == "SingleArticleTemplate")
+                   .Where(x => x.Key == "SingleArticleMessageBodyTemplate")
                    .Select(x => x.Value.Data).Single());
         }
 
