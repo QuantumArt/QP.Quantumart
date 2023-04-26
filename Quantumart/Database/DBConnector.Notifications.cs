@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -12,6 +13,7 @@ using NLog;
 using NLog.Fluent;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
+using Quantumart.QPublishing.Services;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -206,8 +208,11 @@ namespace Quantumart.QPublishing.Database
 
                                 try
                                 {
-                                    mailMess.Subject = "Implement me please!"; //ToDo: build subject using Fluid
-                                    mailMess.Body = "Implement me please!"; //ToDo: build body using Fluid
+                                    IMailRenderService renderer = new FluidBaseMailRenderService();
+                                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
+                                    object model = BuildObjectModelFromArticle(contentItemId);
+                                    mailMess.Subject = renderer.RenderText(subjectTemplate, model);
+                                    mailMess.Body = renderer.RenderText(bodyTemplate, model);
                                 }
                                 catch (Exception ex)
                                 {
@@ -240,6 +245,46 @@ namespace Quantumart.QPublishing.Database
                 InternalExceptionHandler(ex, "SendNotification", null);
                 ExternalExceptionHandler?.Invoke(ex);
             }
+        }
+
+        private object BuildObjectModelFromArticle(int contentItemId)
+        {
+            ContentItem article = ContentItem.Read(contentItemId, this);
+
+            dynamic model = new ExpandoObject();
+            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+
+            collection.Add(new(nameof(article.Id), article.Id));
+            collection.Add(new(nameof(article.ContentId), article.ContentId));
+            collection.Add(new(nameof(article.Created), article.Created));
+            collection.Add(new(nameof(article.Modified), article.Modified));
+            collection.Add(new(nameof(article.StatusName), article.StatusName));
+            collection.Add(new(nameof(article.LastModifiedBy), article.LastModifiedBy));
+
+            foreach (KeyValuePair<string,ContentItemValue> field in article.FieldValues)
+            {
+                collection.Add(new(field.Key, field.Value.Data));
+            }
+
+            return model;
+        }
+
+        private (string, string) GetTemplate(int templateId)
+        {
+            ContentItem result = ContentItem.Read(templateId, this);
+
+            if (result == null)
+            {
+                throw new InvalidOperationException($"Unable to load template with id {templateId}");
+            }
+
+            return (
+                result.FieldValues
+                   .Where(x => x.Key == "SingleArticleTheme")
+                   .Select(x => x.Value.Data).Single(),
+                result.FieldValues
+                   .Where(x => x.Key == "SingleArticleTemplate")
+                   .Select(x => x.Value.Data).Single());
         }
 
         private static void ValidateNotificationEvent(string notificationOn)
@@ -305,29 +350,15 @@ namespace Quantumart.QPublishing.Database
             return functionReturnValue;
         }
 
-        private enum SitePlatform
+        public void AssembleFormatToFile(int siteId, int objectFormatId)
         {
-            Asp,
-            Aspnet
+            LoadUrl(GetNotifyDirectory(siteId) + "AssembleFormat.asp?objectFormatId=" + objectFormatId);
         }
 
-        private SitePlatform GetSitePlatform(int siteId)
+        private string GetNotifyDirectory(int siteId)
         {
-            var site = GetSite(siteId);
-            return site != null && site.ScriptLanguage.ToLowerInvariant() == "vbscript" ? SitePlatform.Asp : SitePlatform.Aspnet;
-        }
-
-        private static string GetFileExtension(SitePlatform platform)
-        {
-            switch (platform)
-            {
-                case SitePlatform.Asp:
-                    return "asp";
-                case SitePlatform.Aspnet:
-                    return "aspx";
-                default:
-                    return "aspx";
-            }
+            var notifyUrl = GetSiteUrl(siteId, true) + DbConnectorSettings.RelNotifyUrl;
+            return notifyUrl.ToLowerInvariant().Replace("notify.asp", "");
         }
 
         private string GetAspWrapperUrl(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive)

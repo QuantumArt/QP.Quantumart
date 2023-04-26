@@ -109,7 +109,7 @@ namespace Quantumart.QPublishing.OnScreen
 
         public bool CheckCustomTabAuthentication() => CheckCustomTabAuthentication(_dbConnector);
 
-        public int GetCustomTabUserId() => _dbConnector.HttpContext.Session?.GetInt32(AuthenticationKey) ?? 0;
+        public int GetCustomTabUserId() => _dbConnector.HttpContext?.Session?.GetInt32(AuthenticationKey) ?? 0;
 
         internal void GetBackendAuthentication()
         {
