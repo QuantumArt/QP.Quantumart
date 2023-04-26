@@ -138,24 +138,37 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        public void SendNotification(int contentItemId, string notificationOn)
+        private int GetContentId(int contentItemId)
         {
-            var contentId = GetContentIdForItem(contentItemId);
+            int contentId = GetContentIdForItem(contentItemId);
             if (contentId == 0)
             {
                 throw new Exception($"Article (ID = {contentItemId}) is not found");
             }
 
+            return contentId;
+        }
+
+        public void SendNotificationById(int contentItemId, int[] notificationIds)
+        {
+            int contentId = GetContentId(contentItemId);
+            int siteId = GetSiteIdByContentId(contentId);
+            SendNotification(siteId, NotificationEvent.FrontendRequest, contentItemId, string.Empty, !IsStage, notificationIds);
+        }
+
+        public void SendNotification(int contentItemId, string notificationOn)
+        {
+            var contentId = GetContentId(contentItemId);
             var siteId = GetSiteIdByContentId(contentId);
             SendNotification(siteId, notificationOn, contentItemId, string.Empty, !IsStage);
         }
 
-        public void SendNotification(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive)
+        public void SendNotification(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive, int[] notificationIds = null)
         {
             ValidateNotificationEvent(notificationOn);
             try
             {
-                var rstNotifications = GetNotificationsTable(notificationOn, contentItemId);
+                var rstNotifications = GetNotificationsTable(notificationOn, contentItemId, notificationIds);
                 var hasUseServiceColumn = rstNotifications.Columns.Contains("USE_SERVICE");
                 var notifications = rstNotifications.Rows.Cast<DataRow>().ToArray();
                 var externalNotifications = notifications.Where(n => (bool)n["is_external"]);
@@ -367,7 +380,7 @@ namespace Quantumart.QPublishing.Database
             return $"{GetSiteUrl(siteId, isLive)}{DbConnectorSettings.RelNotifyUrl}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
         }
 
-        private DataTable GetNotificationsTable(string notificationOn, int contentItemId)
+        private DataTable GetNotificationsTable(string notificationOn, int contentItemId, int[] notificationIds)
         {
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
@@ -382,12 +395,18 @@ namespace Quantumart.QPublishing.Database
             sb.Append($" INNER JOIN site AS s {nolock} ON c.site_id = s.site_id");
             sb.Append($" WHERE n.content_id = {contentId}");
             sb.Append($" AND n.{notificationOn}{on}");
+
             if (notificationOn.ToLowerInvariant() == NotificationEvent.StatusChanged)
             {
                 var stSql = $"select status_type_id from content_item where content_item_id = {contentItemId}";
                 var dt = GetRealData(stSql);
                 var status = dt.Rows[0]["status_type_id"].ToString();
                 sb.Append($" AND (n.notify_on_status_type_id IS NULL OR n.notify_on_status_type_id = {status})");
+            }
+
+            if (notificationOn.ToLowerInvariant() == NotificationEvent.FrontendRequest && notificationIds is { Length: > 0 })
+            {
+                sb.Append($" AND n.NOTIFICATION_ID IN ({string.Join(",", notificationIds)})");
             }
             return GetCachedData(sb.ToString());
         }
