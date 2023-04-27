@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using System.Data.Common;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -224,12 +224,28 @@ namespace Quantumart.QPublishing.Info
 
         private IEnumerable<int> GetRealRelatedItems(int contentId, string fieldName)
         {
-            var cmd = _dbConnector.CreateDbCommand("qp_get_m2o_ids");
-            cmd.CommandType = CommandType.StoredProcedure;
-            cmd.Parameters.AddWithValue("@contentId", contentId);
-            cmd.Parameters.AddWithValue("@fieldName", fieldName);
-            cmd.Parameters.AddWithValue("@id", Id);
-            return _dbConnector.GetRealData(cmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
+            switch (_dbConnector.DatabaseType)
+            {
+                case DatabaseType.SqlServer:
+                    var sqlCmd = _dbConnector.CreateDbCommand("qp_get_m2o_ids");
+                    sqlCmd.CommandType = CommandType.StoredProcedure;
+                    sqlCmd.Parameters.AddWithValue("@contentId", contentId);
+                    sqlCmd.Parameters.AddWithValue("@fieldName", fieldName);
+                    sqlCmd.Parameters.AddWithValue("@id", Id);
+                    return _dbConnector.GetRealData(sqlCmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
+                case DatabaseType.Postgres:
+                    DbCommand pgCmd = _dbConnector.CreateDbCommand($"SELECT public.qp_get_m2o_ids({contentId}, '{fieldName}', {Id});");
+                    DataTable result = _dbConnector.GetRealData(pgCmd);
+
+                    if (result.Rows.Count == 0 || result.Rows[0].ItemArray.Length == 0 || result.Rows[0].ItemArray[0] is DBNull)
+                    {
+                        return Array.Empty<int>();
+                    }
+
+                    return (int[])result.Rows[0].ItemArray[0];
+                default:
+                    throw new InvalidOperationException($"Unsupported DataBaseType {_dbConnector.DatabaseType}");
+            }
         }
 
         private void InitFieldValues()
