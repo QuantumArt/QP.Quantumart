@@ -231,7 +231,8 @@ namespace Quantumart.QPublishing.Database
                                 }
                                 catch (Exception ex)
                                 {
-                                    mailMess.Body = $"An error has occurred while building notification theme or message body. Error message: {ex.Message}";
+                                    mailMess.Subject = $"Error while building mail message.";
+                                    mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
                                     _logger.Error().Exception(ex).Message("Error while building message").Write();
                                     doAttachFiles = false;
                                 }
