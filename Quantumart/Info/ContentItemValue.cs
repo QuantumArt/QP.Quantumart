@@ -6,6 +6,8 @@ namespace Quantumart.QPublishing.Info
     {
         public string Data { get; set; }
 
+        public AttributeType ItemType { get; set; }
+
         public HashSet<int> LinkedItems { get; internal set; }
 
         public ContentItemValue()

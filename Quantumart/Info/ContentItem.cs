@@ -312,8 +312,10 @@ namespace Quantumart.QPublishing.Info
                                 ? GetRealRelatedItems(attr.BackRelation.ContentId, attr.BackRelation.Name)
                                 : GetRealLinkedItems(attr.LinkId ?? 0));
 
-                        value.LinkedItems = new HashSet<int>(items);
+                        value.LinkedItems = new(items);
                     }
+
+                    value.ItemType = attr.Type;
                 }
             }
 

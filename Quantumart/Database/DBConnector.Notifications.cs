@@ -275,7 +275,25 @@ namespace Quantumart.QPublishing.Database
 
             foreach (KeyValuePair<string,ContentItemValue> field in article.FieldValues)
             {
-                collection.Add(new(field.Key, field.Value.Data));
+                switch (field.Value.ItemType)
+                {
+                    case AttributeType.Relation:
+                        collection.Add(new(field.Key, BuildObjectModelFromArticle(field.Value.LinkedItems.FirstOrDefault(0))));
+                        break;
+                    case AttributeType.M2ORelation:
+                        List<object> internalCollection = field.Value.LinkedItems.Select(BuildObjectModelFromArticle).ToList();
+                        collection.Add(new(field.Key, internalCollection));
+                        break;
+
+                    default:
+                        collection.Add(new(field.Key, field.Value.Data));
+                        break;
+                }
+            }
+
+            foreach (ContentItem aggregatedItem in article.AggregatedItems)
+            {
+
             }
 
             return model;
