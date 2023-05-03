@@ -63,6 +63,8 @@ namespace Quantumart.QPublishing.Info
 
         public List<ContentItem> AggregatedItems { get; } = new List<ContentItem>();
 
+        internal Dictionary<string, List<ContentItem>> Classifiers = new();
+
         public bool IsNew => Id == 0;
 
         private ContentItem(DBConnector dbConnector)
@@ -281,10 +283,10 @@ namespace Quantumart.QPublishing.Info
 
             foreach (DataRow dr in dt.Rows)
             {
-                var attr = _dbConnector.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
+                ContentAttribute attr = _dbConnector.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
                 if (FieldValues.ContainsKey(attr.Name))
                 {
-                    var value = FieldValues[attr.Name];
+                    ContentItemValue value = FieldValues[attr.Name];
                     value.Data = dr["DATA"].ToString();
 
                     if (RestrictedFieldValues.ContainsKey(attr.Name))
@@ -300,6 +302,8 @@ namespace Quantumart.QPublishing.Info
 
                     if (attr.Type == AttributeType.Numeric && attr.IsClassifier)
                     {
+                        value.IsClassifier = true;
+                        value.ClassifierBaseArticle = VersionId != 0 ? VersionId : Id;
                         classifierIds.Add(attr.Id);
                         typeIds.Add(int.Parse(value.Data));
                     }
@@ -315,7 +319,7 @@ namespace Quantumart.QPublishing.Info
                         value.LinkedItems = new(items);
                     }
 
-                    value.ItemType = attr.Type;
+                    value.ItemType = attr.Type == AttributeType.Relation && attr.LinkId.HasValue ? AttributeType.M2ORelation : attr.Type;
                 }
             }
 

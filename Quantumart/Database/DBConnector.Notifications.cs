@@ -23,6 +23,8 @@ namespace Quantumart.QPublishing.Database
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
+        private const int RecursionLevelLimit = 2;
+
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
 
@@ -260,8 +262,15 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private object BuildObjectModelFromArticle(int contentItemId)
+        private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0)
         {
+            if (recursionLevel > RecursionLevelLimit)
+            {
+                return default;
+            }
+
+            recursionLevel++;
+
             ContentItem article = ContentItem.Read(contentItemId, this);
 
             dynamic model = new ExpandoObject();
@@ -279,23 +288,52 @@ namespace Quantumart.QPublishing.Database
                 switch (field.Value.ItemType)
                 {
                     case AttributeType.Relation:
-                        collection.Add(new(field.Key, BuildObjectModelFromArticle(field.Value.LinkedItems.FirstOrDefault(0))));
+
+                        if (string.IsNullOrEmpty(field.Value.Data))
+                        {
+                            continue;
+                        }
+
+                        if (!int.TryParse(field.Value.Data, out int id))
+                        {
+                            _logger.Warn("Unable to parse relation {RelationName} value {RelationId} as int. Skipping it", field.Key, field.Value.Data);
+                            continue;
+                        }
+
+                        try
+                        {
+                            collection.Add(new(field.Key, BuildObjectModelFromArticle(id, recursionLevel)));
+                        }
+                        catch (Exception e)
+                        {
+                            if (e.Message.StartsWith("Article is not found"))
+                            {
+                                continue;
+                            }
+
+                            throw;
+                        }
+
                         break;
                     case AttributeType.M2ORelation:
-                        List<object> internalCollection = field.Value.LinkedItems.Select(BuildObjectModelFromArticle).ToList();
+                        if (field.Value.LinkedItems.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        List<object> internalCollection = field.Value.LinkedItems.Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel)).ToList();
                         collection.Add(new(field.Key, internalCollection));
                         break;
-
                     default:
                         collection.Add(new(field.Key, field.Value.Data));
                         break;
                 }
             }
 
-            foreach (ContentItem aggregatedItem in article.AggregatedItems)
-            {
-
-            }
+            // foreach (ContentItem aggregatedItem in article.AggregatedItems)
+            // {
+            //
+            // }
 
             return model;
         }

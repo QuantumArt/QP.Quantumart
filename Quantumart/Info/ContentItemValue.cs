@@ -6,7 +6,11 @@ namespace Quantumart.QPublishing.Info
     {
         public string Data { get; set; }
 
-        public AttributeType ItemType { get; set; }
+        internal AttributeType ItemType { get; set; }
+
+        internal bool IsClassifier { get; set; }
+
+        internal int ClassifierBaseArticle { get; set; }
 
         public HashSet<int> LinkedItems { get; internal set; }
 
