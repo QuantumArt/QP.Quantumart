@@ -63,8 +63,6 @@ namespace Quantumart.QPublishing.Info
 
         public List<ContentItem> AggregatedItems { get; } = new List<ContentItem>();
 
-        internal Dictionary<string, List<ContentItem>> Classifiers = new();
-
         public bool IsNew => Id == 0;
 
         private ContentItem(DBConnector dbConnector)
