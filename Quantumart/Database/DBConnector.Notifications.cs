@@ -32,6 +32,8 @@ namespace Quantumart.QPublishing.Database
 
         public Action<Exception> ExternalExceptionHandler { get; set; }
 
+        private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
+
         private void ProceedExternalNotification(int id, string eventName, string externalUrl, ContentItem item, bool useService)
         {
             eventName = eventName.ToLowerInvariant();
@@ -234,7 +236,7 @@ namespace Quantumart.QPublishing.Database
                                 }
                                 catch (Exception ex)
                                 {
-                                    mailMess.Subject = $"Error while building mail message.";
+                                    mailMess.Subject = "Error while building mail message.";
                                     mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
                                     _logger.Error().Exception(ex).Message("Error while building message").Write();
                                     doAttachFiles = false;
@@ -272,22 +274,29 @@ namespace Quantumart.QPublishing.Database
                 return;
             }
 
-            StringBuilder stringBuilder = new();
-            stringBuilder.Append("select u.first_name, u.last_name");
-            stringBuilder.Append(" from users as u");
-            stringBuilder.Append($" where user_id = {userId}");
+            DataRow user = GetUserInfoByUserId(userId);
 
-            DataTable userData = GetCachedData(stringBuilder.ToString());
-
-            if (userData.Rows.Count == 0)
+            if (user is null)
             {
                 return;
             }
 
             ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
 
-            collection.Add(new("RecipientFirstName", userData.Rows[0]["first_name"]));
-            collection.Add(new("RecipientLastName", userData.Rows[0]["last_name"]));
+            collection.Add(new("RecipientFirstName", user["first_name"]));
+            collection.Add(new("RecipientLastName", user["last_name"]));
+        }
+
+        private DataRow GetUserInfoByUserId(object userId)
+        {
+            StringBuilder stringBuilder = new();
+            stringBuilder.Append("select u.first_name, u.last_name");
+            stringBuilder.Append($" from users as u {NoLock}");
+            stringBuilder.Append($" where user_id = {userId}");
+
+            DataTable userData = GetCachedData(stringBuilder.ToString());
+
+            return userData.Rows.Count == 0 ? null : userData.Rows[0];
         }
 
         private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0)
@@ -552,9 +561,8 @@ namespace Quantumart.QPublishing.Database
         private int? GetClassifierData(int contentId, int parentId)
         {
             StringBuilder sb = new();
-            string noLock = DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
             sb.Append("select c.content_item_id");
-            sb.Append($" from content_{contentId} as c {noLock}");
+            sb.Append($" from content_{contentId} as c {NoLock}");
             sb.Append($" where c.parent = {parentId}");
 
             DataTable data = GetCachedData(sb.ToString());
@@ -566,15 +574,14 @@ namespace Quantumart.QPublishing.Database
         {
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
-            var nolock = DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
             var on = DatabaseType == DatabaseType.SqlServer ? " = 1" : "";
             sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
             sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
             sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
             sb.Append($" n.template_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url");
-            sb.Append($" FROM notifications AS n {nolock}");
-            sb.Append($" INNER JOIN content AS c {nolock} ON c.content_id = n.content_id");
-            sb.Append($" INNER JOIN site AS s {nolock} ON c.site_id = s.site_id");
+            sb.Append($" FROM notifications AS n {NoLock}");
+            sb.Append($" INNER JOIN content AS c {NoLock} ON c.content_id = n.content_id");
+            sb.Append($" INNER JOIN site AS s {NoLock} ON c.site_id = s.site_id");
             sb.Append($" WHERE n.content_id = {contentId}");
             sb.Append($" AND n.{notificationOn}{on}");
 
