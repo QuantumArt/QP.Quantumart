@@ -319,7 +319,10 @@ namespace Quantumart.QPublishing.Database
             return model;
         }
 
-        private void ProcessFields(ICollection<KeyValuePair<string, object>> collection, Dictionary<string, ContentItemValue> fields, int recursionLevel)
+        private void ProcessFields(ICollection<KeyValuePair<string, object>> collection,
+            Dictionary<string, ContentItemValue> fields,
+            int recursionLevel
+        )
         {
             if (recursionLevel > RecursionLevelLimit)
             {
@@ -328,75 +331,123 @@ namespace Quantumart.QPublishing.Database
 
             recursionLevel++;
 
-            foreach (KeyValuePair<string,ContentItemValue> field in fields.Where(x => !x.Key.Equals("parent", StringComparison.OrdinalIgnoreCase)))
+            foreach (KeyValuePair<string,ContentItemValue> field in fields
+               .Where(x => !x.Key.Equals("parent", StringComparison.OrdinalIgnoreCase))
+            )
             {
                 switch (field.Value.ItemType)
                 {
                     case AttributeType.Relation:
-
-                        if (string.IsNullOrEmpty(field.Value.Data))
-                        {
-                            collection.Add(new(field.Key, default));
-                        }
-
-                        if (!int.TryParse(field.Value.Data, out int id))
-                        {
-                            _logger.Warn("Unable to parse relation {RelationName} value {RelationId} as int. Skipping it", field.Key, field.Value.Data);
-                            continue;
-                        }
-
-                        try
-                        {
-                            collection.Add(new(field.Key, BuildObjectModelFromArticle(id, recursionLevel)));
-                        }
-                        catch (Exception e)
-                        {
-                            if (e.Message.StartsWith("Article is not found"))
-                            {
-                                continue;
-                            }
-
-                            throw;
-                        }
-
+                        ProcessSimpleRelationField(collection, field.Key, field.Value.Data, recursionLevel);
                         break;
                     case AttributeType.M2ORelation:
-                        if (field.Value.LinkedItems.Count == 0)
-                        {
-                            continue;
-                        }
-
-                        List<object> internalCollection = field.Value.LinkedItems.Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel)).ToList();
-                        collection.Add(new(field.Key, internalCollection));
+                        ProcessManyToManyRelationField(collection,
+                            field.Key,
+                            field.Value.LinkedItems,
+                            recursionLevel
+                        );
                         break;
                     case AttributeType.Numeric:
-                        if (field.Value.IsClassifier)
-                        {
-                            if (!int.TryParse(field.Value.Data, out int contentId))
-                            {
-                                _logger.Warn("Unable to parse classifier id value {ClassifierId} as int. Skipping it", field.Value.Data);
-                                continue;
-                            }
-
-                            int? item = GetClassifierData(contentId, field.Value.ClassifierBaseArticle);
-
-                            if (!item.HasValue)
-                            {
-                                continue;
-                            }
-
-                            ContentItem classifier = ContentItem.Read(item.Value, this);
-                            ProcessFields(collection, classifier.FieldValues, recursionLevel);
-                        }
-                        else
-                        {
-                            collection.Add(new(field.Key, field.Value.Data));
-                        }
+                        ProcessNumericField(collection,
+                            field.Key,
+                            field.Value.Data,
+                            field.Value.IsClassifier,
+                            field.Value.ClassifierBaseArticle,
+                            recursionLevel
+                        );
                         break;
                     default:
                         collection.Add(new(field.Key, field.Value.Data));
                         break;
                 }
+            }
+        }
+
+        private void ProcessNumericField(ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            string value,
+            bool isClassifier,
+            int baseArticleId,
+            int recursionLevel)
+        {
+            if (!isClassifier)
+            {
+                collection.Add(new(key, value));
+
+                return;
+            }
+
+            if (!int.TryParse(value, out int contentId))
+            {
+                _logger.Warn("Unable to parse classifier id value {ClassifierId} as int. Skipping it",
+                    value);
+
+                return;
+            }
+
+            int? item = GetClassifierData(contentId, baseArticleId);
+
+            if (!item.HasValue)
+            {
+                return;
+            }
+
+            ContentItem classifier = ContentItem.Read(item.Value, this);
+            ProcessFields(collection, classifier.FieldValues, recursionLevel);
+        }
+
+        private void ProcessManyToManyRelationField(
+            ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            IReadOnlyCollection<int> values,
+            int recursionLevel
+        )
+        {
+            if (values.Count == 0)
+            {
+                return;
+            }
+
+            List<object> internalCollection = values
+               .Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel))
+               .ToList();
+            collection.Add(new(key, internalCollection));
+        }
+
+        private void ProcessSimpleRelationField(ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            string value,
+            int recursionLevel
+        )
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                collection.Add(new(key, default));
+
+                return;
+            }
+
+            if (!int.TryParse(value, out int id))
+            {
+                _logger.Warn("Unable to parse relation {RelationName} value {RelationId} as int. Skipping it",
+                    key,
+                    value);
+
+                return;
+            }
+
+            try
+            {
+                collection.Add(new(key, BuildObjectModelFromArticle(id, recursionLevel)));
+            }
+            catch (Exception e)
+            {
+                if (e.Message.StartsWith("Article is not found"))
+                {
+                    return;
+                }
+
+                throw;
             }
         }
 
