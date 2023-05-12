@@ -23,7 +23,7 @@ namespace Quantumart.QPublishing.Database
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
-        private const int RecursionLevelLimit = 2;
+        private const int RecursionLevelLimit = 1;
 
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
@@ -228,6 +228,7 @@ namespace Quantumart.QPublishing.Database
                                     IMailRenderService renderer = new FluidBaseMailRenderService();
                                     (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
                                     object model = BuildObjectModelFromArticle(contentItemId);
+                                    AddUserInfoToModel(notifyRow, model);
                                     mailMess.Subject = renderer.RenderText(subjectTemplate, model);
                                     mailMess.Body = renderer.RenderText(bodyTemplate, model);
                                 }
@@ -262,6 +263,33 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        private void AddUserInfoToModel(DataRow notification, dynamic model)
+        {
+            object userId = notification["USER_ID"];
+
+            if (ReferenceEquals(userId, DBNull.Value))
+            {
+                return;
+            }
+
+            StringBuilder stringBuilder = new();
+            stringBuilder.Append("select u.first_name, u.last_name");
+            stringBuilder.Append(" from users as u");
+            stringBuilder.Append($" where user_id = {userId}");
+
+            DataTable userData = GetCachedData(stringBuilder.ToString());
+
+            if (userData.Rows.Count == 0)
+            {
+                return;
+            }
+
+            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+
+            collection.Add(new("RecipientFirstName", userData.Rows[0]["first_name"]));
+            collection.Add(new("RecipientLastName", userData.Rows[0]["last_name"]));
+        }
+
         private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0)
         {
             if (recursionLevel > RecursionLevelLimit)
@@ -269,9 +297,12 @@ namespace Quantumart.QPublishing.Database
                 return default;
             }
 
-            recursionLevel++;
-
             ContentItem article = ContentItem.Read(contentItemId, this);
+
+            if (article.Archive)
+            {
+                return default;
+            }
 
             dynamic model = new ExpandoObject();
             ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
@@ -283,7 +314,21 @@ namespace Quantumart.QPublishing.Database
             collection.Add(new(nameof(article.StatusName), article.StatusName));
             collection.Add(new(nameof(article.LastModifiedBy), article.LastModifiedBy));
 
-            foreach (KeyValuePair<string,ContentItemValue> field in article.FieldValues)
+            ProcessFields(collection, article.FieldValues, recursionLevel);
+
+            return model;
+        }
+
+        private void ProcessFields(ICollection<KeyValuePair<string, object>> collection, Dictionary<string, ContentItemValue> fields, int recursionLevel)
+        {
+            if (recursionLevel > RecursionLevelLimit)
+            {
+                return;
+            }
+
+            recursionLevel++;
+
+            foreach (KeyValuePair<string,ContentItemValue> field in fields.Where(x => !x.Key.Equals("parent", StringComparison.OrdinalIgnoreCase)))
             {
                 switch (field.Value.ItemType)
                 {
@@ -291,7 +336,7 @@ namespace Quantumart.QPublishing.Database
 
                         if (string.IsNullOrEmpty(field.Value.Data))
                         {
-                            continue;
+                            collection.Add(new(field.Key, default));
                         }
 
                         if (!int.TryParse(field.Value.Data, out int id))
@@ -324,18 +369,35 @@ namespace Quantumart.QPublishing.Database
                         List<object> internalCollection = field.Value.LinkedItems.Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel)).ToList();
                         collection.Add(new(field.Key, internalCollection));
                         break;
+                    case AttributeType.Numeric:
+                        if (field.Value.IsClassifier)
+                        {
+                            if (!int.TryParse(field.Value.Data, out int contentId))
+                            {
+                                _logger.Warn("Unable to parse classifier id value {ClassifierId} as int. Skipping it", field.Value.Data);
+                                continue;
+                            }
+
+                            int? item = GetClassifierData(contentId, field.Value.ClassifierBaseArticle);
+
+                            if (!item.HasValue)
+                            {
+                                continue;
+                            }
+
+                            ContentItem classifier = ContentItem.Read(item.Value, this);
+                            ProcessFields(collection, classifier.FieldValues, recursionLevel);
+                        }
+                        else
+                        {
+                            collection.Add(new(field.Key, field.Value.Data));
+                        }
+                        break;
                     default:
                         collection.Add(new(field.Key, field.Value.Data));
                         break;
                 }
             }
-
-            // foreach (ContentItem aggregatedItem in article.AggregatedItems)
-            // {
-            //
-            // }
-
-            return model;
         }
 
         private (string, string) GetTemplate(int templateId)
@@ -434,6 +496,19 @@ namespace Quantumart.QPublishing.Database
         {
             var liveString = isLive ? "1" : "0";
             return $"{GetSiteUrl(siteId, isLive)}{DbConnectorSettings.RelNotifyUrl}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
+        }
+
+        private int? GetClassifierData(int contentId, int parentId)
+        {
+            StringBuilder sb = new();
+            string noLock = DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
+            sb.Append("select c.content_item_id");
+            sb.Append($" from content_{contentId} as c {noLock}");
+            sb.Append($" where c.parent = {parentId}");
+
+            DataTable data = GetCachedData(sb.ToString());
+
+            return data.Rows.Count == 0 ? null : GetNumInt(data.Rows[0]["content_item_id"]);
         }
 
         private DataTable GetNotificationsTable(string notificationOn, int contentItemId, int[] notificationIds)
