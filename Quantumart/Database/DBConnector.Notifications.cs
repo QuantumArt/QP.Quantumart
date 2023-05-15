@@ -251,7 +251,7 @@ namespace Quantumart.QPublishing.Database
 
                                 SendMail(mailMess);
 
-                                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers + string.Empty))
+                                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers))
                                 {
                                     ProcessData(strSqlRegisterNotifyForUsers);
                                 }
@@ -301,7 +301,7 @@ namespace Quantumart.QPublishing.Database
             return userData.Rows.Count == 0 ? null : userData.Rows[0];
         }
 
-        private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0)
+        private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0, int? parentId = null)
         {
             if (recursionLevel > RecursionLevelLimit)
             {
@@ -325,14 +325,16 @@ namespace Quantumart.QPublishing.Database
             collection.Add(new(nameof(article.StatusName), article.StatusName));
             collection.Add(new(nameof(article.LastModifiedBy), article.LastModifiedBy));
 
-            ProcessFields(collection, article.FieldValues, recursionLevel);
+            ProcessFields(collection, article.FieldValues, recursionLevel, article.Id, parentId);
 
             return model;
         }
 
         private void ProcessFields(ICollection<KeyValuePair<string, object>> collection,
             Dictionary<string, ContentItemValue> fields,
-            int recursionLevel
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
         )
         {
             if (recursionLevel > RecursionLevelLimit)
@@ -342,20 +344,20 @@ namespace Quantumart.QPublishing.Database
 
             recursionLevel++;
 
-            foreach (KeyValuePair<string,ContentItemValue> field in fields
-               .Where(x => !x.Key.Equals("parent", StringComparison.OrdinalIgnoreCase))
-            )
+            foreach (KeyValuePair<string,ContentItemValue> field in fields)
             {
                 switch (field.Value.ItemType)
                 {
                     case AttributeType.Relation:
-                        ProcessSimpleRelationField(collection, field.Key, field.Value.Data, recursionLevel);
+                        ProcessSimpleRelationField(collection, field.Key, field.Value.Data, recursionLevel, currentArticleId, parentId);
                         break;
                     case AttributeType.M2ORelation:
                         ProcessManyToManyRelationField(collection,
                             field.Key,
                             field.Value.LinkedItems,
-                            recursionLevel
+                            recursionLevel,
+                            currentArticleId,
+                            parentId
                         );
                         break;
                     case AttributeType.Numeric:
@@ -404,14 +406,16 @@ namespace Quantumart.QPublishing.Database
             }
 
             ContentItem classifier = ContentItem.Read(item.Value, this);
-            ProcessFields(collection, classifier.FieldValues, recursionLevel);
+            ProcessFields(collection, classifier.FieldValues, recursionLevel, baseArticleId, baseArticleId);
         }
 
         private void ProcessManyToManyRelationField(
             ICollection<KeyValuePair<string, object>> collection,
             string key,
             IReadOnlyCollection<int> values,
-            int recursionLevel
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
         )
         {
             if (values.Count == 0)
@@ -419,8 +423,13 @@ namespace Quantumart.QPublishing.Database
                 return;
             }
 
+            if (parentId.HasValue && values.Contains(parentId.Value))
+            {
+                return;
+            }
+
             List<object> internalCollection = values
-               .Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel))
+               .Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel, currentArticleId))
                .ToList();
             collection.Add(new(key, internalCollection));
         }
@@ -428,7 +437,9 @@ namespace Quantumart.QPublishing.Database
         private void ProcessSimpleRelationField(ICollection<KeyValuePair<string, object>> collection,
             string key,
             string value,
-            int recursionLevel
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
         )
         {
             if (string.IsNullOrEmpty(value))
@@ -447,9 +458,14 @@ namespace Quantumart.QPublishing.Database
                 return;
             }
 
+            if (parentId == id)
+            {
+                return;
+            }
+
             try
             {
-                collection.Add(new(key, BuildObjectModelFromArticle(id, recursionLevel)));
+                collection.Add(new(key, BuildObjectModelFromArticle(id, recursionLevel, currentArticleId)));
             }
             catch (Exception e)
             {
@@ -562,14 +578,34 @@ namespace Quantumart.QPublishing.Database
 
         private int? GetClassifierData(int contentId, int parentId)
         {
+            string parentFieldName = GetClassifierParentFieldName(contentId);
+
             StringBuilder sb = new();
             sb.Append("select c.content_item_id");
             sb.Append($" from content_{contentId} as c {NoLock}");
-            sb.Append($" where c.parent = {parentId}");
+            sb.Append($" where c.{parentFieldName} = {parentId}");
 
             DataTable data = GetCachedData(sb.ToString());
 
             return data.Rows.Count == 0 ? null : GetNumInt(data.Rows[0]["content_item_id"]);
+        }
+
+        private string GetClassifierParentFieldName(int contentId)
+        {
+            StringBuilder sb = new();
+            sb.Append("select a.attribute_name");
+            sb.Append($" from content_attribute as a {NoLock}");
+            sb.Append($" where a.content_id = {contentId}");
+            sb.Append(" and a.aggregated = true");
+
+            DataTable data = GetCachedData(sb.ToString());
+
+            if (data.Rows.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return (string)data.Rows[0]["attribute_name"];
         }
 
         private DataTable GetNotificationsTable(string notificationOn, int contentItemId, int[] notificationIds)
