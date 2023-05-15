@@ -10,7 +10,7 @@ namespace Quantumart.QPublishing.Info
 
         internal bool IsClassifier { get; set; }
 
-        internal int ClassifierBaseArticle { get; set; }
+        internal int BaseArticleId { get; set; }
 
         public HashSet<int> LinkedItems { get; internal set; }
 

@@ -24,6 +24,8 @@ namespace Quantumart.QPublishing.Database
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
         private const int RecursionLevelLimit = 1;
+        private const string FirstNameField = "first_name";
+        private const string LastNameField = "last_name";
 
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
@@ -32,7 +34,7 @@ namespace Quantumart.QPublishing.Database
 
         public Action<Exception> ExternalExceptionHandler { get; set; }
 
-        private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
+        private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : string.Empty;
 
         private void ProceedExternalNotification(int id, string eventName, string externalUrl, ContentItem item, bool useService)
         {
@@ -283,14 +285,14 @@ namespace Quantumart.QPublishing.Database
 
             ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
 
-            collection.Add(new("RecipientFirstName", user["first_name"]));
-            collection.Add(new("RecipientLastName", user["last_name"]));
+            collection.Add(new("RecipientFirstName", user[FirstNameField]));
+            collection.Add(new("RecipientLastName", user[LastNameField]));
         }
 
         private DataRow GetUserInfoByUserId(object userId)
         {
             StringBuilder stringBuilder = new();
-            stringBuilder.Append("select u.first_name, u.last_name");
+            stringBuilder.Append($"select u.{FirstNameField}, u.{LastNameField}");
             stringBuilder.Append($" from users as u {NoLock}");
             stringBuilder.Append($" where user_id = {userId}");
 
@@ -361,7 +363,7 @@ namespace Quantumart.QPublishing.Database
                             field.Key,
                             field.Value.Data,
                             field.Value.IsClassifier,
-                            field.Value.ClassifierBaseArticle,
+                            field.Value.BaseArticleId,
                             recursionLevel
                         );
                         break;

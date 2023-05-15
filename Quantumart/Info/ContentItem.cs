@@ -301,7 +301,7 @@ namespace Quantumart.QPublishing.Info
                     if (attr.Type == AttributeType.Numeric && attr.IsClassifier)
                     {
                         value.IsClassifier = true;
-                        value.ClassifierBaseArticle = VersionId != 0 ? VersionId : Id;
+                        value.BaseArticleId = VersionId != 0 ? VersionId : Id;
                         classifierIds.Add(attr.Id);
                         typeIds.Add(int.Parse(value.Data));
                     }
