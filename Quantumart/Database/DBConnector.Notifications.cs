@@ -267,6 +267,57 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        public void SendInternalNotificationBatch(int siteId, string notificationOn, int[] contentItemIds, string notificationEmail, bool isLive)
+        {
+            if (DisableInternalNotifications)
+            {
+                return;
+            }
+
+            DataTable possibleNotifications = GetNotificationsTable(notificationOn, contentItemIds.First(), null);
+            IEnumerable<DataRow> internalNotifications = possibleNotifications.Rows.Cast<DataRow>().Where(n => !(bool)n["is_external"]);
+
+            if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase)
+                || string.IsNullOrEmpty(DbConnectorSettings.MailHost)
+            )
+            {
+                throw new("Internal notifications component not configured properly");
+            }
+
+            foreach (DataRow notification in internalNotifications)
+            {
+                if (ReferenceEquals(notification["TEMPLATE_ID"], DBNull.Value) || GetNumBool(notification["NO_EMAIL"]))
+                {
+                    continue;
+                }
+
+                MailMessage mailMess = new()
+                {
+                    From = GetFromAddress(notification),
+                    IsBodyHtml = true
+                };
+
+                try
+                {
+                    IMailRenderService renderer = new FluidBaseMailRenderService();
+                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]));
+                    object[] model = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
+                    mailMess.Subject = renderer.RenderText(subjectTemplate, model);
+                    mailMess.Body = renderer.RenderText(bodyTemplate, model);
+                }
+                catch (Exception ex)
+                {
+                    mailMess.Subject = "Error while building mail message.";
+                    mailMess.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
+                    _logger.Error().Exception(ex).Message("Error while building message").Write();
+                }
+
+                //ToDo: get all mail recipients
+
+
+            }
+        }
+
         private void AddUserInfoToModel(DataRow notification, dynamic model)
         {
             object userId = notification["USER_ID"];
