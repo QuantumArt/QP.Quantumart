@@ -35,6 +35,7 @@ namespace Quantumart.QPublishing.Database
         public Action<Exception> ExternalExceptionHandler { get; set; }
 
         private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : string.Empty;
+        private string On => DatabaseType == DatabaseType.SqlServer ? " = 1" : string.Empty;
 
         private void ProceedExternalNotification(int id, string eventName, string externalUrl, ContentItem item, bool useService)
         {
@@ -662,7 +663,7 @@ namespace Quantumart.QPublishing.Database
             sb.Append("select a.attribute_name");
             sb.Append($" from content_attribute as a {NoLock}");
             sb.Append($" where a.content_id = {contentId}");
-            sb.Append(" and a.aggregated = true");
+            sb.Append($" and a.aggregated{On}");
 
             DataTable data = GetCachedData(sb.ToString());
 
@@ -678,7 +679,6 @@ namespace Quantumart.QPublishing.Database
         {
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
-            var on = DatabaseType == DatabaseType.SqlServer ? " = 1" : "";
             sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
             sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
             sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
@@ -687,7 +687,7 @@ namespace Quantumart.QPublishing.Database
             sb.Append($" INNER JOIN content AS c {NoLock} ON c.content_id = n.content_id");
             sb.Append($" INNER JOIN site AS s {NoLock} ON c.site_id = s.site_id");
             sb.Append($" WHERE n.content_id = {contentId}");
-            sb.Append($" AND n.{notificationOn}{on}");
+            sb.Append($" AND n.{notificationOn}{On}");
 
             if (notificationOn.ToLowerInvariant() == NotificationEvent.StatusChanged)
             {
