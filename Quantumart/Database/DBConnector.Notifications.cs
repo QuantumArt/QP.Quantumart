@@ -35,7 +35,7 @@ namespace Quantumart.QPublishing.Database
         public Action<Exception> ExternalExceptionHandler { get; set; }
 
         private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : string.Empty;
-        private string On => DatabaseType == DatabaseType.SqlServer ? " = 1" : "";
+        private string On => DatabaseType == DatabaseType.SqlServer ? " = 1" : string.Empty;
 
         private void ProceedExternalNotification(int id, string eventName, string externalUrl, ContentItem item, bool useService)
         {
