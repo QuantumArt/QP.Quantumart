@@ -268,66 +268,73 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        public void SendInternalNotificationBatch(string notificationOn, int[] contentItemIds, string notificationEmail)
+        public void SendInternalNotificationBatch(string notificationOn, int[] contentItemIds, string notificationEmail = null)
         {
-            if (DisableInternalNotifications)
+            try
             {
-                return;
+                if (DisableInternalNotifications)
+                {
+                    return;
+                }
+
+                if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase) || string.IsNullOrEmpty(DbConnectorSettings.MailHost)
+                )
+                {
+                    throw new("Internal notifications component not configured properly");
+                }
+
+                DataTable possibleNotifications = GetNotificationsTable(notificationOn, contentItemIds.First(), null);
+                IEnumerable<DataRow> internalNotifications = possibleNotifications.Rows.Cast<DataRow>().Where(n => !(bool)n["is_external"]);
+
+                foreach (DataRow notification in internalNotifications)
+                {
+                    if (ReferenceEquals(notification["TEMPLATE_ID"], DBNull.Value) || GetNumBool(notification["NO_EMAIL"]))
+                    {
+                        continue;
+                    }
+
+                    MailMessage mailMessage = new()
+                    {
+                        From = GetFromAddress(notification),
+                        IsBodyHtml = true
+                    };
+
+                    try
+                    {
+                        IMailRenderService renderer = new FluidBaseMailRenderService();
+                        (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]), true);
+                        object[] model = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
+                        mailMessage.Subject = renderer.RenderText(subjectTemplate, model);
+                        mailMessage.Body = renderer.RenderText(bodyTemplate, model);
+                    }
+                    catch (Exception ex)
+                    {
+                        mailMessage.Subject = "Error while building mail message.";
+                        mailMessage.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
+                        _logger.Error().Exception(ex).Message("Error while building message").Write();
+                    }
+
+                    string strSqlRegisterNotifyForUsers = string.Empty;
+
+                    SetToMail(notification,
+                        contentItemIds,
+                        notificationOn,
+                        notificationEmail,
+                        mailMessage,
+                        ref strSqlRegisterNotifyForUsers);
+
+                    SendMail(mailMessage);
+
+                    if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers))
+                    {
+                        ProcessData(strSqlRegisterNotifyForUsers);
+                    }
+                }
             }
-
-            if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase)
-                || string.IsNullOrEmpty(DbConnectorSettings.MailHost)
-            )
+            catch (Exception ex)
             {
-                throw new("Internal notifications component not configured properly");
-            }
-
-            DataTable possibleNotifications = GetNotificationsTable(notificationOn, contentItemIds.First(), null);
-            IEnumerable<DataRow> internalNotifications = possibleNotifications.Rows.Cast<DataRow>().Where(n => !(bool)n["is_external"]);
-
-            foreach (DataRow notification in internalNotifications)
-            {
-                if (ReferenceEquals(notification["TEMPLATE_ID"], DBNull.Value) || GetNumBool(notification["NO_EMAIL"]))
-                {
-                    continue;
-                }
-
-                MailMessage mailMessage = new()
-                {
-                    From = GetFromAddress(notification),
-                    IsBodyHtml = true
-                };
-
-                try
-                {
-                    IMailRenderService renderer = new FluidBaseMailRenderService();
-                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]), true);
-                    object[] model = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
-                    mailMessage.Subject = renderer.RenderText(subjectTemplate, model);
-                    mailMessage.Body = renderer.RenderText(bodyTemplate, model);
-                }
-                catch (Exception ex)
-                {
-                    mailMessage.Subject = "Error while building mail message.";
-                    mailMessage.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
-                    _logger.Error().Exception(ex).Message("Error while building message").Write();
-                }
-
-                string strSqlRegisterNotifyForUsers = string.Empty;
-
-                SetToMail(notification,
-                    contentItemIds,
-                    notificationOn,
-                    notificationEmail,
-                    mailMessage,
-                    ref strSqlRegisterNotifyForUsers);
-
-                SendMail(mailMessage);
-
-                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers))
-                {
-                    ProcessData(strSqlRegisterNotifyForUsers);
-                }
+                InternalExceptionHandler(ex, "SendInternalNotificationBatch", null);
+                ExternalExceptionHandler?.Invoke(ex);
             }
         }
 
