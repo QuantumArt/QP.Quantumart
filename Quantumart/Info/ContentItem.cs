@@ -281,10 +281,10 @@ namespace Quantumart.QPublishing.Info
 
             foreach (DataRow dr in dt.Rows)
             {
-                var attr = _dbConnector.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
+                ContentAttribute attr = _dbConnector.GetContentAttributeObject((int)(decimal)dr["ATTRIBUTE_ID"]);
                 if (FieldValues.ContainsKey(attr.Name))
                 {
-                    var value = FieldValues[attr.Name];
+                    ContentItemValue value = FieldValues[attr.Name];
                     value.Data = dr["DATA"].ToString();
 
                     if (RestrictedFieldValues.ContainsKey(attr.Name))
@@ -300,6 +300,8 @@ namespace Quantumart.QPublishing.Info
 
                     if (attr.Type == AttributeType.Numeric && attr.IsClassifier)
                     {
+                        value.IsClassifier = true;
+                        value.BaseArticleId = VersionId != 0 ? VersionId : Id;
                         classifierIds.Add(attr.Id);
                         typeIds.Add(int.Parse(value.Data));
                     }
@@ -312,8 +314,10 @@ namespace Quantumart.QPublishing.Info
                                 ? GetRealRelatedItems(attr.BackRelation.ContentId, attr.BackRelation.Name)
                                 : GetRealLinkedItems(attr.LinkId ?? 0));
 
-                        value.LinkedItems = new HashSet<int>(items);
+                        value.LinkedItems = new(items);
                     }
+
+                    value.ItemType = attr.Type == AttributeType.Relation && attr.LinkId.HasValue ? AttributeType.M2ORelation : attr.Type;
                 }
             }
 

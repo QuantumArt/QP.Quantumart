@@ -23,12 +23,19 @@ namespace Quantumart.QPublishing.Database
     {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
+        private const int RecursionLevelLimit = 1;
+        private const string FirstNameField = "first_name";
+        private const string LastNameField = "last_name";
+
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
 
         public bool DisableInternalNotifications { get; set; }
 
         public Action<Exception> ExternalExceptionHandler { get; set; }
+
+        private string NoLock => DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : string.Empty;
+        private string On => DatabaseType == DatabaseType.SqlServer ? " = 1" : string.Empty;
 
         private void ProceedExternalNotification(int id, string eventName, string externalUrl, ContentItem item, bool useService)
         {
@@ -226,12 +233,14 @@ namespace Quantumart.QPublishing.Database
                                     IMailRenderService renderer = new FluidBaseMailRenderService();
                                     (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
                                     object model = BuildObjectModelFromArticle(contentItemId);
+                                    AddUserInfoToModel(notifyRow, model);
                                     mailMess.Subject = renderer.RenderText(subjectTemplate, model);
                                     mailMess.Body = renderer.RenderText(bodyTemplate, model);
                                 }
                                 catch (Exception ex)
                                 {
-                                    mailMess.Body = $"An error has occurred while building notification theme or message body. Error message: {ex.Message}";
+                                    mailMess.Subject = "Error while building mail message.";
+                                    mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
                                     _logger.Error().Exception(ex).Message("Error while building message").Write();
                                     doAttachFiles = false;
                                 }
@@ -243,7 +252,7 @@ namespace Quantumart.QPublishing.Database
 
                                 SendMail(mailMess);
 
-                                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers + string.Empty))
+                                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers))
                                 {
                                     ProcessData(strSqlRegisterNotifyForUsers);
                                 }
@@ -259,9 +268,53 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private object BuildObjectModelFromArticle(int contentItemId)
+        private void AddUserInfoToModel(DataRow notification, dynamic model)
         {
+            object userId = notification["USER_ID"];
+
+            if (ReferenceEquals(userId, DBNull.Value))
+            {
+                return;
+            }
+
+            DataRow user = GetUserInfoByUserId(userId);
+
+            if (user is null)
+            {
+                return;
+            }
+
+            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+
+            collection.Add(new("RecipientFirstName", user[FirstNameField]));
+            collection.Add(new("RecipientLastName", user[LastNameField]));
+        }
+
+        private DataRow GetUserInfoByUserId(object userId)
+        {
+            StringBuilder stringBuilder = new();
+            stringBuilder.Append($"select u.{FirstNameField}, u.{LastNameField}");
+            stringBuilder.Append($" from users as u {NoLock}");
+            stringBuilder.Append($" where user_id = {userId}");
+
+            DataTable userData = GetCachedData(stringBuilder.ToString());
+
+            return userData.Rows.Count == 0 ? null : userData.Rows[0];
+        }
+
+        private object BuildObjectModelFromArticle(int contentItemId, int recursionLevel = 0, int? parentId = null)
+        {
+            if (recursionLevel > RecursionLevelLimit)
+            {
+                return default;
+            }
+
             ContentItem article = ContentItem.Read(contentItemId, this);
+
+            if (article.Archive)
+            {
+                return default;
+            }
 
             dynamic model = new ExpandoObject();
             ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
@@ -273,12 +326,157 @@ namespace Quantumart.QPublishing.Database
             collection.Add(new(nameof(article.StatusName), article.StatusName));
             collection.Add(new(nameof(article.LastModifiedBy), article.LastModifiedBy));
 
-            foreach (KeyValuePair<string,ContentItemValue> field in article.FieldValues)
-            {
-                collection.Add(new(field.Key, field.Value.Data));
-            }
+            ProcessFields(collection, article.FieldValues, recursionLevel, article.Id, parentId);
 
             return model;
+        }
+
+        private void ProcessFields(ICollection<KeyValuePair<string, object>> collection,
+            Dictionary<string, ContentItemValue> fields,
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
+        )
+        {
+            if (recursionLevel > RecursionLevelLimit)
+            {
+                return;
+            }
+
+            recursionLevel++;
+
+            foreach (KeyValuePair<string,ContentItemValue> field in fields)
+            {
+                switch (field.Value.ItemType)
+                {
+                    case AttributeType.Relation:
+                        ProcessSimpleRelationField(collection, field.Key, field.Value.Data, recursionLevel, currentArticleId, parentId);
+                        break;
+                    case AttributeType.M2ORelation:
+                        ProcessManyToManyRelationField(collection,
+                            field.Key,
+                            field.Value.LinkedItems,
+                            recursionLevel,
+                            currentArticleId,
+                            parentId
+                        );
+                        break;
+                    case AttributeType.Numeric:
+                        ProcessNumericField(collection,
+                            field.Key,
+                            field.Value.Data,
+                            field.Value.IsClassifier,
+                            field.Value.BaseArticleId,
+                            recursionLevel
+                        );
+                        break;
+                    default:
+                        collection.Add(new(field.Key, field.Value.Data));
+                        break;
+                }
+            }
+        }
+
+        private void ProcessNumericField(ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            string value,
+            bool isClassifier,
+            int baseArticleId,
+            int recursionLevel)
+        {
+            if (!isClassifier)
+            {
+                collection.Add(new(key, value));
+
+                return;
+            }
+
+            if (!int.TryParse(value, out int contentId))
+            {
+                _logger.Warn("Unable to parse classifier id value {ClassifierId} as int. Skipping it",
+                    value);
+
+                return;
+            }
+
+            int? item = GetClassifierData(contentId, baseArticleId);
+
+            if (!item.HasValue)
+            {
+                return;
+            }
+
+            ContentItem classifier = ContentItem.Read(item.Value, this);
+            ProcessFields(collection, classifier.FieldValues, recursionLevel, baseArticleId, baseArticleId);
+        }
+
+        private void ProcessManyToManyRelationField(
+            ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            IReadOnlyCollection<int> values,
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
+        )
+        {
+            if (values.Count == 0)
+            {
+                return;
+            }
+
+            if (parentId.HasValue && values.Contains(parentId.Value))
+            {
+                return;
+            }
+
+            List<object> internalCollection = values
+               .Select(linkedItem => BuildObjectModelFromArticle(linkedItem, recursionLevel, currentArticleId))
+               .ToList();
+            collection.Add(new(key, internalCollection));
+        }
+
+        private void ProcessSimpleRelationField(ICollection<KeyValuePair<string, object>> collection,
+            string key,
+            string value,
+            int recursionLevel,
+            int currentArticleId,
+            int? parentId
+        )
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                collection.Add(new(key, default));
+
+                return;
+            }
+
+            if (!int.TryParse(value, out int id))
+            {
+                _logger.Warn("Unable to parse relation {RelationName} value {RelationId} as int. Skipping it",
+                    key,
+                    value);
+
+                return;
+            }
+
+            if (parentId == id)
+            {
+                return;
+            }
+
+            try
+            {
+                collection.Add(new(key, BuildObjectModelFromArticle(id, recursionLevel, currentArticleId)));
+            }
+            catch (Exception e)
+            {
+                if (e.Message.StartsWith("Article is not found"))
+                {
+                    return;
+                }
+
+                throw;
+            }
         }
 
         private (string, string) GetTemplate(int templateId)
@@ -379,21 +577,51 @@ namespace Quantumart.QPublishing.Database
             return $"{GetSiteUrl(siteId, isLive)}{DbConnectorSettings.RelNotifyUrl}?id={contentItemId}&target={notificationOn}&email={notificationEmail}&is_live={liveString}";
         }
 
+        private int? GetClassifierData(int contentId, int parentId)
+        {
+            string parentFieldName = GetClassifierParentFieldName(contentId);
+
+            StringBuilder sb = new();
+            sb.Append("select c.content_item_id");
+            sb.Append($" from content_{contentId} as c {NoLock}");
+            sb.Append($" where c.{parentFieldName} = {parentId}");
+
+            DataTable data = GetCachedData(sb.ToString());
+
+            return data.Rows.Count == 0 ? null : GetNumInt(data.Rows[0]["content_item_id"]);
+        }
+
+        private string GetClassifierParentFieldName(int contentId)
+        {
+            StringBuilder sb = new();
+            sb.Append("select a.attribute_name");
+            sb.Append($" from content_attribute as a {NoLock}");
+            sb.Append($" where a.content_id = {contentId}");
+            sb.Append($" and a.aggregated{On}");
+
+            DataTable data = GetCachedData(sb.ToString());
+
+            if (data.Rows.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return (string)data.Rows[0]["attribute_name"];
+        }
+
         private DataTable GetNotificationsTable(string notificationOn, int contentItemId, int[] notificationIds)
         {
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
-            var nolock = DatabaseType == DatabaseType.SqlServer ? " with(nolock) " : "";
-            var on = DatabaseType == DatabaseType.SqlServer ? " = 1" : "";
             sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
             sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
             sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
             sb.Append($" n.template_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url");
-            sb.Append($" FROM notifications AS n {nolock}");
-            sb.Append($" INNER JOIN content AS c {nolock} ON c.content_id = n.content_id");
-            sb.Append($" INNER JOIN site AS s {nolock} ON c.site_id = s.site_id");
+            sb.Append($" FROM notifications AS n {NoLock}");
+            sb.Append($" INNER JOIN content AS c {NoLock} ON c.content_id = n.content_id");
+            sb.Append($" INNER JOIN site AS s {NoLock} ON c.site_id = s.site_id");
             sb.Append($" WHERE n.content_id = {contentId}");
-            sb.Append($" AND n.{notificationOn}{on}");
+            sb.Append($" AND n.{notificationOn}{On}");
 
             if (notificationOn.ToLowerInvariant() == NotificationEvent.StatusChanged)
             {
