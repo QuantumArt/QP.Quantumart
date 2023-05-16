@@ -216,7 +216,7 @@ namespace Quantumart.QPublishing.Database
 
                                 SetToMail(
                                     notifyRow,
-                                    contentItemId,
+                                    new[] { contentItemId },
                                     notificationOn,
                                     notificationEmail,
                                     mailMess,
@@ -267,15 +267,12 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        public void SendInternalNotificationBatch(int siteId, string notificationOn, int[] contentItemIds, string notificationEmail, bool isLive)
+        public void SendInternalNotificationBatch(string notificationOn, int[] contentItemIds, string notificationEmail)
         {
             if (DisableInternalNotifications)
             {
                 return;
             }
-
-            DataTable possibleNotifications = GetNotificationsTable(notificationOn, contentItemIds.First(), null);
-            IEnumerable<DataRow> internalNotifications = possibleNotifications.Rows.Cast<DataRow>().Where(n => !(bool)n["is_external"]);
 
             if (string.Equals(DbConnectorSettings.MailComponent, "qa_mail", StringComparison.InvariantCultureIgnoreCase)
                 || string.IsNullOrEmpty(DbConnectorSettings.MailHost)
@@ -284,6 +281,9 @@ namespace Quantumart.QPublishing.Database
                 throw new("Internal notifications component not configured properly");
             }
 
+            DataTable possibleNotifications = GetNotificationsTable(notificationOn, contentItemIds.First(), null);
+            IEnumerable<DataRow> internalNotifications = possibleNotifications.Rows.Cast<DataRow>().Where(n => !(bool)n["is_external"]);
+
             foreach (DataRow notification in internalNotifications)
             {
                 if (ReferenceEquals(notification["TEMPLATE_ID"], DBNull.Value) || GetNumBool(notification["NO_EMAIL"]))
@@ -291,7 +291,7 @@ namespace Quantumart.QPublishing.Database
                     continue;
                 }
 
-                MailMessage mailMess = new()
+                MailMessage mailMessage = new()
                 {
                     From = GetFromAddress(notification),
                     IsBodyHtml = true
@@ -300,21 +300,33 @@ namespace Quantumart.QPublishing.Database
                 try
                 {
                     IMailRenderService renderer = new FluidBaseMailRenderService();
-                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]));
+                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]), true);
                     object[] model = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
-                    mailMess.Subject = renderer.RenderText(subjectTemplate, model);
-                    mailMess.Body = renderer.RenderText(bodyTemplate, model);
+                    mailMessage.Subject = renderer.RenderText(subjectTemplate, model);
+                    mailMessage.Body = renderer.RenderText(bodyTemplate, model);
                 }
                 catch (Exception ex)
                 {
-                    mailMess.Subject = "Error while building mail message.";
-                    mailMess.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
+                    mailMessage.Subject = "Error while building mail message.";
+                    mailMessage.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
                     _logger.Error().Exception(ex).Message("Error while building message").Write();
                 }
 
-                //ToDo: get all mail recipients
+                string strSqlRegisterNotifyForUsers = string.Empty;
 
+                SetToMail(notification,
+                    contentItemIds,
+                    notificationOn,
+                    notificationEmail,
+                    mailMessage,
+                    ref strSqlRegisterNotifyForUsers);
 
+                SendMail(mailMessage);
+
+                if (!string.IsNullOrEmpty(strSqlRegisterNotifyForUsers))
+                {
+                    ProcessData(strSqlRegisterNotifyForUsers);
+                }
             }
         }
 
@@ -529,8 +541,11 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private (string, string) GetTemplate(int templateId)
+        private (string, string) GetTemplate(int templateId, bool multipleArticles = false)
         {
+            string subjectTemplateFieldName = multipleArticles ? "SingleArticleMessageSubjectTemplate" : "MultiArticleMessageSubjectTemplate";
+            string bodyTemplateFieldName = multipleArticles ? "SingleArticleMessageBodyTemplate" : "MultiArticleMessageBodyTemplate";
+
             ContentItem result = ContentItem.Read(templateId, this);
 
             if (result == null)
@@ -540,10 +555,10 @@ namespace Quantumart.QPublishing.Database
 
             return (
                 result.FieldValues
-                   .Where(x => x.Key == "SingleArticleMessageSubjectTemplate")
+                   .Where(x => x.Key == subjectTemplateFieldName)
                    .Select(x => x.Value.Data).Single(),
                 result.FieldValues
-                   .Where(x => x.Key == "SingleArticleMessageBodyTemplate")
+                   .Where(x => x.Key == bodyTemplateFieldName)
                    .Select(x => x.Value.Data).Single());
         }
 
@@ -689,7 +704,7 @@ namespace Quantumart.QPublishing.Database
             return GetCachedData(sb.ToString());
         }
 
-        private DataTable GetRecipientTable(DataRow notifyRow, int contentItemId)
+        private DataTable GetRecipientTable(DataRow notifyRow, int[] contentItemIds)
         {
             var userId = notifyRow["USER_ID"];
             var groupId = notifyRow["GROUP_ID"];
@@ -706,17 +721,17 @@ namespace Quantumart.QPublishing.Database
             }
             else if (!ReferenceEquals(eMailAttrId, DBNull.Value))
             {
-                strSql = $"SELECT DATA AS EMAIL, NULL AS USER_ID FROM content_data WHERE content_item_id = @itemId AND attribute_id = {eMailAttrId}";
+                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID FROM content_data WHERE content_item_id in ({string.Join(",", contentItemIds)}) AND attribute_id = {eMailAttrId}";
             }
             else
             {
-                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id={contentItemId}";
+                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id in ({string.Join(",", contentItemIds)})";
             }
 
             return GetCachedData(strSql);
         }
 
-        private static string GetSqlRegisterNotificationsForUsers(DataTable toTable, int contentItemId, int notificationId, string notificationOn)
+        private static string GetSqlRegisterNotificationsForUsers(DataTable toTable, int[] contentItemIds, int notificationId, string notificationOn)
         {
             var sb = new StringBuilder();
             sb.AppendLine();
@@ -726,7 +741,10 @@ namespace Quantumart.QPublishing.Database
                 {
                     if (!ReferenceEquals(dr["USER_ID"], DBNull.Value))
                     {
-                        sb.AppendFormat($"INSERT INTO notifications_sent VALUES ({dr["USER_ID"]}, {notificationId}, {contentItemId}, DEFAULT, '{notificationOn.ToLower()}')");
+                        foreach (int contentItemId in contentItemIds)
+                        {
+                            sb.AppendFormat($"INSERT INTO notifications_sent VALUES ({dr["USER_ID"]}, {notificationId}, {contentItemId}, DEFAULT, '{notificationOn.ToLower()}')");
+                        }
                     }
                 }
             }
@@ -836,7 +854,7 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private void SetToMail(DataRow notifyRow, int contentItemId, string notificationOn, string notificationEmail, MailMessage mailMess, ref string strSqlRegisterNotificationsForUsers)
+        private void SetToMail(DataRow notifyRow, int[] contentItemIds, string notificationOn, string notificationEmail, MailMessage mailMess, ref string strSqlRegisterNotificationsForUsers)
         {
             var notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
             if (notificationEmail.Length > 0)
@@ -845,9 +863,9 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-                var toTable = GetRecipientTable(notifyRow, contentItemId);
+                var toTable = GetRecipientTable(notifyRow, contentItemIds);
                 SetToMail(mailMess, toTable);
-                strSqlRegisterNotificationsForUsers = GetSqlRegisterNotificationsForUsers(toTable, contentItemId, notificationId, notificationOn);
+                strSqlRegisterNotificationsForUsers = GetSqlRegisterNotificationsForUsers(toTable, contentItemIds, notificationId, notificationOn);
             }
         }
     }
