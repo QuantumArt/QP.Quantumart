@@ -26,6 +26,10 @@ namespace Quantumart.QPublishing.Database
         private const int RecursionLevelLimit = 1;
         private const string FirstNameField = "first_name";
         private const string LastNameField = "last_name";
+        private const string SingleArticleMessageBodyFieldName = "SINGLE_ARTICLE_MESSAGE_BODY_FIELD_NAME";
+        private const string MultiArticleMessageBodyFieldName = "MULTI_ARTICLE_MESSAGE_BODY_FIELD_NAME";
+        private const string SingleArticleMessageSubjectFieldName = "SINGLE_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
+        private const string MultiArticleMessageSubjectFieldName = "MULTI_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
 
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
@@ -303,7 +307,10 @@ namespace Quantumart.QPublishing.Database
                     {
                         IMailRenderService renderer = new FluidBaseMailRenderService();
                         (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notification["TEMPLATE_ID"]), true);
-                        object[] model = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
+                        object[] articles = contentItemIds.Select(contentItemId => BuildObjectModelFromArticle(contentItemId)).ToArray();
+                        dynamic model = new ExpandoObject();
+                        ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+                        collection.Add(new("Articles", articles));
                         mailMessage.Subject = renderer.RenderText(subjectTemplate, model);
                         mailMessage.Body = renderer.RenderText(bodyTemplate, model);
                     }
@@ -551,8 +558,8 @@ namespace Quantumart.QPublishing.Database
 
         private (string, string) GetTemplate(int templateId, bool multipleArticles = false)
         {
-            string subjectTemplateFieldName = multipleArticles ? "SingleArticleMessageSubjectTemplate" : "MultiArticleMessageSubjectTemplate";
-            string bodyTemplateFieldName = multipleArticles ? "SingleArticleMessageBodyTemplate" : "MultiArticleMessageBodyTemplate";
+            string subjectTemplateFieldName = GetSettingByName<string>(multipleArticles ? MultiArticleMessageSubjectFieldName : SingleArticleMessageSubjectFieldName);
+            string bodyTemplateFieldName = GetSettingByName<string>(multipleArticles ? MultiArticleMessageBodyFieldName : SingleArticleMessageBodyFieldName);
 
             ContentItem result = ContentItem.Read(templateId, this);
 
@@ -741,7 +748,7 @@ namespace Quantumart.QPublishing.Database
         private static string GetSqlRegisterNotificationsForUsers(DataTable toTable, int[] contentItemIds, int notificationId, string notificationOn)
         {
             var sb = new StringBuilder();
-            sb.AppendLine();
+            sb.Append("INSERT INTO notifications_sent VALUES ");
             foreach (DataRow dr in toTable.Rows)
             {
                 if (!ReferenceEquals(dr["EMAIL"], DBNull.Value))
@@ -750,13 +757,13 @@ namespace Quantumart.QPublishing.Database
                     {
                         foreach (int contentItemId in contentItemIds)
                         {
-                            sb.AppendFormat($"INSERT INTO notifications_sent VALUES ({dr["USER_ID"]}, {notificationId}, {contentItemId}, DEFAULT, '{notificationOn.ToLower()}')");
+                            sb.Append($"({dr["USER_ID"]}, {notificationId}, {contentItemId}, DEFAULT, '{notificationOn.ToLower()}'),");
                         }
                     }
                 }
             }
 
-            return sb.ToString();
+            return sb.ToString().TrimEnd(',');
         }
 
         private static string ConvertToString(object obj) => obj == DBNull.Value ? "" : obj.ToString();
@@ -864,7 +871,7 @@ namespace Quantumart.QPublishing.Database
         private void SetToMail(DataRow notifyRow, int[] contentItemIds, string notificationOn, string notificationEmail, MailMessage mailMess, ref string strSqlRegisterNotificationsForUsers)
         {
             var notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
-            if (notificationEmail.Length > 0)
+            if (!string.IsNullOrWhiteSpace(notificationEmail))
             {
                 SetToMail(mailMess, notificationEmail);
             }
