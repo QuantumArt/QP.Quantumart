@@ -696,7 +696,8 @@ namespace Quantumart.QPublishing.Database
             sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
             sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
             sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
-            sb.Append($" n.template_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url");
+            sb.Append($" n.template_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url,");
+            sb.Append($" n.HIDE_RECIPIENTS");
             sb.Append($" FROM notifications AS n {NoLock}");
             sb.Append($" INNER JOIN content AS c {NoLock} ON c.content_id = n.content_id");
             sb.Append($" INNER JOIN site AS s {NoLock} ON c.site_id = s.site_id");
@@ -848,20 +849,24 @@ namespace Quantumart.QPublishing.Database
             smtpMail.Send(mailMess);
         }
 
-        private static void SetToMail(MailMessage mailMess, DataTable toTable)
+        private static void SetToMail(MailMessage mailMess, DataTable toTable, bool hideRecipients)
         {
             foreach (DataRow dr in toTable.Rows)
             {
-                SetToMail(mailMess, ConvertToString(dr["EMAIL"]));
+                SetToMail(mailMess, ConvertToString(dr["EMAIL"]), hideRecipients);
             }
         }
 
-        private static void SetToMail(MailMessage mailMess, string allEmails)
+        private static void SetToMail(MailMessage mailMess, string allEmails, bool hideRecipients)
         {
             var emails = allEmails.Split(';');
-            foreach (var email in emails)
+            foreach (string email in emails.Where(x => !string.IsNullOrWhiteSpace(x)))
             {
-                if (!string.IsNullOrEmpty(email))
+                if (hideRecipients)
+                {
+                    mailMess.Bcc.Add(new MailAddress(email));
+                }
+                else
                 {
                     mailMess.To.Add(new MailAddress(email));
                 }
@@ -870,15 +875,16 @@ namespace Quantumart.QPublishing.Database
 
         private void SetToMail(DataRow notifyRow, int[] contentItemIds, string notificationOn, string notificationEmail, MailMessage mailMess, ref string strSqlRegisterNotificationsForUsers)
         {
-            var notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
+            int notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
+            bool hideRecipients = (bool)notifyRow["HIDE_RECIPIENTS"];
             if (!string.IsNullOrWhiteSpace(notificationEmail))
             {
-                SetToMail(mailMess, notificationEmail);
+                SetToMail(mailMess, notificationEmail, hideRecipients);
             }
             else
             {
                 var toTable = GetRecipientTable(notifyRow, contentItemIds);
-                SetToMail(mailMess, toTable);
+                SetToMail(mailMess, toTable, hideRecipients);
                 strSqlRegisterNotificationsForUsers = GetSqlRegisterNotificationsForUsers(toTable, contentItemIds, notificationId, notificationOn);
             }
         }
