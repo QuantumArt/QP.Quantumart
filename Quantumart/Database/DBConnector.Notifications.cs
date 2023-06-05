@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Xml.Linq;
+using Newtonsoft.Json.Linq;
 using NLog;
 using NLog.Fluent;
 using QP.ConfigurationService.Models;
@@ -30,6 +31,7 @@ namespace Quantumart.QPublishing.Database
         private const string MultiArticleMessageBodyFieldName = "MULTI_ARTICLE_MESSAGE_BODY_FIELD_NAME";
         private const string SingleArticleMessageSubjectFieldName = "SINGLE_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
         private const string MultiArticleMessageSubjectFieldName = "MULTI_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
+        private const string NotificationReceiverContentId = "NOTIFICATION_RECEIVER_CONTENT_ID";
 
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
@@ -210,7 +212,7 @@ namespace Quantumart.QPublishing.Database
                         var strSqlRegisterNotifyForUsers = string.Empty;
                         foreach (var notifyRow in internalNotifications)
                         {
-                            if (!ReferenceEquals(notifyRow["TEMPLATE_ID"], DBNull.Value) || !GetNumBool(notifyRow["NO_EMAIL"]))
+                            if (!ReferenceEquals(notifyRow["TEMPLATE_ID"], DBNull.Value) && !GetNumBool(notifyRow["NO_EMAIL"]) && !EmailFromContentIsNotAvaliable(notifyRow))
                             {
                                 int contentId = GetNumInt(notifyRow["CONTENT_ID"]);
 
@@ -297,6 +299,11 @@ namespace Quantumart.QPublishing.Database
                         continue;
                     }
 
+                    if (UseEmailFromContent(notification))
+                    {
+                        return;
+                    }
+
                     MailMessage mailMessage = new()
                     {
                         From = GetFromAddress(notification),
@@ -347,24 +354,27 @@ namespace Quantumart.QPublishing.Database
 
         private void AddUserInfoToModel(DataRow notification, dynamic model)
         {
-            object userId = notification["USER_ID"];
-
-            if (ReferenceEquals(userId, DBNull.Value))
-            {
-                return;
-            }
-
-            DataRow user = GetUserInfoByUserId(userId);
-
-            if (user is null)
-            {
-                return;
-            }
-
             ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+            object userId = notification["USER_ID"];
+            object userData = notification["USER_DATA"];
+            
 
-            collection.Add(new("RecipientFirstName", user[FirstNameField]));
-            collection.Add(new("RecipientLastName", user[LastNameField]));
+            if (!ReferenceEquals(userId, DBNull.Value))
+            {
+                DataRow user = GetUserInfoByUserId(userId);
+
+                if (user is not null)
+                {                    
+                    collection.Add(new("RecipientFirstName", user[FirstNameField]));
+                    collection.Add(new("RecipientLastName", user[LastNameField]));
+                }
+            }
+
+            if (!ReferenceEquals(userData, DBNull.Value))
+            {
+                dynamic userForm = JObject.Parse(userData as string);
+                collection.Add(new("UserForm", userForm));
+            }
         }
 
         private DataRow GetUserInfoByUserId(object userId)
@@ -693,11 +703,12 @@ namespace Quantumart.QPublishing.Database
         {
             var contentId = GetContentIdForItem(contentItemId);
             var sb = new StringBuilder();
+
             sb.Append($" select n.NOTIFICATION_ID, n.NOTIFICATION_NAME, n.CONTENT_ID, n.FORMAT_ID, n.USER_ID, n.GROUP_ID,");
             sb.Append($" n.NOTIFY_ON_STATUS_TYPE_ID, n.EMAIL_ATTRIBUTE_ID, n.NO_EMAIL, n.SEND_FILES, n.FROM_BACKENDUSER_ID, n.FROM_BACKENDUSER,");
             sb.Append($" n.FROM_DEFAULT_NAME, n.FROM_USER_EMAIL, n.FROM_USER_NAME, n.USE_SERVICE, n.is_external,");
             sb.Append($" n.template_id, c.site_id, coalesce(n.external_url, s.external_url) as external_url,");
-            sb.Append($" n.HIDE_RECIPIENTS");
+            sb.Append($" n.HIDE_RECIPIENTS, n.USE_EMAIL_FROM_CONTENT, n.CATEGORY_ATTRIBUTE_ID");
             sb.Append($" FROM notifications AS n {NoLock}");
             sb.Append($" INNER JOIN content AS c {NoLock} ON c.content_id = n.content_id");
             sb.Append($" INNER JOIN site AS s {NoLock} ON c.site_id = s.site_id");
@@ -719,11 +730,13 @@ namespace Quantumart.QPublishing.Database
             return GetCachedData(sb.ToString());
         }
 
-        private DataTable GetRecipientTable(DataRow notifyRow, int[] contentItemIds)
+        private DataTable GetRecipientTable(DataRow notifyRow, int[] contentItemIds, int notificationId)
         {
             var userId = notifyRow["USER_ID"];
             var groupId = notifyRow["GROUP_ID"];
             var eMailAttrId = notifyRow["EMAIL_ATTRIBUTE_ID"];
+            var categoryAttrId = notifyRow["CATEGORY_ATTRIBUTE_ID"];
+            var ids = string.Join(",", contentItemIds);
 
             string strSql;
             if (!ReferenceEquals(userId, DBNull.Value))
@@ -736,11 +749,85 @@ namespace Quantumart.QPublishing.Database
             }
             else if (!ReferenceEquals(eMailAttrId, DBNull.Value))
             {
-                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID FROM content_data WHERE content_item_id in ({string.Join(",", contentItemIds)}) AND attribute_id = {eMailAttrId}";
+                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
+            }
+            else if (UseEmailFromContent(notifyRow))
+            {
+                if (ReferenceEquals(categoryAttrId, DBNull.Value))
+                {
+                    strSql = @$"
+                        SELECT
+                            r.email,
+                            NULL USER_ID,
+                            r.userData user_data
+                        FROM content_{ReceiverContentId}_united r
+                        JOIN notifications n ON r.notification = n.notification_id
+                        WHERE
+                            n.use_email_from_content{On} AND
+                            n.category_attribute_id IS NULL AND
+                            r.notification = {notificationId}";
+                }
+                else
+                {
+                    strSql = @$"
+                        SELECT
+	                        receiver_r.email,
+	                        NULL USER_ID,
+	                        receiver_r.userData user_data,
+	                        article.item_id
+                        FROM content_{ReceiverContentId}_united receiver_r
+                        JOIN notifications receiver_n ON
+	                        receiver_r.notification = receiver_n.notification_id
+                        JOIN item_to_item receiver_iti ON
+	                        receiver_r.category = receiver_iti.link_id AND
+	                        receiver_r.content_item_id = receiver_iti.l_item_id AND
+	                        not receiver_iti.is_rev
+                        JOIN content_item receiver_i on
+	                        receiver_iti.r_item_id = receiver_i.content_item_id
+                        JOIN content_attribute receiver_a on
+	                        receiver_i.content_id = receiver_a.content_id AND
+	                        receiver_a.attribute_name = 'Category'
+                        JOIN content_data receiver_d ON
+	                        receiver_d.attribute_id = receiver_a.attribute_id AND
+	                        receiver_d.content_item_id = receiver_i.content_item_id
+                        JOIN (
+		                        SELECT
+			                        article_n.notification_id,
+			                        article_iti.l_item_id item_id,
+			                        article_iti.r_item_id category_id
+		                        FROM item_to_item article_iti
+		                        JOIN content_attribute article_a on article_iti.link_id = article_a.link_id
+		                        JOIN notifications article_n on article_a.attribute_id = article_n.category_attribute_id
+		                        WHERE
+			                        article_iti.l_item_id in ({ids}) AND
+			                        article_n.use_email_from_content{On} AND
+			                        article_n.category_attribute_id IS NOT NULL
+		
+		                        UNION ALL
+
+		                        SELECT
+			                        article_n.notification_id,
+			                        article_d.content_item_id item_id,
+			                        article_d.o2m_data category_id
+		                        FROM content_data article_d
+		                        JOIN notifications article_n ON article_n.category_attribute_id = article_d.attribute_id
+		                        WHERE
+			                        article_d.content_item_id in ({ids}) AND
+			                        article_n.use_email_from_content{On} AND
+			                        article_n.category_attribute_id IS NOT NULL AND
+			                        article_d.o2m_data IS NOT NULL
+	                        ) article ON
+	                        receiver_n.notification_id = article.notification_id AND
+	                        receiver_d.o2m_data = article.category_id
+                        WHERE
+	                        receiver_n.use_email_from_content{On} AND
+	                        receiver_n.category_attribute_id IS NOT NULL AND
+	                        receiver_r.notification = {notificationId}";
+                }
             }
             else
             {
-                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id in ({string.Join(",", contentItemIds)})";
+                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id in ({ids})";
             }
 
             return GetCachedData(strSql);
@@ -873,7 +960,13 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
-        private void SetToMail(DataRow notifyRow, int[] contentItemIds, string notificationOn, string notificationEmail, MailMessage mailMess, ref string strSqlRegisterNotificationsForUsers)
+        private void SetToMail(
+            DataRow notifyRow,
+            int[] contentItemIds,
+            string notificationOn,
+            string notificationEmail,
+            MailMessage mailMess,
+            ref string strSqlRegisterNotificationsForUsers)
         {
             int notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
             bool hideRecipients = (bool)notifyRow["HIDE_RECIPIENTS"];
@@ -883,10 +976,16 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-                var toTable = GetRecipientTable(notifyRow, contentItemIds);
+                var toTable = GetRecipientTable(notifyRow, contentItemIds, notificationId);
                 SetToMail(mailMess, toTable, hideRecipients);
                 strSqlRegisterNotificationsForUsers = GetSqlRegisterNotificationsForUsers(toTable, contentItemIds, notificationId, notificationOn);
             }
         }
+
+        private int? ReceiverContentId => GetSettingByName<int?>(NotificationReceiverContentId);
+
+        private bool UseEmailFromContent(DataRow notification) => (bool)notification["USE_EMAIL_FROM_CONTENT"];
+
+        private bool EmailFromContentIsNotAvaliable(DataRow notification) => UseEmailFromContent(notification) && !ReceiverContentId.HasValue;
     }
 }
