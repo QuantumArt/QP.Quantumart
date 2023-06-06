@@ -741,15 +741,15 @@ namespace Quantumart.QPublishing.Database
             string strSql;
             if (!ReferenceEquals(userId, DBNull.Value))
             {
-                strSql = $"SELECT EMAIL, USER_ID FROM users WHERE user_id = {userId}";
+                strSql = $"SELECT EMAIL, USER_ID FROM users, NULL USER_DATA WHERE user_id = {userId}";
             }
             else if (!ReferenceEquals(groupId, DBNull.Value))
             {
-                strSql = $"SELECT U.EMAIL, U.USER_ID FROM users AS u LEFT OUTER JOIN user_group_bind AS ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
+                strSql = $"SELECT U.EMAIL, U.USER_ID, NULL USER_DATA FROM users AS u LEFT OUTER JOIN user_group_bind AS ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
             }
             else if (!ReferenceEquals(eMailAttrId, DBNull.Value))
             {
-                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
+                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID, NULL USER_DATA FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
             }
             else if (UseEmailFromContent(notifyRow))
             {
@@ -759,9 +759,9 @@ namespace Quantumart.QPublishing.Database
                         SELECT
                             r.email,
                             NULL USER_ID,
-                            r.userData user_data
-                        FROM content_{ReceiverContentId}_united r
-                        JOIN notifications n ON r.notification = n.notification_id
+                            r.userData USER_DATA
+                        FROM content_{ReceiverContentId}_united r {NoLock}
+                        JOIN notifications n {NoLock} ON r.notification = n.notification_id
                         WHERE
                             n.use_email_from_content{On} AND
                             n.category_attribute_id IS NULL AND
@@ -773,21 +773,21 @@ namespace Quantumart.QPublishing.Database
                         SELECT
 	                        receiver_r.email,
 	                        NULL USER_ID,
-	                        receiver_r.userData user_data,
+	                        receiver_r.userData USER_DATA,
 	                        article.item_id
-                        FROM content_{ReceiverContentId}_united receiver_r
-                        JOIN notifications receiver_n ON
+                        FROM content_{ReceiverContentId}_united receiver_r {NoLock}
+                        JOIN notifications receiver_n {NoLock} ON
 	                        receiver_r.notification = receiver_n.notification_id
-                        JOIN item_to_item receiver_iti ON
+                        JOIN item_to_item receiver_iti {NoLock} ON
 	                        receiver_r.category = receiver_iti.link_id AND
 	                        receiver_r.content_item_id = receiver_iti.l_item_id AND
 	                        not receiver_iti.is_rev
-                        JOIN content_item receiver_i on
+                        JOIN content_item receiver_i {NoLock} ON
 	                        receiver_iti.r_item_id = receiver_i.content_item_id
-                        JOIN content_attribute receiver_a on
+                        JOIN content_attribute receiver_a {NoLock} ON
 	                        receiver_i.content_id = receiver_a.content_id AND
 	                        receiver_a.attribute_name = 'Category'
-                        JOIN content_data receiver_d ON
+                        JOIN content_data receiver_d {NoLock} ON
 	                        receiver_d.attribute_id = receiver_a.attribute_id AND
 	                        receiver_d.content_item_id = receiver_i.content_item_id
                         JOIN (
@@ -795,9 +795,9 @@ namespace Quantumart.QPublishing.Database
 			                        article_n.notification_id,
 			                        article_iti.l_item_id item_id,
 			                        article_iti.r_item_id category_id
-		                        FROM item_to_item article_iti
-		                        JOIN content_attribute article_a on article_iti.link_id = article_a.link_id
-		                        JOIN notifications article_n on article_a.attribute_id = article_n.category_attribute_id
+		                        FROM item_to_item article_iti {NoLock}
+		                        JOIN content_attribute article_a {NoLock} ON article_iti.link_id = article_a.link_id
+		                        JOIN notifications article_n {NoLock} ON article_a.attribute_id = article_n.category_attribute_id
 		                        WHERE
 			                        article_iti.l_item_id in ({ids}) AND
 			                        article_n.use_email_from_content{On} AND
@@ -809,8 +809,8 @@ namespace Quantumart.QPublishing.Database
 			                        article_n.notification_id,
 			                        article_d.content_item_id item_id,
 			                        article_d.o2m_data category_id
-		                        FROM content_data article_d
-		                        JOIN notifications article_n ON article_n.category_attribute_id = article_d.attribute_id
+		                        FROM content_data article_d {NoLock}
+		                        JOIN notifications article_n {NoLock} ON article_n.category_attribute_id = article_d.attribute_id
 		                        WHERE
 			                        article_d.content_item_id in ({ids}) AND
 			                        article_n.use_email_from_content{On} AND
@@ -827,7 +827,7 @@ namespace Quantumart.QPublishing.Database
             }
             else
             {
-                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id in ({ids})";
+                strSql = $"SELECT DISTINCT(U.EMAIL), U.USER_ID, NULL USER_DATA FROM content_item_status_history AS ch LEFT OUTER JOIN users AS u ON ch.user_id = u.user_id WHERE ch.content_item_id in ({ids})";
             }
 
             return GetCachedData(strSql);
