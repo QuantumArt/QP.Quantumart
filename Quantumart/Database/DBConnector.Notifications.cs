@@ -1,3 +1,9 @@
+using Newtonsoft.Json.Linq;
+using NLog;
+using NLog.Fluent;
+using QP.ConfigurationService.Models;
+using Quantumart.QPublishing.Info;
+using Quantumart.QPublishing.Services;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -9,12 +15,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Xml.Linq;
-using Newtonsoft.Json.Linq;
-using NLog;
-using NLog.Fluent;
-using QP.ConfigurationService.Models;
-using Quantumart.QPublishing.Info;
-using Quantumart.QPublishing.Services;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -216,6 +216,12 @@ namespace Quantumart.QPublishing.Database
                             {
                                 int contentId = GetNumInt(notifyRow["CONTENT_ID"]);
 
+                                if (UseEmailFromContent(notifyRow))
+                                {
+                                    SendEmailFromContentNotification(notifyRow, contentItemId, contentId, siteId);
+                                    break;
+                                }
+
                                 var mailMess = new MailMessage
                                 {
                                     From = GetFromAddress(notifyRow)
@@ -301,7 +307,7 @@ namespace Quantumart.QPublishing.Database
 
                     if (UseEmailFromContent(notification))
                     {
-                        return;
+                        continue;
                     }
 
                     MailMessage mailMessage = new()
@@ -352,26 +358,79 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        private void SendEmailFromContentNotification(DataRow notifyRow, int contentItemId, int contentId, int siteId)
+        {
+            int notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
+            var toTable = GetRecipientTable(notifyRow, new[] { contentItemId }, notificationId);
+
+            foreach (DataRow row in toTable.Rows)
+            {
+                var email = ConvertToString(row["EMAIL"]);
+                var userForm = ConvertToString(row["USER_DATA"]);
+
+                var mailMess = new MailMessage
+                {
+                    From = GetFromAddress(notifyRow),
+                    IsBodyHtml = true
+                };
+
+                mailMess.To.Add(new MailAddress(email));
+
+                var doAttachFiles = (bool)notifyRow["SEND_FILES"];
+
+                try
+                {
+                    IMailRenderService renderer = new FluidBaseMailRenderService();
+                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
+                    object model = BuildObjectModelFromArticle(contentItemId);
+                    AddUserFormToModel(userForm, model);
+                    mailMess.Subject = renderer.RenderText(subjectTemplate, model);
+                    mailMess.Body = renderer.RenderText(bodyTemplate, model);
+                }
+                catch (Exception ex)
+                {
+                    mailMess.Subject = "Error while building mail message.";
+                    mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
+                    _logger.Error().Exception(ex).Message("Error while building message").Write();
+                    doAttachFiles = false;
+                }
+
+                if (doAttachFiles)
+                {
+                    AttachFiles(mailMess, siteId, contentId, contentItemId);
+                }
+
+                SendMail(mailMess);
+            }
+        }
+
         private void AddUserInfoToModel(DataRow notification, dynamic model)
         {
-            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
             object userId = notification["USER_ID"];
-            object userData = notification["USER_DATA"];
-            
 
-            if (!ReferenceEquals(userId, DBNull.Value))
+            if (ReferenceEquals(userId, DBNull.Value))
             {
-                DataRow user = GetUserInfoByUserId(userId);
-
-                if (user is not null)
-                {                    
-                    collection.Add(new("RecipientFirstName", user[FirstNameField]));
-                    collection.Add(new("RecipientLastName", user[LastNameField]));
-                }
+                return;
             }
 
-            if (!ReferenceEquals(userData, DBNull.Value))
+            DataRow user = GetUserInfoByUserId(userId);
+
+            if (user is null)
             {
+                return;
+            }
+
+            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+
+            collection.Add(new("RecipientFirstName", user[FirstNameField]));
+            collection.Add(new("RecipientLastName", user[LastNameField]));
+        }
+
+        private void AddUserFormToModel(string userData, dynamic model)
+        {
+            if (!string.IsNullOrEmpty(userData))
+            {
+                ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
                 dynamic userForm = JObject.Parse(userData as string);
                 collection.Add(new("UserForm", userForm));
             }
@@ -763,6 +822,7 @@ namespace Quantumart.QPublishing.Database
                         FROM content_{ReceiverContentId}_united r {NoLock}
                         JOIN notifications n {NoLock} ON r.notification = n.notification_id
                         WHERE
+                            r.email IS NOT NULL AND
                             n.use_email_from_content{On} AND
                             n.category_attribute_id IS NULL AND
                             r.notification = {notificationId}";
@@ -820,6 +880,7 @@ namespace Quantumart.QPublishing.Database
 	                        receiver_n.notification_id = article.notification_id AND
 	                        receiver_d.o2m_data = article.category_id
                         WHERE
+                            receiver_r.email IS NOT NULL AND
 	                        receiver_n.use_email_from_content{On} AND
 	                        receiver_n.category_attribute_id IS NOT NULL AND
 	                        receiver_r.notification = {notificationId}";
