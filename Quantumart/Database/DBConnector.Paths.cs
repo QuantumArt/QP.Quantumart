@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -24,15 +25,11 @@ namespace Quantumart.QPublishing.Database
             return sb.ToString();
         }
 
-        private static string ConvertUrlToSchemaInvariant(string prefix)
-        {
-            if (prefix.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return "//" + prefix.Substring(7);
-            }
-
-            return prefix;
-        }
+        private static string ConvertUrlToSchemaInvariant(string prefix) => Regex.Replace(
+            prefix,
+            "^http(s?):",
+            string.Empty,
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         public string GetImagesUploadUrlRel(int siteId) => GetUploadUrlRel(siteId) + "images";
 
