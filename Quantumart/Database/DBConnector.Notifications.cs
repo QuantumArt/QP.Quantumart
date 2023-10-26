@@ -1,19 +1,28 @@
+using Fluid.Ast;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using NLog.Fluent;
+using Npgsql;
+using NpgsqlTypes;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
+using Quantumart.QPublishing.Info.Subscribtion;
 using Quantumart.QPublishing.Services;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Dynamic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
+using System.Transactions;
 using System.Xml.Linq;
 
 // ReSharper disable once CheckNamespace
@@ -32,6 +41,7 @@ namespace Quantumart.QPublishing.Database
         private const string SingleArticleMessageSubjectFieldName = "SINGLE_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
         private const string MultiArticleMessageSubjectFieldName = "MULTI_ARTICLE_MESSAGE_SUBJECT_FIELD_NAME";
         private const string NotificationReceiverContentId = "NOTIFICATION_RECEIVER_CONTENT_ID";
+        private const int NotificationUserId = 1;
 
         public bool ThrowNotificationExceptions { get; set; }
         public bool DisableServiceNotifications { get; set; }
@@ -176,6 +186,502 @@ namespace Quantumart.QPublishing.Database
             SendNotification(siteId, notificationOn, contentItemId, string.Empty, !IsStage);
         }
 
+        /// <summary>
+        /// Создание подписки
+        /// </summary>
+        /// <param name="notificationId">Идентификатор уведомления</param>
+        /// <param name="notificationEmail">Email</param>
+        /// <param name="categoryIds">Идентификаторы категорий</param>
+        /// <param name="userData">Пользовательские данные</param>
+        /// <param name="confirmationPeriod">Время жизни кода активации подписки</param>
+        /// <returns>Данные подписки</returns>
+        public NotificationSubscribtion AddNotificationSubscriber(int notificationId, string notificationEmail, int[] categoryIds, string userData, TimeSpan confirmationPeriod)
+        {
+            var id = SaveNotificationSubscribtion(notificationId, notificationEmail, categoryIds, userData, confirmationPeriod);
+
+            if (id.HasValue)
+            {
+                return SendConfirmSubscribeNotification(id.Value);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Отправка уведомления на почту для подтверждения подписки
+        /// </summary>
+        /// <param name="subscribeItemId">Идентификатор получателя подписки</param>
+        /// <returns>Данные подписки или null, если отправка уведомлений не настроена</returns>
+        public NotificationSubscribtion SendConfirmSubscribeNotification(int subscribeItemId)
+        {
+            var newSubscription = GetNotificationSubscribtion(subscribeItemId);
+
+            if (newSubscription != null && !newSubscription.Confirmed)
+            {
+                var notification = GetNotificationById(newSubscription.NotificationId);
+                var oldSubscription = GetConfirmedNotificationSubscribtion(notification.NotificationId, newSubscription.Email);
+
+                if (notification.ConfirmationTemplateId.HasValue)
+                {
+                    var request = new SubscribeRequest
+                    {
+                        Action = SubscribeRequestMode.Unsubscribe,
+                        Email = newSubscription.Email,
+                        OldUserData = oldSubscription?.UserData,
+                        OldCategories = oldSubscription?.Categories.Select(c => c.Name).ToArray() ?? new string[0],
+                        NewCategories = newSubscription.Categories.Select(c => c.Name).ToArray(),
+                        NewUserData = newSubscription.UserData
+                    };
+
+                    SendConfirmationNotification(notification, request);
+                }
+            }
+
+            return newSubscription;
+        }
+
+        /// <summary>
+        /// Отправка уведомления на почту для подтверждения отписки
+        /// </summary>
+        /// <param name="notificationId"></param>
+        /// <param name="notificationEmail"></param>
+        /// <returns>Данные подписки или null, если отправка уведомлений не настроена</returns>
+        public NotificationSubscribtion SendUnSubscribeNotification(int notificationId, string notificationEmail)
+        {
+            var subscription = GetConfirmedNotificationSubscribtion(notificationId, notificationEmail);
+
+            if (subscription != null)
+            {
+                var notification = GetNotificationById(notificationId);
+
+                if (notification.ConfirmationTemplateId.HasValue)
+                {
+                    var request = new SubscribeRequest
+                    {
+                        Action = SubscribeRequestMode.Unsubscribe,
+                        Email = notificationEmail,
+                        OldUserData = subscription.UserData,
+                        OldCategories = subscription.Categories.Select(c => c.Name).ToArray(),
+                        NewCategories = new string[0],
+                        NewUserData = null
+                    };
+
+                    SendConfirmationNotification(notification, request);
+                }
+            }
+
+            return subscription;
+        }
+
+        /// <summary>
+        /// Отписка
+        /// </summary>
+        /// <param name="confirmationCode">Код подтверждения</param>
+        /// <returns>Данные отписки</returns>
+        public SubscribeResult UnsubscribeNotificationSubscriber(string confirmationCode)
+        {
+            if (!ReceiverContentId.HasValue)
+            {
+                throw new($"Setting {NotificationReceiverContentId} is not supplied");
+            }
+
+            var subscription = GetNotificationSubscribtion(confirmationCode);
+
+            SubscribeResultMode action = SubscribeResultMode.Unsubscribe;
+
+            if (subscription == null)
+            {
+                action = SubscribeResultMode.ConfirmationCodeNotFound;
+            }
+            else if (!subscription.Confirmed)
+            {
+                action = SubscribeResultMode.NotComfirmed;
+            }
+            else if (subscription.ConfirmationDate < DateTime.Now)
+            {
+                action = SubscribeResultMode.ConfirmationDateExpared;
+            }
+            else
+            {
+                RemoveNotificationSubscribtions(subscription.NotificationId, subscription.Email);
+            }
+
+            return new SubscribeResult
+            {
+                Action = action,
+                OldSubscription = subscription,
+                NewSubscription = null
+            };
+        }
+
+        /// <summary>
+        /// Подписка
+        /// </summary>
+        /// <param name="confirmationCode">Код подтверждения</param>
+        /// <returns>Данные подписки</returns>
+        public SubscribeResult ConfirmNotificationSubscriber(string confirmationCode)
+        {
+            if (!ReceiverContentId.HasValue)
+            {
+                throw new($"Setting {NotificationReceiverContentId} is not supplied");
+            }
+
+            var newSubscription = GetNotificationSubscribtion(confirmationCode);
+            NotificationSubscribtion oldSubscription = null;
+
+            SubscribeResultMode action = SubscribeResultMode.Subscribe;
+
+            if (newSubscription == null)
+            {
+                action = SubscribeResultMode.ConfirmationCodeNotFound;
+            }
+            else if (!newSubscription.Confirmed)
+            {
+                action = SubscribeResultMode.NotComfirmed;
+            }
+            else if (newSubscription.ConfirmationDate < DateTime.Now)
+            {
+                action = SubscribeResultMode.ConfirmationDateExpared;
+            }
+            else
+            {
+                oldSubscription = GetConfirmedNotificationSubscribtion(newSubscription.NotificationId, newSubscription.Email);
+
+                var values = new Dictionary<string, string>()
+                {
+                    { SystemColumnNames.Id, newSubscription.Id.ToString(CultureInfo.InvariantCulture) },
+                    { "Confirmed", "true" },
+                };
+
+                MassUpdate(ReceiverContentId.Value, new[] { values }, NotificationUserId);
+
+                RemoveNotificationSubscribtions(newSubscription.NotificationId, newSubscription.Email, exceptId: newSubscription.Id);
+            }
+
+            return new SubscribeResult
+            {
+                Action = action,
+                OldSubscription = oldSubscription,
+                NewSubscription = newSubscription
+            };
+        }
+
+        /// <summary>
+        /// Получение доступных категориий для уведомления
+        /// </summary>
+        /// <param name="notificationId">Идентификатор уведомления</param>
+        /// <returns>Массив категорий</returns>
+        public SubscribtionCategory[] GetSubscribtionCategories(int notificationId)
+        {
+            if (!ReceiverContentId.HasValue)
+            {
+                throw new($"Setting {NotificationReceiverContentId} is not supplied");
+            }
+
+            var query = @$"
+                select
+	                subscription_category.content_item_id id,
+	                subscription_category.category id,
+	                category.category categoryname
+                from
+	                content_{GetReceiverCategoryContentId()}_united subscription_category
+	                join content_{GetNotificationCategoryContentId()}_united category on subscription_category.category = category.content_item_id
+                where
+	                subscription_category.notification = {notificationId}";
+
+            var data = GetCachedData(query);
+
+            return data
+            .AsEnumerable()
+            .Select(row => new SubscribtionCategory
+            {
+                Id = GetNumInt(row["id"]),
+                CategoryId = GetNumInt(row["id"]),
+                Name = GetString(row["categoryname"], string.Empty)
+            })
+            .ToArray();
+        }
+
+        /// <summary>
+        /// Создает неподтвержденную подписку
+        /// </summary>
+        /// <param name="notificationId"></param>
+        /// <param name="notificationEmail"></param>
+        /// <param name="categoryIds"></param>
+        /// <param name="userData"></param>
+        /// <param name="confirmationPeriod"></param>
+        /// <returns>Идентификатор пописки</returns>
+        private int? SaveNotificationSubscribtion(int notificationId, string notificationEmail, int[] categoryIds, string userData, TimeSpan confirmationPeriod)
+        {
+            if (!ReceiverContentId.HasValue)
+            {
+                throw new($"Setting {NotificationReceiverContentId} is not supplied");
+            }
+
+            if (!string.IsNullOrEmpty(userData))
+            {
+                try
+                {
+                    JObject.Parse(userData);
+                }
+                catch(JsonReaderException ex)
+                {
+                    throw new ArgumentException("User data not valid", nameof(userData), ex);
+                }
+            }            
+
+            var values = new Dictionary<string, string>()
+            {
+                { SystemColumnNames.Id, "0" },
+                { "Email", notificationEmail },
+                { "Notification", notificationId.ToString() },
+                { "Category", string.Join(",", categoryIds) },
+                { "UserData", userData },
+                { "Confirmed", "false" },
+                { "ConfirmationCode", Guid.NewGuid().ToString() },
+                { "ConfirmationDate", DateTime.Now.Add(confirmationPeriod).ToString(CultureInfo.CurrentCulture) },
+            };
+
+            MassUpdate(ReceiverContentId.Value, new[] { values }, NotificationUserId);
+
+            if (int.TryParse(values[SystemColumnNames.Id], out int id) && id > 0)
+            {
+                return id;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Поиск подписки по идентификатору
+        /// </summary>
+        /// <param name="id">Идентификатор подписки</param>
+        /// <returns>Данные подписки</returns>
+        private NotificationSubscribtion GetNotificationSubscribtion(int id)
+        {
+            var query = @$"
+                select 
+	                content_item_id,
+	                notification,
+	                email,
+	                userdata,
+	                confirmed
+	                confirmationcode,
+	                confirmationdate,
+	                category
+                from content_{ReceiverContentId}_united
+                where content_item_id = @id";
+
+            var cmd = CreateDbCommand(query);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            return GetNotificationSubscribtion(cmd);
+        }
+
+        /// <summary>
+        /// Поиск подписки по коду подтверждения
+        /// </summary>
+        /// <param name="confirmationCode">Код подтверждения</param>
+        /// <returns>Данные подписки</returns>
+        private NotificationSubscribtion GetNotificationSubscribtion(string confirmationCode)
+        {
+            var query = @$"
+                select 
+	                content_item_id,
+	                notification,
+	                email,
+	                userdata,
+	                confirmed
+	                confirmationcode,
+	                confirmationdate,
+	                category
+                from content_{ReceiverContentId}_united
+                where confirmationcode = @confirmationCode";
+
+            var cmd = CreateDbCommand(query);
+            cmd.Parameters.AddWithValue("@confirmationCode", confirmationCode);
+
+            return GetNotificationSubscribtion(cmd);
+        }
+
+        /// <summary>
+        /// Поиск подтвержденной подписки по еmail
+        /// </summary>
+        /// <param name="notificationId">Идентификатор уведомления</param>
+        /// <param name="notificationEmail">Адрес электронной почты</param>
+        /// <returns>Данные подписки</returns>
+        private NotificationSubscribtion GetConfirmedNotificationSubscribtion(int notificationId, string notificationEmail)
+        {
+            var query = @$"
+                select 
+	                content_item_id,
+	                notification,
+	                email,
+	                userdata,
+	                confirmed
+	                confirmationcode,
+	                confirmationdate,
+	                category
+                from content_{ReceiverContentId}_united
+                where notification = @notificationId and email = @notificationEmail and confirmed = 1";
+
+            var cmd = CreateDbCommand(query);
+            cmd.Parameters.AddWithValue("@notificationId", notificationId);
+            cmd.Parameters.AddWithValue("@notificationEmail", notificationEmail);
+
+            return GetNotificationSubscribtion(cmd);
+        }
+
+        /// <summary>
+        /// Поиск подписки
+        /// Поскольку операции одноразовые, то запросы не кэшируются
+        /// </summary>
+        /// <param name="command">Комманда поиска подписки</param>
+        /// <returns>Данные подписки</returns>
+        private NotificationSubscribtion GetNotificationSubscribtion(DbCommand command)
+        {
+            var data = GetRealData(command);
+
+            var item = data
+                .AsEnumerable()
+                .Select(row => new NotificationSubscribtion
+                {
+                    Id = GetNumInt(row["id"]),
+                    NotificationId = GetNumInt(row["id"]),
+                    Email = GetString(row["email"], string.Empty),
+                    UserData = GetString(row["email"], string.Empty),
+                    Confirmed = GetNumBool(row["id"]),
+                    ConfirmationCode = GetString(row["email"], string.Empty),
+                    ConfirmationDate = (DateTime)row["email"],
+                    CategoryLinkId = GetNumInt(row["category"])
+                })
+                .FirstOrDefault();
+
+            var categoriesQuery = @$"
+                select
+	                subscription_category.content_item_id id,
+	                subscription_category.category id,
+	                category.category categoryname
+                from
+	                content_{GetReceiverCategoryContentId()}_united subscription_category
+	                join content_{GetNotificationCategoryContentId()}_united category on subscription_category.category = category.content_item_id
+                    join item_link_{item.CategoryLinkId} l on subscription_category.content_item_id = l.linked_id
+                where
+	                subscription_category.notification = @notificationId and l.id = @id";
+
+            var categoriesCommand = CreateDbCommand(categoriesQuery);
+
+            categoriesCommand.Parameters.AddWithValue("@notificationId", item.NotificationId);
+            categoriesCommand.Parameters.AddWithValue("@id", item.Id);
+
+            var categoriesData = GetRealData(categoriesCommand);
+
+            var categories = categoriesData
+                .AsEnumerable()
+                .Select(row => new SubscribtionCategory
+                {
+                    Id = GetNumInt(row["id"]),
+                    CategoryId = GetNumInt(row["id"]),
+                    Name = GetString(row["categoryname"], string.Empty)
+                })
+                .ToArray();
+
+            item.Categories = categories;
+
+            return item;
+        }
+
+        private void RemoveNotificationSubscribtions(int notificationId, string notificationEmail, int? exceptId = null)
+        {
+            var query = $@"
+                select 
+	                content_item_id id
+                from content_{ReceiverContentId}_united
+                where notification = @notificationId and email = @email";
+
+            if (exceptId.HasValue)
+            {
+                query += " and content_item_id <> @id";
+            }
+
+            var cmd = CreateDbCommand(query);
+
+            cmd.Parameters.AddWithValue("@notificationId", notificationId);
+            cmd.Parameters.AddWithValue("@email", notificationEmail);
+
+            if (exceptId.HasValue)
+            {
+                cmd.Parameters.AddWithValue("@id", exceptId.Value);
+            }
+
+            var data = GetRealData(cmd);
+
+            var ids = data.AsEnumerable().Select(row => GetNumInt(row["id"])).ToArray();
+
+            DeleteContentItems(ids);
+        }
+
+        private void DeleteContentItems(int[] ids)
+        {
+            if (ids == null)
+            {
+                throw new ArgumentNullException(nameof(ids));
+            }
+
+            var query = $@"
+                DELETE FROM CONTENT_ITEM {SqlQuerySyntaxHelper.WithRowLock(DatabaseType)}
+                WHERE CONTENT_ITEM_ID in (SELECT ID FROM {SqlQuerySyntaxHelper.GetIdTable(DatabaseType, "@ids")})";
+
+            var cmd = CreateDbCommand(query);
+            cmd.Parameters.AddWithValue(DatabaseType, "@ids", ids);
+            ProcessData(cmd);
+        }
+
+        /// <summary>
+        /// Ищет уведомление по идентификатору
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        private Notification GetNotificationById(int id)
+        {
+            var notificationQuery = @$"
+                select
+	                n.NOTIFICATION_ID,
+	                n.NOTIFICATION_NAME,
+	                n.CONTENT_ID,
+	                n.FROM_DEFAULT_NAME,
+	                n.FROM_USER_NAME,
+	                n.FROM_USER_EMAIL,
+	                n.FROM_BACKENDUSER,
+	                n.FROM_BACKENDUSER_ID,
+	                u.EMAIL FROM_BACKENDUSER_EMAIL,
+	                n.USE_EMAIL_FROM_CONTENT,
+	                n.CONFIRMATION_TEMPLATE_ID
+                from notifications n
+                join users u on n.FROM_BACKENDUSER_ID = u.user_id
+                where n.NOTIFICATION_ID = {id}";
+
+            var notificationData = GetCachedData(notificationQuery);
+
+            return notificationData
+                .AsEnumerable()
+                .Select(row => new Notification
+                {
+                    NotificationId = GetNumInt(row["NOTIFICATION_ID"]),
+                    NotificationName = GetString(row["NOTIFICATION_NAME"], string.Empty),
+                    ContentId = GetNumInt(row["CONTENT_ID"]),
+                    FromDefaultName = GetNumBool(row["FROM_DEFAULT_NAME"]),
+                    FromUserName = GetString(row["FROM_USER_NAME"], string.Empty),
+                    FromUserEmail = GetString(row["FROM_USER_EMAIL"], string.Empty),
+                    FromBackendUser = GetNumBool(row["FROM_BACKENDUSER"]),
+                    FromBackendUserId = GetNumInt(row["FROM_BACKENDUSER_ID"]),
+                    FromBackendUserEmail = GetString(row["FROM_BACKENDUSER_EMAIL"], string.Empty),
+                    UseEmailFromContent = GetNumBool(row["USE_EMAIL_FROM_CONTENT"]),
+                    ConfirmationTemplateId = GetNumInt(row["CONFIRMATION_TEMPLATE_ID"]),                    
+                })
+                .FirstOrDefault();
+        }
+
         public void SendNotification(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive, int[] notificationIds = null)
         {
             ValidateNotificationEvent(notificationOn);
@@ -219,7 +725,7 @@ namespace Quantumart.QPublishing.Database
                                 if (UseEmailFromContent(notifyRow))
                                 {
                                     SendEmailFromContentNotification(notifyRow, contentItemId, contentId, siteId);
-                                    break;
+                                    continue;
                                 }
 
                                 var mailMess = new MailMessage
@@ -358,10 +864,62 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        private void SendConfirmationNotification(Notification notification, SubscribeRequest request)
+        {
+            IMailRenderService renderer = new FluidBaseMailRenderService();
+            (string subjectTemplate, string bodyTemplate) = GetTemplate(notification.ConfirmationTemplateId.Value);
+
+            dynamic model = new ExpandoObject();
+            ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
+
+            collection.Add(new(nameof(request.Action), request.Action));
+            collection.Add(new(nameof(request.Email), request.Email));
+            collection.Add(new(nameof(request.OldCategories), request.OldCategories));
+            collection.Add(new(nameof(request.NewCategories), request.NewCategories));
+
+            if (!string.IsNullOrEmpty(request.OldUserData))
+            {
+                try
+                {
+                    dynamic oldUserData = JObject.Parse(request.OldUserData as string);
+                    collection.Add(new(nameof(request.OldUserData), oldUserData));
+                }
+                catch (JsonReaderException)
+                {
+                }
+            }
+
+            if (!string.IsNullOrEmpty(request.NewUserData))
+            {
+                try
+                {
+                    dynamic newUserData = JObject.Parse(request.NewUserData as string);
+                    collection.Add(new(nameof(request.NewUserData), newUserData));
+                }
+                catch (JsonReaderException)
+                {
+                }
+            }
+
+
+            var mailMess = new MailMessage
+            {
+                From = GetFromAddress(notification),
+                IsBodyHtml = true
+            };
+
+            mailMess.Subject = renderer.RenderText(subjectTemplate, model);
+            mailMess.Body = renderer.RenderText(bodyTemplate, model);
+            mailMess.To.Add(request.Email);
+            SendMail(mailMess);
+        }
+
         private void SendEmailFromContentNotification(DataRow notifyRow, int contentItemId, int contentId, int siteId)
         {
             int notificationId = GetNumInt(notifyRow["NOTIFICATION_ID"]);
             var toTable = GetRecipientTable(notifyRow, new[] { contentItemId }, notificationId);
+            (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
+            object model = BuildObjectModelFromArticle(contentItemId);
 
             foreach (DataRow row in toTable.Rows)
             {
@@ -381,26 +939,20 @@ namespace Quantumart.QPublishing.Database
                 try
                 {
                     IMailRenderService renderer = new FluidBaseMailRenderService();
-                    (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
-                    object model = BuildObjectModelFromArticle(contentItemId);
                     AddUserFormToModel(userForm, model);
                     mailMess.Subject = renderer.RenderText(subjectTemplate, model);
                     mailMess.Body = renderer.RenderText(bodyTemplate, model);
+                    if (doAttachFiles)
+                    {
+                        AttachFiles(mailMess, siteId, contentId, contentItemId);
+                    }
+
+                    SendMail(mailMess);
                 }
                 catch (Exception ex)
                 {
-                    mailMess.Subject = "Error while building mail message.";
-                    mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
-                    _logger.Error().Exception(ex).Message("Error while building message").Write();
-                    doAttachFiles = false;
+                    _logger.Error().Exception(ex).Message("Error while building or sending message").Write();
                 }
-
-                if (doAttachFiles)
-                {
-                    AttachFiles(mailMess, siteId, contentId, contentItemId);
-                }
-
-                SendMail(mailMess);
             }
         }
 
@@ -428,11 +980,13 @@ namespace Quantumart.QPublishing.Database
 
         private void AddUserFormToModel(string userData, dynamic model)
         {
+            var map = (IDictionary<string, object>)model;
+            map.Remove("UserForm");
+
             if (!string.IsNullOrEmpty(userData))
             {
-                ICollection<KeyValuePair<string, object>> collection = (ICollection<KeyValuePair<string, object>>)model;
                 dynamic userForm = JObject.Parse(userData as string);
-                collection.Add(new("UserForm", userForm));
+                map.Add("UserForm", userForm);
             }
         }
 
@@ -491,7 +1045,7 @@ namespace Quantumart.QPublishing.Database
 
             recursionLevel++;
 
-            foreach (KeyValuePair<string,ContentItemValue> field in fields)
+            foreach (KeyValuePair<string, ContentItemValue> field in fields)
             {
                 switch (field.Value.ItemType)
                 {
@@ -822,6 +1376,7 @@ namespace Quantumart.QPublishing.Database
                         FROM content_{ReceiverContentId}_united r {NoLock}
                         JOIN notifications n {NoLock} ON r.notification = n.notification_id
                         WHERE
+                            (r.confirmed{On} OR n.confirmation_template_id IS NULL) AND
                             r.email IS NOT NULL AND
                             n.use_email_from_content{On} AND
                             n.category_attribute_id IS NULL AND
@@ -880,6 +1435,7 @@ namespace Quantumart.QPublishing.Database
 	                        receiver_n.notification_id = article.notification_id AND
 	                        receiver_d.o2m_data = article.category_id
                         WHERE
+                            (receiver_r.confirmed{On} OR receiver_n.confirmation_template_id IS NULL) AND
                             receiver_r.email IS NOT NULL AND
 	                        receiver_n.use_email_from_content{On} AND
 	                        receiver_n.category_attribute_id IS NOT NULL AND
@@ -919,6 +1475,44 @@ namespace Quantumart.QPublishing.Database
 
         private static string ConvertToNullString(object obj) => ReferenceEquals(obj, DBNull.Value) ? "NULL" : obj.ToString();
 
+        private MailAddress GetFromAddress(Notification notification)
+        {
+            MailAddress functionReturnValue;
+            string fromName;
+            var from = string.Empty;
+            if (notification.FromDefaultName)
+            {
+                fromName = DbConnectorSettings.MailFromName;
+            }
+            else
+            {
+                fromName = notification.FromUserName;
+            }
+
+            if (notification.FromBackendUser)
+            {
+                from = notification.FromBackendUserEmail;
+            }
+            else
+            {
+                from = notification.FromUserEmail;
+            }
+
+            if (!string.IsNullOrEmpty(from))
+            {
+                functionReturnValue = !string.IsNullOrEmpty(fromName) ? new MailAddress(from, fromName) : new MailAddress(from);
+            }
+            else
+            {
+                throw new Exception("Mail sender is not defined");
+            }
+
+            return functionReturnValue;
+        }
+
+        /// <summary>
+        /// TODO: refactior calls to GetFromAddress(Notification notification)
+        /// </summary>
         private MailAddress GetFromAddress(DataRow notifyRow)
         {
             MailAddress functionReturnValue;
@@ -1044,6 +1638,35 @@ namespace Quantumart.QPublishing.Database
         }
 
         private int? ReceiverContentId => GetSettingByName<int?>(NotificationReceiverContentId);
+
+        private int GetReceiverCategoryContentId()
+        {
+            var query = @$"
+                select r.r_content_id contentid
+                from content_attribute a
+                join content_to_content r on a.link_id = r.link_id
+                where a.content_id = {ReceiverContentId} and a.attribute_name = 'Category'";
+
+            var table = GetCachedData(query);
+
+            return GetNumInt(table.Rows[0]["contentid"]);
+        }
+
+
+        private int GetNotificationCategoryContentId()
+        {
+            var query = @$"
+                select a3.content_id contentid
+                from content_attribute a
+                join content_to_content r on a.link_id = r.link_id
+                join content_attribute a2 on r.r_content_id = a2.content_id and a2.attribute_name = 'Category'
+                join content_attribute a3 on a2.related_attribute_id = a3.attribute_id
+                where a.content_id = {ReceiverContentId} and a.attribute_name = 'Category'";
+
+            var table = GetCachedData(query);
+
+            return GetNumInt(table.Rows[0]["contentid"]);
+        }
 
         private bool UseEmailFromContent(DataRow notification) => (bool)notification["USE_EMAIL_FROM_CONTENT"];
 

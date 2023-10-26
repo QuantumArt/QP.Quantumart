@@ -1,16 +1,16 @@
+using Npgsql;
+using NpgsqlTypes;
+using QP.ConfigurationService.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
-using Npgsql;
-using NpgsqlTypes;
-using QP.ConfigurationService.Models;
 
 namespace Quantumart.QPublishing.Database
 {
-    public class SqlQuerySyntaxHelper
+    public static class SqlQuerySyntaxHelper
     {
         public static string CastToString(DatabaseType databaseType, string columnName)
         {
@@ -90,6 +90,28 @@ namespace Quantumart.QPublishing.Database
             }
         }
 
+        public static DbParameter AddWithValue(this DbParameterCollection parameterCollection, DatabaseType databaseType, string parameterName, int[] ids)
+        {
+            DbParameter parameter = null;
+
+            if (databaseType == DatabaseType.Postgres)
+            {
+                parameter = new NpgsqlParameter(parameterName, NpgsqlDbType.Array | NpgsqlDbType.Integer);
+            }
+            else
+            {
+                parameter = new SqlParameter(parameterName, SqlDbType.Structured)
+                {
+                    TypeName = "Ids",
+                    Value = IdsToDataTable(ids)
+                };
+            }
+
+            parameterCollection.Add(parameter);
+
+            return parameter;
+        }
+
 
         public static string DbSchemaName(DatabaseType databaseType) => databaseType == DatabaseType.Postgres ? "public" : "dbo";
 
@@ -98,6 +120,8 @@ namespace Quantumart.QPublishing.Database
         public static string WithRowLock(DatabaseType databaseType) => databaseType == DatabaseType.SqlServer ? "with(rowlock) " : string.Empty;
 
         public static string RecursiveCte(DatabaseType databaseType) => databaseType == DatabaseType.Postgres ? " RECURSIVE " : string.Empty;
+
+        public static string GetIdTable(DatabaseType databaseType, string name, string alias = "i") => databaseType == DatabaseType.Postgres ? $"unnest({name}) {alias}(id)" : $"{name} {alias}";
 
         public static string NullableDbValue(DatabaseType databaseType, int? value)
         {
