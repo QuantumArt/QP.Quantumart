@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using QP.ConfigurationService.Models;
 using Quantumart.QP8.Assembling.Info;
 
 // ReSharper disable once CheckNamespace
@@ -566,7 +567,7 @@ namespace Quantumart.QP8.Assembling
             return sb.ToString();
         }
 
-        private static XElement GetSchemaElement(SchemaInfo info)
+        private XElement GetSchemaElement(SchemaInfo info)
         {
             var result = new XElement("schema",
                 new XAttribute("connectionStringName", info.ConnectionStringName),
@@ -584,6 +585,12 @@ namespace Quantumart.QP8.Assembling
             result.SetAttributeValue("isPartial", info.IsPartial);
             result.SetAttributeValue("sendNotifications", info.SendNotifications);
             result.SetAttributeValue("siteName", info.SiteName);
+
+            if (Controller.Cnn.DbType == DatabaseType.Postgres)
+            {
+                result.SetAttributeValue("dbType", "postgres");
+            }
+
             return result;
         }
 
