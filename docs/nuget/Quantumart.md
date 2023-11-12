@@ -12,7 +12,7 @@
 
 ### Quantumart.4.0.8
 
-* Обновлена версия пакета (Quantumart.QP8.Assembling)[Quantumart.QP8.Assembling] до 1.0.7
+* Обновлена версия пакета [Quantumart.QP8.Assembling](Quantumart.QP8.Assembling) до 1.0.7
 
 ### Quantumart.4.0.7
 

@@ -12,7 +12,7 @@
 
 ### Quantumart.AspNetCore.6.0.9
 
-* Обновлена версия пакета (Quantumart.QP8.Assembling)[Quantumart.QP8.Assembling] до 1.1.1
+* Обновлена версия пакета [Quantumart.QP8.Assembling](Quantumart.QP8.Assembling) до 1.1.1
 
 ### Quantumart.AspNetCore.6.0.8
 
