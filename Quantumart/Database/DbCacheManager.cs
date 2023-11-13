@@ -314,7 +314,7 @@ namespace Quantumart.QPublishing.Database
 
             var localHash = new Hashtable();
 
-            var cmd = DbConnector.CreateDbCommand($"SELECT LINK_ID, NET_LINK_NAME FROM CONTENT_TO_CONTENT CC INNER JOIN CONTENT C ON CC.L_CONTENT_ID = C.CONTENT_ID WHERE SITE_ID = @Id");
+            var cmd = DbConnector.CreateDbCommand($"SELECT LINK_ID, NET_LINK_NAME FROM CONTENT_TO_CONTENT CC {DbConnector.WithNoLock} INNER JOIN CONTENT C {DbConnector.WithNoLock} ON CC.L_CONTENT_ID = C.CONTENT_ID WHERE SITE_ID = @Id");
             cmd.Parameters.AddWithValue("@Id", siteId);
             var dt2 = DbConnector.GetRealData(cmd);
             foreach (DataRow row in dt2.Rows)
@@ -377,7 +377,7 @@ namespace Quantumart.QPublishing.Database
             var linkHash = GetCachedHashTable(LinkHashKey);
             var attributeHash = new Hashtable();
             var cmd = DbConnector.CreateDbCommand($@"
-                SELECT ATTRIBUTE_NAME, LINK_ID, BACK_RELATED_ATTRIBUTE_ID FROM CONTENT_ATTRIBUTE
+                SELECT ATTRIBUTE_NAME, LINK_ID, BACK_RELATED_ATTRIBUTE_ID FROM CONTENT_ATTRIBUTE {DbConnector.WithNoLock}
                 WHERE (LINK_ID IS NOT NULL OR BACK_RELATED_ATTRIBUTE_ID IS NOT NULL) AND CONTENT_ID = @Id"
             );
             cmd.Parameters.AddWithValue("@Id", int.Parse(contentKey));
@@ -665,7 +665,7 @@ namespace Quantumart.QPublishing.Database
 
         private Hashtable FillSiteIdHashTable()
         {
-            var dt = DbConnector.GetRealData("SELECT SITE_ID, SITE_NAME FROM SITE");
+            var dt = DbConnector.GetRealData($"SELECT SITE_ID, SITE_NAME FROM SITE {DbConnector.WithNoLock}");
             var siteIds = new Hashtable(dt.Rows.Count);
             foreach (DataRow row in dt.Rows)
             {
@@ -677,7 +677,7 @@ namespace Quantumart.QPublishing.Database
 
         private Hashtable FillSiteHashTable()
         {
-            var dt = DbConnector.GetRealData("SELECT SITE_NAME, SITE_ID, DNS, STAGE_DNS, LIVE_DIRECTORY, STAGE_DIRECTORY, ASSEMBLY_PATH, STAGE_ASSEMBLY_PATH, UPLOAD_DIR, TEST_DIRECTORY, UPLOAD_URL, UPLOAD_URL_PREFIX, LIVE_VIRTUAL_ROOT, STAGE_VIRTUAL_ROOT, STAGE_EDIT_FIELD_BORDER, ASSEMBLE_FORMATS_IN_LIVE, USE_ABSOLUTE_UPLOAD_URL, ALLOW_USER_SESSIONS, IS_LIVE, SCRIPT_LANGUAGE, CONTEXT_CLASS_NAME, ENABLE_ONSCREEN, REPLACE_URLS_IN_DB FROM SITE");
+            var dt = DbConnector.GetRealData($"SELECT SITE_NAME, SITE_ID, DNS, STAGE_DNS, LIVE_DIRECTORY, STAGE_DIRECTORY, ASSEMBLY_PATH, STAGE_ASSEMBLY_PATH, UPLOAD_DIR, TEST_DIRECTORY, UPLOAD_URL, UPLOAD_URL_PREFIX, LIVE_VIRTUAL_ROOT, STAGE_VIRTUAL_ROOT, STAGE_EDIT_FIELD_BORDER, ASSEMBLE_FORMATS_IN_LIVE, USE_ABSOLUTE_UPLOAD_URL, ALLOW_USER_SESSIONS, IS_LIVE, SCRIPT_LANGUAGE, CONTEXT_CLASS_NAME, ENABLE_ONSCREEN, REPLACE_URLS_IN_DB FROM SITE {DbConnector.WithNoLock}");
             var sites = new Hashtable(dt.Rows.Count);
             foreach (DataRow row in dt.Rows)
             {

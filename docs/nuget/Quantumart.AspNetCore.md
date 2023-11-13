@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.0.10
+
+* Добавлен хинт WITH(NOLOCK) к некоторым запросам `DBConnector`
+
 ### Quantumart.AspNetCore.6.0.9
 
 * Обновлена версия пакета [Quantumart.QP8.Assembling](Quantumart.QP8.Assembling) до 1.1.1
