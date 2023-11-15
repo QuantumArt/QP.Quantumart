@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.0.11
+
+* Добавлено экранирование поля `Key` при чтении из таблицы `App_settings`
+
 ### Quantumart.AspNetCore.6.0.10
 
 * Добавлен хинт WITH(NOLOCK) к некоторым запросам `DBConnector`

@@ -9,7 +9,7 @@ public partial class DBConnector
 {
     public T GetSettingByName<T>(string name)
     {
-        DataTable result = GetCachedData($"select VALUE from APP_SETTINGS where KEY = '{name}'");
+        DataTable result = GetCachedData($"select VALUE from APP_SETTINGS where {SqlQuerySyntaxHelper.EscapeEntityName(DatabaseType, "KEY")} = '{name}'");
 
         switch (result.Rows.Count)
         {
