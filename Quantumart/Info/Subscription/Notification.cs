@@ -1,4 +1,4 @@
-namespace Quantumart.QPublishing.Info.Subscribtion
+namespace Quantumart.QPublishing.Info.Subscription
 {
     internal class Notification
     {

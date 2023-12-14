@@ -1,4 +1,4 @@
-namespace Quantumart.QPublishing.Info.Subscribtion
+namespace Quantumart.QPublishing.Info.Subscription
 {
 
     /// <summary>
@@ -17,7 +17,7 @@ namespace Quantumart.QPublishing.Info.Subscribtion
         /// <summary>
         /// Время подтверждения истекло
         /// </summary>
-        ConfirmationDateExpared = 2,
+        ConfirmationDateExpired = 2,
         /// <summary>
         /// Код подтверждения не найден
         /// </summary>
@@ -29,6 +29,6 @@ namespace Quantumart.QPublishing.Info.Subscribtion
         /// <summary>
         /// Подписка еще не активна
         /// </summary>
-        NotComfirmed = 5
+        NotConfirmed = 5
     }
 }

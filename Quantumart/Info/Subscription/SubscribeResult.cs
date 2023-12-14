@@ -1,4 +1,4 @@
-namespace Quantumart.QPublishing.Info.Subscribtion
+namespace Quantumart.QPublishing.Info.Subscription
 {
     /// <summary>
     /// Данные подписки
@@ -13,10 +13,10 @@ namespace Quantumart.QPublishing.Info.Subscribtion
         /// Старая подписка, которая была до смены подписки
         /// null если подписались впервые
         /// </summary>
-        public NotificationSubscribtion OldSubscription { get; set; }
+        public NotificationSubscription OldSubscription { get; set; }
         /// <summary>
         /// Новая подписка
         /// </summary>
-        public NotificationSubscribtion NewSubscription { get; set; }
+        public NotificationSubscription NewSubscription { get; set; }
     }
 }

@@ -1,9 +1,9 @@
-namespace Quantumart.QPublishing.Info.Subscribtion
+namespace Quantumart.QPublishing.Info.Subscription
 {
     /// <summary>
     /// Категория подписки
     /// </summary>
-    public class SubscribtionCategory
+    public class SubscriptionCategory
     {
         /// <summary>
         /// Идентификатор связи подписки и категории

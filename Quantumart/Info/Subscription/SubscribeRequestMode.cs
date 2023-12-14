@@ -1,4 +1,4 @@
-namespace Quantumart.QPublishing.Info.Subscribtion
+namespace Quantumart.QPublishing.Info.Subscription
 {
     /// <summary>
     /// Запрос на подписку или отписку

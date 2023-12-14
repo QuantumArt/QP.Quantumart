@@ -1,11 +1,11 @@
 using System;
 
-namespace Quantumart.QPublishing.Info.Subscribtion;
+namespace Quantumart.QPublishing.Info.Subscription;
 
 /// <summary>
 /// Получатель из контента (подписка)
 /// </summary>
-public class NotificationSubscribtion
+public class NotificationSubscription
 {
     /// <summary>
     /// Идентификатор подписки
@@ -26,7 +26,7 @@ public class NotificationSubscribtion
     /// <summary>
     /// Категории подписки
     /// </summary>
-    public SubscribtionCategory[] Categories { get; set; }
+    public SubscriptionCategory[] Categories { get; set; }
     /// <summary>
     /// Пользовательские данные
     /// Доступны в качестве контекста в шаблоне письма
