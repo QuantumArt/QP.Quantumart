@@ -1,16 +1,12 @@
-using Fluid.Ast;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
 using NLog.Fluent;
-using Npgsql;
-using NpgsqlTypes;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Info.Subscription;
 using Quantumart.QPublishing.Services;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -22,7 +18,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-using System.Transactions;
 using System.Xml.Linq;
 
 // ReSharper disable once CheckNamespace
@@ -429,7 +424,7 @@ namespace Quantumart.QPublishing.Database
                 {
                     throw new ArgumentException("User data not valid", nameof(userData), ex);
                 }
-            }            
+            }
 
             var values = new Dictionary<string, string>()
             {
@@ -994,8 +989,14 @@ namespace Quantumart.QPublishing.Database
 
             if (!string.IsNullOrWhiteSpace(userData))
             {
-                dynamic userForm = JObject.Parse(userData as string);
-                map.Add("UserForm", userForm);
+                try
+                {
+                    dynamic userForm = JObject.Parse(userData);
+                    map.Add("UserForm", userForm);
+                }
+                catch (JsonReaderException)
+                {
+                }
             }
         }
 
