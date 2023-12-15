@@ -492,7 +492,7 @@ namespace Quantumart.QPublishing.Database
                     notification,
                     email,
                     userdata,
-                    confirmed
+                    confirmed,
                     confirmationcode,
                     confirmationdate,
                     (select a.link_id from content_attribute a where a.content_id = {ReceiverContentId} and a.attribute_name = 'Category') as category
@@ -519,7 +519,7 @@ namespace Quantumart.QPublishing.Database
                 notification,
                 email,
                 userdata,
-                confirmed
+                confirmed,
                 confirmationcode,
                 confirmationdate,
                 category
@@ -557,6 +557,11 @@ namespace Quantumart.QPublishing.Database
                     CategoryLinkId = GetNumInt(row["category"])
                 })
                 .FirstOrDefault();
+
+            if (item == null)
+            {
+                return null;
+            }
 
             var categoriesQuery = @$"
                 select
@@ -683,7 +688,7 @@ namespace Quantumart.QPublishing.Database
                     UseEmailFromContent = GetNumBool(row["USE_EMAIL_FROM_CONTENT"]),
                     ConfirmationTemplateId = GetNumInt(row["CONFIRMATION_TEMPLATE_ID"]),
                 })
-                .FirstOrDefault();
+                .First();
         }
 
         public void SendNotification(int siteId, string notificationOn, int contentItemId, string notificationEmail, bool isLive, int[] notificationIds = null)
@@ -885,7 +890,7 @@ namespace Quantumart.QPublishing.Database
             {
                 try
                 {
-                    dynamic oldUserData = JObject.Parse(request.OldUserData as string);
+                    dynamic oldUserData = JObject.Parse(request.OldUserData);
                     collection.Add(new(nameof(request.OldUserData), oldUserData));
                 }
                 catch (JsonReaderException)
@@ -897,7 +902,7 @@ namespace Quantumart.QPublishing.Database
             {
                 try
                 {
-                    dynamic newUserData = JObject.Parse(request.NewUserData as string);
+                    dynamic newUserData = JObject.Parse(request.NewUserData);
                     collection.Add(new(nameof(request.NewUserData), newUserData));
                 }
                 catch (JsonReaderException)
@@ -924,6 +929,7 @@ namespace Quantumart.QPublishing.Database
             var toTable = GetRecipientTable(notifyRow, new[] { contentItemId }, notificationId);
             (string subjectTemplate, string bodyTemplate) = GetTemplate(GetNumInt(notifyRow["TEMPLATE_ID"]));
             object model = BuildObjectModelFromArticle(contentItemId);
+            IMailRenderService renderer = new FluidBaseMailRenderService();
 
             foreach (DataRow row in toTable.Rows)
             {
@@ -942,7 +948,6 @@ namespace Quantumart.QPublishing.Database
 
                 try
                 {
-                    IMailRenderService renderer = new FluidBaseMailRenderService();
                     AddUserFormToModel(userForm, model);
                     mailMess.Subject = renderer.RenderText(subjectTemplate, model);
                     mailMess.Body = renderer.RenderText(bodyTemplate, model);
