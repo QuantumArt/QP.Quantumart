@@ -234,7 +234,7 @@ namespace Quantumart.QPublishing.Info
                     sqlCmd.Parameters.AddWithValue("@id", Id);
                     return _dbConnector.GetRealData(sqlCmd).Select().Select(row => Convert.ToInt32(row["content_item_id"]));
                 case DatabaseType.Postgres:
-                    DbCommand pgCmd = _dbConnector.CreateDbCommand($"SELECT public.qp_get_m2o_ids({contentId}, '{fieldName}', {Id});");
+                    DbCommand pgCmd = _dbConnector.CreateDbCommand($"SELECT qp_get_m2o_ids({contentId}, '{fieldName}', {Id});");
                     DataTable result = _dbConnector.GetRealData(pgCmd);
 
                     if (result.Rows.Count == 0 || result.Rows[0].ItemArray.Length == 0 || result.Rows[0].ItemArray[0] is DBNull)
@@ -491,7 +491,7 @@ namespace Quantumart.QPublishing.Info
             }
             else
             {
-                query = $"select public.qp_get_aggregated_ids(@article_id, @ids, @cids, @isLive)";
+                query = $"select qp_get_aggregated_ids(@article_id, @ids, @cids, @isLive)";
             }
 
 
