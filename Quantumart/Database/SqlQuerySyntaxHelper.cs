@@ -113,7 +113,7 @@ namespace Quantumart.QPublishing.Database
         }
 
 
-        public static string DbSchemaName(DatabaseType databaseType) => databaseType == DatabaseType.Postgres ? "public" : "dbo";
+        public static string DbSchemaName(DatabaseType databaseType) => databaseType == DatabaseType.Postgres ? "" : "dbo.";
 
         public static string WithNoLock(DatabaseType databaseType) => databaseType == DatabaseType.SqlServer ? "with(nolock) " : string.Empty;
 

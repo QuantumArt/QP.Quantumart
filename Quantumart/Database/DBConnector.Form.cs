@@ -248,7 +248,7 @@ namespace Quantumart.QPublishing.Database
 
         private Tuple<int, DateTime> PersistArticle(XDocument doc)
         {
-            var sql = "select id, modified from public.qp_persist_article(@xml);";
+            var sql = "select id, modified from qp_persist_article(@xml);";
             var xml = doc.ToString();
             using (var cmd = (NpgsqlCommand)CreateDbCommand(sql))
             {

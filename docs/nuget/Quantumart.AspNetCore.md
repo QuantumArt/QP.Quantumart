@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.0.13
+
+* Удалена схема public из запросов к PostgreSQL (#173717)
+
 ### Quantumart.AspNetCore.6.0.12
 
 * Рассылка уведомлений для получателей из контента
