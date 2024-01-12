@@ -10,7 +10,7 @@
 
 ## Quantumart.AspNetCore 6.x
 
-### Quantumart.AspNetCore.6.0.12beta1
+### Quantumart.AspNetCore.6.0.12
 
 * Рассылка уведомлений для получателей из контента
 * Методы для управления получателями из контента
