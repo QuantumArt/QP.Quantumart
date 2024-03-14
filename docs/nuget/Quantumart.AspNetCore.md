@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.0.15
+
+* Обновлены nuget-пакеты `System.Data.SqlClient` и `SixLabors.ImageSharp` в связи с найденными уязвимостями (#174238)
+
 ### Quantumart.AspNetCore.6.0.14
 
 * Добавлена поддержка нативных типов EF для PostgreSQL (#173019)
