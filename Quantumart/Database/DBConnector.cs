@@ -68,9 +68,9 @@ namespace Quantumart.QPublishing.Database
             return string.IsNullOrEmpty(result) ? defaultValue : result;
         }
 
-        public static bool GetNumBool(object obj) => Convert.ToBoolean((decimal)obj);
+        public static bool GetNumBool(object obj) => Convert.ToBoolean(obj);
 
-        public static int GetNumInt(object obj) => (int)(decimal)obj;
+        public static int GetNumInt(object obj) => Convert.ToInt32(obj);
 
         public string FormatField(string input, int siteId, bool isLive)
         {

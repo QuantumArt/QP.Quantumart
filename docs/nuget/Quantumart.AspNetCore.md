@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.0.14
+
+* Добавлена поддержка нативных типов EF для PostgreSQL (#173019)
+
 ### Quantumart.AspNetCore.6.0.13
 
 * Удалена схема public из запросов к PostgreSQL (#173717)
