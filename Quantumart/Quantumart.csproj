@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Version>6.0.15</Version>
+    <Version>6.1.0-beta1</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -32,19 +32,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fluid.Core" Version="2.4.0" />
+    <PackageReference Include="Fluid.Core" Version="2.8.0" />
     <PackageReference Include="Minio" Version="6.0.2" />
     <PackageReference Include="System.Collections" Version="4.3.0" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" PrivateAssets="None" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3" PrivateAssets="None" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" PrivateAssets="None" />
   </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <Reference Include="netstandard, Version=2.1.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="NLog" Version="4.7.15" />
+    <PackageReference Include="NLog" Version="5.2.8" />
     <PackageReference Include="Npgsql" Version="6.0.7" />
     <PackageReference Include="QP.ConfigurationService.Client" Version="0.2.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
