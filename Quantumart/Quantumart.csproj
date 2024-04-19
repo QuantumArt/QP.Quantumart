@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fluid.Core" Version="2.4.0" />
+    <PackageReference Include="Minio" Version="6.0.2" />
     <PackageReference Include="System.Collections" Version="4.3.0" PrivateAssets="None" />
     <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" PrivateAssets="None" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" PrivateAssets="None" />

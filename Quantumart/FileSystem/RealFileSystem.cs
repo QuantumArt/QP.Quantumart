@@ -1,4 +1,8 @@
 using System.IO;
+using System.Xml;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.Formats;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.FileSystem
@@ -35,5 +39,44 @@ namespace Quantumart.QPublishing.FileSystem
 
             File.Copy(sourceName, destName);
         }
+
+        public bool FileExists(string path)
+        {
+            return File.Exists(path);
+        }
+
+        public ImageInfo IdentifyImage(string path)
+        {
+            return Image.Identify(path);
+        }
+
+        public Image LoadImage(string path)
+        {
+            return Image.Load(path);
+        }
+
+        public void SaveImage(Image image, string path, IImageEncoder encoder = null)
+        {
+            image.Save(path, encoder ?? image.DetectEncoder(path));
+        }
+
+        public XmlDocument LoadXml(string fileName)
+        {
+            var xmlDocument = new XmlDocument();
+            xmlDocument.Load(fileName);
+            return xmlDocument;
+        }
+
+        public Stream LoadStream(string fileName)
+        {
+            return new MemoryStream(File.ReadAllBytes(fileName));
+        }
+
+        public void SaveXml(XmlDocument xml, string fileName)
+        {
+            xml.Save(fileName);
+        }
+
+
     }
 }

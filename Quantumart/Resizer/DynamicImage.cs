@@ -127,7 +127,7 @@ namespace Quantumart.QPublishing.Resizer
         public void Create()
         {
             var baseImagePath = (_info.ImagePath + Path.DirectorySeparatorChar + _info.ImageName).Replace("/", Path.DirectorySeparatorChar.ToString());
-            if (!File.Exists(baseImagePath))
+            if (!_fileSystem.FileExists(baseImagePath))
             {
                 return;
             }
@@ -137,23 +137,18 @@ namespace Quantumart.QPublishing.Resizer
 
             if (!_info.ImageName.ToUpper().EndsWith(SVG_EXTENSION))
             {
-                using (var image = Image.Load(baseImagePath))
+                using (var image = _fileSystem.LoadImage(baseImagePath))
                 {
                     var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
                     image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
 
                     _fileSystem.CreateDirectory(resultDir);
-                    using (var fs = File.OpenWrite(resultPath))
-                    {
-                        image.Save(fs, Encoder);
-                    }
-
+                    _fileSystem.SaveImage(image, resultPath, Encoder);
                 }
             }
             else
             {
-                var xmlDocument = new XmlDocument();
-                xmlDocument.Load(baseImagePath);
+                var xmlDocument = _fileSystem.LoadXml(baseImagePath);
                 var documentElement = xmlDocument.DocumentElement;
                 if (documentElement == null)
                 {
@@ -187,7 +182,7 @@ namespace Quantumart.QPublishing.Resizer
                     heightAttr.Value = desiredImageSize.Height.ToString();
                 }
 
-                xmlDocument.Save(resultPath);
+                _fileSystem.SaveXml(xmlDocument,resultPath);
 
             }
         }

@@ -456,7 +456,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetNotificationSubscription(int id)
         {
             var query = @$"
-                select 
+                select
                     content_item_id,
                     notification,
                     email,
@@ -482,7 +482,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetNotificationSubscription(string confirmationCode)
         {
             var query = @$"
-                select 
+                select
                     content_item_id,
                     notification,
                     email,
@@ -509,7 +509,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetConfirmedNotificationSubscription(int notificationId, string notificationEmail)
         {
             var query = @$"
-                select 
+                select
                 content_item_id,
                 notification,
                 email,
@@ -595,7 +595,7 @@ namespace Quantumart.QPublishing.Database
         private void RemoveNotificationSubscriptions(int notificationId, string notificationEmail, int? exceptId = null)
         {
             var query = $@"
-                select 
+                select
                     content_item_id id
                 from content_{ReceiverContentId}_united
                 where notification = @notificationId and email = @email";
@@ -1489,11 +1489,11 @@ namespace Quantumart.QPublishing.Database
         {
             MailAddress functionReturnValue;
             var fromName = notification.FromDefaultName ? DbConnectorSettings.MailFromName : notification.FromUserName;
-            var from = notification.FromBackendUser ? notification.FromBackendUserEmail : notification.FromUserEmail;            
+            var from = notification.FromBackendUser ? notification.FromBackendUserEmail : notification.FromUserEmail;
 
             if (string.IsNullOrWhiteSpace(from))
             {
-                throw new Exception("Mail sender is not defined");                
+                throw new Exception("Mail sender is not defined");
             }
             else
             {
@@ -1553,7 +1553,7 @@ namespace Quantumart.QPublishing.Database
             foreach (DataRow fileRow in rstData.Rows)
             {
                 var fileName = currentDir + Path.DirectorySeparatorChar + fileRow["data"];
-                if (File.Exists(fileName))
+                if (FileSystem.FileExists(fileName))
                 {
                     mailMess.Attachments.Add(new Attachment(fileName));
                 }
