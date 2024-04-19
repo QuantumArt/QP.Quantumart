@@ -1,3 +1,4 @@
+using System.IO;
 using System.Xml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -23,6 +24,8 @@ namespace Quantumart.QPublishing.FileSystem
         void SaveImage(Image image, string path, IImageEncoder encoder = null);
 
         ImageInfo IdentifyImage(string path);
+
+        Stream LoadStream(string path);
 
     }
 }

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Xml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -35,5 +36,6 @@ namespace Quantumart.QPublishing.FileSystem
         }
 
         public ImageInfo IdentifyImage(string path) => throw new System.NotImplementedException();
+        public Stream LoadStream(string path) => throw new System.NotImplementedException();
     }
 }
