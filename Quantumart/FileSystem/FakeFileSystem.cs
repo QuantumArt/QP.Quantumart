@@ -37,5 +37,9 @@ namespace Quantumart.QPublishing.FileSystem
 
         public ImageInfo IdentifyImage(string path) => throw new System.NotImplementedException();
         public Stream LoadStream(string path) => throw new System.NotImplementedException();
+        public void SaveStream(Stream stream, string path)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

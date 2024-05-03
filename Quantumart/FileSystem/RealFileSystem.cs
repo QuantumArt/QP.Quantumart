@@ -72,11 +72,15 @@ namespace Quantumart.QPublishing.FileSystem
             return new MemoryStream(File.ReadAllBytes(fileName));
         }
 
+        public void SaveStream(Stream stream, string path)
+        {
+            using var fileStream = File.Create(path);
+            stream.CopyTo(fileStream);
+        }
+
         public void SaveXml(XmlDocument xml, string fileName)
         {
             xml.Save(fileName);
         }
-
-
     }
 }

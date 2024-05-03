@@ -27,5 +27,7 @@ namespace Quantumart.QPublishing.FileSystem
 
         Stream LoadStream(string path);
 
+        void SaveStream(Stream stream, string path);
+
     }
 }

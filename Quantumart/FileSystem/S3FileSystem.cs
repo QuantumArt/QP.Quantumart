@@ -114,7 +114,7 @@ public class S3FileSystem : IFileSystem
         return memoryStream;
     }
 
-    private void SetS3File(MemoryStream stream, string path)
+    private void SetS3File(Stream stream, string path)
     {
         new FileExtensionContentTypeProvider().TryGetContentType(path, out var contentType);
 
@@ -143,6 +143,11 @@ public class S3FileSystem : IFileSystem
     public Stream LoadStream(string path)
     {
         return GetS3Stream(path);
+    }
+
+    public void SaveStream(Stream stream, string path)
+    {
+        SetS3File(stream, path);
     }
 
     public void SaveImage(Image image, string path, IImageEncoder encoder = null)
