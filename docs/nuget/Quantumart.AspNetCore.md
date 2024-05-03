@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.1.0
+
+* Добавлена реализация новая реализация IFileSystem с поддержкой MinIO (#174303)
+
 ### Quantumart.AspNetCore.6.0.15
 
 * Обновлены nuget-пакеты `System.Data.SqlClient` и `SixLabors.ImageSharp` в связи с найденными уязвимостями (#174238)
