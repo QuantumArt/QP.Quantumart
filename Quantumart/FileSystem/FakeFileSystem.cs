@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -41,5 +42,9 @@ namespace Quantumart.QPublishing.FileSystem
         {
             throw new System.NotImplementedException();
         }
+
+        public Task<Stream> LoadStreamAsync(string path) => throw new System.NotImplementedException();
+
+        public Task SaveStreamAsync(Stream stream, string path) => throw new System.NotImplementedException();
     }
 }

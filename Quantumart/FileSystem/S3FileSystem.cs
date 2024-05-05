@@ -100,21 +100,29 @@ public class S3FileSystem : IFileSystem
         Task.Run(async () => await _client.CopyObjectAsync(destArgs)).Wait();
     }
 
-    private MemoryStream GetS3Stream(string path)
+    private Stream GetS3Stream(string path)
+    {
+        return Task.Run(async () => await GetS3StreamAsync(path)).Result;
+    }
+
+    private async Task<Stream> GetS3StreamAsync(string path)
     {
         MemoryStream memoryStream = new MemoryStream();
         GetObjectArgs getObjectArgs = new GetObjectArgs()
             .WithBucket(_bucket)
             .WithObject(FixPathSeparator(path))
             .WithCallbackStream(stream => { stream.CopyTo(memoryStream); });
-        _ = Task.Run(async () =>
-            await _client.GetObjectAsync(getObjectArgs)
-        ).Result;
+        await _client.GetObjectAsync(getObjectArgs);
         memoryStream.Position = 0;
         return memoryStream;
     }
 
     private void SetS3File(Stream stream, string path)
+    {
+        Task.Run(async () => await SetS3FileAsync(stream, path)).Wait();
+    }
+
+    private async Task SetS3FileAsync(Stream stream, string path)
     {
         new FileExtensionContentTypeProvider().TryGetContentType(path, out var contentType);
 
@@ -125,7 +133,7 @@ public class S3FileSystem : IFileSystem
             .WithStreamData(stream)
             .WithObjectSize(stream.Length);
 
-        Task.Run(async () => await _client.PutObjectAsync(putObjectArgs)).Wait();
+        await _client.PutObjectAsync(putObjectArgs);
     }
 
     public ImageInfo IdentifyImage(string path)
@@ -140,15 +148,13 @@ public class S3FileSystem : IFileSystem
         return Image.Load(stream);
     }
 
-    public Stream LoadStream(string path)
-    {
-        return GetS3Stream(path);
-    }
+    public Stream LoadStream(string path) => GetS3Stream(path);
 
-    public void SaveStream(Stream stream, string path)
-    {
-        SetS3File(stream, path);
-    }
+    public void SaveStream(Stream stream, string path) => SetS3File(stream, path);
+
+    public Task<Stream> LoadStreamAsync(string path) => GetS3StreamAsync(path);
+
+    public Task SaveStreamAsync(Stream stream, string path) => SetS3FileAsync(stream, path);
 
     public void SaveImage(Image image, string path, IImageEncoder encoder = null)
     {

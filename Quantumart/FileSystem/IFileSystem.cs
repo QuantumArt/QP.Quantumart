@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using System.Xml;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
@@ -28,6 +29,10 @@ namespace Quantumart.QPublishing.FileSystem
         Stream LoadStream(string path);
 
         void SaveStream(Stream stream, string path);
+
+        Task<Stream> LoadStreamAsync(string path);
+
+        Task SaveStreamAsync(Stream stream, string path);
 
     }
 }
