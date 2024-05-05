@@ -1364,15 +1364,15 @@ namespace Quantumart.QPublishing.Database
             string strSql;
             if (!ReferenceEquals(userId, DBNull.Value))
             {
-                strSql = $"SELECT EMAIL, USER_ID FROM users, NULL USER_DATA WHERE user_id = {userId}";
+                strSql = $"SELECT EMAIL, USER_ID, NULL AS USER_DATA FROM users WHERE user_id = {userId}";
             }
             else if (!ReferenceEquals(groupId, DBNull.Value))
             {
-                strSql = $"SELECT U.EMAIL, U.USER_ID, NULL USER_DATA FROM users AS u LEFT OUTER JOIN user_group_bind AS ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
+                strSql = $"SELECT U.EMAIL, U.USER_ID, NULL AS USER_DATA FROM users u LEFT OUTER JOIN user_group_bind ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
             }
             else if (!ReferenceEquals(eMailAttrId, DBNull.Value))
             {
-                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID, NULL USER_DATA FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
+                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID, NULL AS USER_DATA FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
             }
             else if (UseEmailFromContent(notifyRow))
             {
@@ -1381,8 +1381,8 @@ namespace Quantumart.QPublishing.Database
                     strSql = @$"
                         SELECT
                             r.email,
-                            NULL USER_ID,
-                            r.userData USER_DATA
+                            NULL AS USER_ID,
+                            r.userData AS USER_DATA
                         FROM content_{ReceiverContentId}_united r {NoLock}
                         JOIN notifications n {NoLock} ON r.notification = n.notification_id
                         WHERE
@@ -1397,8 +1397,8 @@ namespace Quantumart.QPublishing.Database
                     strSql = @$"
                         SELECT
                             receiver_r.email,
-                            NULL USER_ID,
-                            receiver_r.userData USER_DATA,
+                            NULL AS USER_ID,
+                            receiver_r.userData AS USER_DATA,
                             article.item_id
                         FROM content_{ReceiverContentId}_united receiver_r {NoLock}
                         JOIN notifications receiver_n {NoLock} ON
