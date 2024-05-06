@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Xml;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Info;
 using SixLabors.ImageSharp;
@@ -67,9 +66,9 @@ namespace Quantumart.QPublishing.Resizer
         {
             var newName = _info.ImageName.Replace("/", Path.DirectorySeparatorChar.ToString());
             var fileNameParts = newName.Split('.');
-            if (!fileNameParts[fileNameParts.Length - 1].Equals(SVG_EXTENSION, StringComparison.InvariantCultureIgnoreCase))
+            if (!fileNameParts[^1].Equals(SVG_EXTENSION, StringComparison.InvariantCultureIgnoreCase))
             {
-                fileNameParts[fileNameParts.Length - 1] = _info.FileType;
+                fileNameParts[^1] = _info.FileType;
             }
             return "field_" + _info.AttrId + Path.DirectorySeparatorChar + string.Join(".", fileNameParts);
         }
@@ -137,14 +136,12 @@ namespace Quantumart.QPublishing.Resizer
 
             if (!_info.ImageName.ToUpper().EndsWith(SVG_EXTENSION))
             {
-                using (var image = _fileSystem.LoadImage(baseImagePath))
-                {
-                    var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
-                    image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
+                using var image = _fileSystem.LoadImage(baseImagePath);
+                var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
+                image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
 
-                    _fileSystem.CreateDirectory(resultDir);
-                    _fileSystem.SaveImage(image, resultPath, Encoder);
-                }
+                _fileSystem.CreateDirectory(resultDir);
+                _fileSystem.SaveImage(image, resultPath, Encoder);
             }
             else
             {
@@ -158,13 +155,13 @@ namespace Quantumart.QPublishing.Resizer
                 var width = 0;
                 var height = 0;
                 var widthAttr = documentElement.Attributes.GetNamedItem("width");
-                if (widthAttr != null)
+                if (widthAttr is { Value: not null })
                 {
                     width = int.Parse(Regex.Match(widthAttr.Value, "\\d+").Value);
                 }
 
                 var heightAttr = documentElement.Attributes.GetNamedItem("height");
-                if (heightAttr != null)
+                if (heightAttr is { Value: not null })
                 {
                     height = int.Parse(Regex.Match(heightAttr.Value, "\\d+").Value);
                 }
@@ -182,7 +179,7 @@ namespace Quantumart.QPublishing.Resizer
                     heightAttr.Value = desiredImageSize.Height.ToString();
                 }
 
-                _fileSystem.SaveXml(xmlDocument,resultPath);
+                _fileSystem.SaveXml(xmlDocument, resultPath);
 
             }
         }
@@ -196,7 +193,7 @@ namespace Quantumart.QPublishing.Resizer
             else
             {
                 var fileNameParts = fileName.Split('.');
-                fileNameParts[fileNameParts.Length - 1] = outFileType;
+                fileNameParts[^1] = outFileType;
                 return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
             }
         }
