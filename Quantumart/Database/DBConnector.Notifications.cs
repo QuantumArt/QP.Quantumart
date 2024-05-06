@@ -1551,7 +1551,7 @@ namespace Quantumart.QPublishing.Database
             var rstData = GetRealData(strDataSql);
             foreach (DataRow fileRow in rstData.Rows)
             {
-                var attrId = (int)fileRow["attribute_id"];
+                var attrId = Convert.ToInt32(fileRow["attribute_id"]);
                 var fileName = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileRow["data"];
                 if (FileSystem.FileExists(fileName))
                 {
