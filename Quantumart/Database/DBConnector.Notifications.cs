@@ -1547,12 +1547,12 @@ namespace Quantumart.QPublishing.Database
 
         public void AttachFiles(MailMessage mailMess, int siteId, int contentId, int contentItemId)
         {
-            var strDataSql = $"select cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = {contentId} and ca.attribute_type_id in (7,8) and cd.content_item_id = {contentItemId}";
+            var strDataSql = $"select cd.attribute_id, cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = {contentId} and ca.attribute_type_id in (7,8) and cd.content_item_id = {contentItemId}";
             var rstData = GetRealData(strDataSql);
-            var currentDir = GetUploadDir(siteId) + "\\contents\\" + contentId;
             foreach (DataRow fileRow in rstData.Rows)
             {
-                var fileName = currentDir + Path.DirectorySeparatorChar + fileRow["data"];
+                var attrId = (int)fileRow["attribute_id"];
+                var fileName = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileRow["data"];
                 if (FileSystem.FileExists(fileName))
                 {
                     using var stream = FileSystem.LoadStream(fileName);
