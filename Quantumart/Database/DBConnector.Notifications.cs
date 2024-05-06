@@ -1555,7 +1555,7 @@ namespace Quantumart.QPublishing.Database
                 var fileName = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileRow["data"];
                 if (FileSystem.FileExists(fileName))
                 {
-                    using var stream = FileSystem.LoadStream(fileName);
+                    var stream = FileSystem.LoadStream(fileName);
                     mailMess.Attachments.Add(new Attachment(stream, fileName));
                 }
             }
