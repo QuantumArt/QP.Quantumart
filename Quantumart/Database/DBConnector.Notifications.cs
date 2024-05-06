@@ -1547,16 +1547,22 @@ namespace Quantumart.QPublishing.Database
 
         public void AttachFiles(MailMessage mailMess, int siteId, int contentId, int contentItemId)
         {
-            var strDataSql = $"select cd.attribute_id, cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = {contentId} and ca.attribute_type_id in (7,8) and cd.content_item_id = {contentItemId}";
+            var strDataSql = @$"
+                select cd.attribute_id, cd.data from content_data cd
+                inner join content_attribute ca on cd.attribute_id = ca.attribute_id
+                where ca.content_id = {contentId} and ca.attribute_type_id in (7,8)
+                and cd.content_item_id = {contentItemId} and cd.data is not null
+            ";
             var rstData = GetRealData(strDataSql);
             foreach (DataRow fileRow in rstData.Rows)
             {
                 var attrId = Convert.ToInt32(fileRow["attribute_id"]);
-                var fileName = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileRow["data"];
-                if (FileSystem.FileExists(fileName))
+                var fileName = Convert.ToString(fileRow["data"]);
+                var resultFileName = fileName.Replace( '\\', '_').Replace('/', '_');
+                var path = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileName;
+                if (FileSystem.FileExists(path))
                 {
-                    var stream = FileSystem.LoadStream(fileName);
-                    mailMess.Attachments.Add(new Attachment(stream, fileName));
+                    mailMess.Attachments.Add(new Attachment(FileSystem.LoadStream(path), resultFileName));
                 }
             }
         }
