@@ -180,22 +180,19 @@ namespace Quantumart.QPublishing.Resizer
                 }
 
                 _fileSystem.SaveXml(xmlDocument, resultPath);
-
             }
         }
 
-       public static string GetDynamicImageRelUrl(string fileName, decimal attributeId, string outFileType)
+        public static string GetDynamicImageRelUrl(string fileName, decimal attributeId, string outFileType)
         {
             if (fileName == null)
             {
                 return null;
             }
-            else
-            {
-                var fileNameParts = fileName.Split('.');
-                fileNameParts[^1] = outFileType;
-                return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
-            }
+
+            var fileNameParts = fileName.Split('.');
+            fileNameParts[^1] = outFileType;
+            return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
         }
     }
 }
