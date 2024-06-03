@@ -456,7 +456,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetNotificationSubscription(int id)
         {
             var query = @$"
-                select 
+                select
                     content_item_id,
                     notification,
                     email,
@@ -482,7 +482,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetNotificationSubscription(string confirmationCode)
         {
             var query = @$"
-                select 
+                select
                     content_item_id,
                     notification,
                     email,
@@ -509,7 +509,7 @@ namespace Quantumart.QPublishing.Database
         private NotificationSubscription GetConfirmedNotificationSubscription(int notificationId, string notificationEmail)
         {
             var query = @$"
-                select 
+                select
                 content_item_id,
                 notification,
                 email,
@@ -595,7 +595,7 @@ namespace Quantumart.QPublishing.Database
         private void RemoveNotificationSubscriptions(int notificationId, string notificationEmail, int? exceptId = null)
         {
             var query = $@"
-                select 
+                select
                     content_item_id id
                 from content_{ReceiverContentId}_united
                 where notification = @notificationId and email = @email";
@@ -1364,15 +1364,15 @@ namespace Quantumart.QPublishing.Database
             string strSql;
             if (!ReferenceEquals(userId, DBNull.Value))
             {
-                strSql = $"SELECT EMAIL, USER_ID FROM users, NULL USER_DATA WHERE user_id = {userId}";
+                strSql = $"SELECT EMAIL, USER_ID, NULL AS USER_DATA FROM users WHERE user_id = {userId}";
             }
             else if (!ReferenceEquals(groupId, DBNull.Value))
             {
-                strSql = $"SELECT U.EMAIL, U.USER_ID, NULL USER_DATA FROM users AS u LEFT OUTER JOIN user_group_bind AS ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
+                strSql = $"SELECT U.EMAIL, U.USER_ID, NULL AS USER_DATA FROM users u LEFT OUTER JOIN user_group_bind ub ON ub.user_id = u.user_id WHERE ub.group_id = {groupId}";
             }
             else if (!ReferenceEquals(eMailAttrId, DBNull.Value))
             {
-                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID, NULL USER_DATA FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
+                strSql = $"SELECT DISTINCT(DATA) AS EMAIL, NULL AS USER_ID, NULL AS USER_DATA FROM content_data WHERE content_item_id in ({ids}) AND attribute_id = {eMailAttrId}";
             }
             else if (UseEmailFromContent(notifyRow))
             {
@@ -1381,8 +1381,8 @@ namespace Quantumart.QPublishing.Database
                     strSql = @$"
                         SELECT
                             r.email,
-                            NULL USER_ID,
-                            r.userData USER_DATA
+                            NULL AS USER_ID,
+                            r.userData AS USER_DATA
                         FROM content_{ReceiverContentId}_united r {NoLock}
                         JOIN notifications n {NoLock} ON r.notification = n.notification_id
                         WHERE
@@ -1397,8 +1397,8 @@ namespace Quantumart.QPublishing.Database
                     strSql = @$"
                         SELECT
                             receiver_r.email,
-                            NULL USER_ID,
-                            receiver_r.userData USER_DATA,
+                            NULL AS USER_ID,
+                            receiver_r.userData AS USER_DATA,
                             article.item_id
                         FROM content_{ReceiverContentId}_united receiver_r {NoLock}
                         JOIN notifications receiver_n {NoLock} ON
@@ -1489,11 +1489,11 @@ namespace Quantumart.QPublishing.Database
         {
             MailAddress functionReturnValue;
             var fromName = notification.FromDefaultName ? DbConnectorSettings.MailFromName : notification.FromUserName;
-            var from = notification.FromBackendUser ? notification.FromBackendUserEmail : notification.FromUserEmail;            
+            var from = notification.FromBackendUser ? notification.FromBackendUserEmail : notification.FromUserEmail;
 
             if (string.IsNullOrWhiteSpace(from))
             {
-                throw new Exception("Mail sender is not defined");                
+                throw new Exception("Mail sender is not defined");
             }
             else
             {
@@ -1547,15 +1547,22 @@ namespace Quantumart.QPublishing.Database
 
         public void AttachFiles(MailMessage mailMess, int siteId, int contentId, int contentItemId)
         {
-            var strDataSql = $"select cd.data from content_data cd inner join content_attribute ca on cd.attribute_id = ca.attribute_id where ca.content_id = {contentId} and ca.attribute_type_id in (7,8) and cd.content_item_id = {contentItemId}";
+            var strDataSql = @$"
+                select cd.attribute_id, cd.data from content_data cd
+                inner join content_attribute ca on cd.attribute_id = ca.attribute_id
+                where ca.content_id = {contentId} and ca.attribute_type_id in (7,8)
+                and cd.content_item_id = {contentItemId} and cd.data is not null
+            ";
             var rstData = GetRealData(strDataSql);
-            var currentDir = GetUploadDir(siteId) + "\\contents\\" + contentId;
             foreach (DataRow fileRow in rstData.Rows)
             {
-                var fileName = currentDir + Path.DirectorySeparatorChar + fileRow["data"];
-                if (File.Exists(fileName))
+                var attrId = Convert.ToInt32(fileRow["attribute_id"]);
+                var fileName = Convert.ToString(fileRow["data"]);
+                var resultFileName = fileName.Replace( '\\', '_').Replace('/', '_');
+                var path = GetDirectoryForFileAttribute(attrId) + Path.DirectorySeparatorChar + fileName;
+                if (FileSystem.FileExists(path))
                 {
-                    mailMess.Attachments.Add(new Attachment(fileName));
+                    mailMess.Attachments.Add(new Attachment(FileSystem.LoadStream(path), resultFileName));
                 }
             }
         }

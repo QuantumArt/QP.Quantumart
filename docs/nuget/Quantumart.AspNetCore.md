@@ -10,6 +10,14 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.1.0
+
+* Добавлена новая реализация IFileSystem с поддержкой MinIO (#174303)
+* Исправлены ошибки с уведомлениями:
+  * При выборе пользователя в качестве получателя возникает SQL-ошибка (#174698)
+  * Aттачменты не поддерживают Use Site Library и Subfolder (#174699)
+  * Исправлено имя файла аттачмента (#174700)
+
 ### Quantumart.AspNetCore.6.0.15
 
 * Обновлены nuget-пакеты `System.Data.SqlClient` и `SixLabors.ImageSharp` в связи с найденными уязвимостями (#174238)

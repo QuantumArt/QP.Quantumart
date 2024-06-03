@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
-using System.Xml;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Info;
 using SixLabors.ImageSharp;
@@ -67,9 +66,9 @@ namespace Quantumart.QPublishing.Resizer
         {
             var newName = _info.ImageName.Replace("/", Path.DirectorySeparatorChar.ToString());
             var fileNameParts = newName.Split('.');
-            if (!fileNameParts[fileNameParts.Length - 1].Equals(SVG_EXTENSION, StringComparison.InvariantCultureIgnoreCase))
+            if (!fileNameParts[^1].Equals(SVG_EXTENSION, StringComparison.InvariantCultureIgnoreCase))
             {
-                fileNameParts[fileNameParts.Length - 1] = _info.FileType;
+                fileNameParts[^1] = _info.FileType;
             }
             return "field_" + _info.AttrId + Path.DirectorySeparatorChar + string.Join(".", fileNameParts);
         }
@@ -127,7 +126,7 @@ namespace Quantumart.QPublishing.Resizer
         public void Create()
         {
             var baseImagePath = (_info.ImagePath + Path.DirectorySeparatorChar + _info.ImageName).Replace("/", Path.DirectorySeparatorChar.ToString());
-            if (!File.Exists(baseImagePath))
+            if (!_fileSystem.FileExists(baseImagePath))
             {
                 return;
             }
@@ -137,23 +136,16 @@ namespace Quantumart.QPublishing.Resizer
 
             if (!_info.ImageName.ToUpper().EndsWith(SVG_EXTENSION))
             {
-                using (var image = Image.Load(baseImagePath))
-                {
-                    var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
-                    image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
+                using var image = _fileSystem.LoadImage(baseImagePath);
+                var desiredSize = GetDesiredImageSize(new Size(image.Width, image.Height));
+                image.Mutate(x => x.Resize(desiredSize.Width, desiredSize.Height));
 
-                    _fileSystem.CreateDirectory(resultDir);
-                    using (var fs = File.OpenWrite(resultPath))
-                    {
-                        image.Save(fs, Encoder);
-                    }
-
-                }
+                _fileSystem.CreateDirectory(resultDir);
+                _fileSystem.SaveImage(image, resultPath, Encoder);
             }
             else
             {
-                var xmlDocument = new XmlDocument();
-                xmlDocument.Load(baseImagePath);
+                var xmlDocument = _fileSystem.LoadXml(baseImagePath);
                 var documentElement = xmlDocument.DocumentElement;
                 if (documentElement == null)
                 {
@@ -163,13 +155,13 @@ namespace Quantumart.QPublishing.Resizer
                 var width = 0;
                 var height = 0;
                 var widthAttr = documentElement.Attributes.GetNamedItem("width");
-                if (widthAttr != null)
+                if (widthAttr is { Value: not null })
                 {
                     width = int.Parse(Regex.Match(widthAttr.Value, "\\d+").Value);
                 }
 
                 var heightAttr = documentElement.Attributes.GetNamedItem("height");
-                if (heightAttr != null)
+                if (heightAttr is { Value: not null })
                 {
                     height = int.Parse(Regex.Match(heightAttr.Value, "\\d+").Value);
                 }
@@ -187,23 +179,20 @@ namespace Quantumart.QPublishing.Resizer
                     heightAttr.Value = desiredImageSize.Height.ToString();
                 }
 
-                xmlDocument.Save(resultPath);
-
+                _fileSystem.SaveXml(xmlDocument, resultPath);
             }
         }
 
-       public static string GetDynamicImageRelUrl(string fileName, decimal attributeId, string outFileType)
+        public static string GetDynamicImageRelUrl(string fileName, decimal attributeId, string outFileType)
         {
             if (fileName == null)
             {
                 return null;
             }
-            else
-            {
-                var fileNameParts = fileName.Split('.');
-                fileNameParts[fileNameParts.Length - 1] = outFileType;
-                return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
-            }
+
+            var fileNameParts = fileName.Split('.');
+            fileNameParts[^1] = outFileType;
+            return "field_" + attributeId + "/" + string.Join(".", fileNameParts);
         }
     }
 }
