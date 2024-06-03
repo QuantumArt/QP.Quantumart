@@ -52,8 +52,8 @@ public class S3FileSystem : IFileSystem
             var statObjectArgs = new StatObjectArgs()
                 .WithBucket(_bucket)
                 .WithObject(FixPathSeparator(path));
-            Task.Run(async () => await _client.StatObjectAsync(statObjectArgs)).Wait();
-            return true;
+            var result = Task.Run(async () => await _client.StatObjectAsync(statObjectArgs)).Result;
+            return result.ETag != null && result.Size != 0;
         }
         catch (Exception)
         {
@@ -93,6 +93,10 @@ public class S3FileSystem : IFileSystem
 
     public void CopyFile(string sourceName, string destName)
     {
+        if (!FileExists(sourceName))
+        {
+            return;
+        }
         var sourceArgs = new CopySourceObjectArgs().WithBucket(_bucket).WithObject(FixPathSeparator(sourceName));
         var destArgs = new CopyObjectArgs().WithBucket(_bucket).WithObject(FixPathSeparator(destName))
             .WithCopyObjectSource(sourceArgs);
@@ -133,7 +137,12 @@ public class S3FileSystem : IFileSystem
             .WithStreamData(stream)
             .WithObjectSize(stream.Length);
 
-        await _client.PutObjectAsync(putObjectArgs);
+        var result = await _client.PutObjectAsync(putObjectArgs);
+        if (result.Etag == null)
+        {
+            throw new Exception($"Error while saving file {path} to S3");
+        }
+
     }
 
     public ImageInfo IdentifyImage(string path)
@@ -178,7 +187,4 @@ public class S3FileSystem : IFileSystem
         xmlDocument.Load(GetS3Stream(fileName));
         return xmlDocument;
     }
-
-
-
 }
