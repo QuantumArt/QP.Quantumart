@@ -74,4 +74,4 @@ if ($isDebug) {
 }
 
 
-Invoke-Sqlcmd -ServerInstance $serverInstance -Query $queryToRun -Username $sqlUserId -Password $sqlPassword
+Invoke-Sqlcmd -ServerInstance $serverInstance -Query $queryToRun -Username $sqlUserId -Password $sqlPassword -TrustServerCertificate
