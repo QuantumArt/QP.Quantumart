@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.1.1
+
+* Исправлена работа режима returnAll в GetContentItemLinkCommand (#175470)
+
 ### Quantumart.AspNetCore.6.1.0
 
 * Добавлена новая реализация IFileSystem с поддержкой MinIO (#174303)

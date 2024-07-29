@@ -154,13 +154,13 @@ namespace Quantumart.QPublishing.Database
             if (isManyToMany)
             {
                 table = IsStage ? "item_link_united" : "item_link";
+                query = returnAll ? "item_id, linked_item_id" : "DISTINCT linked_item_id";
                 if (ids.Length == 1)
                 {
-                    query = $@"SELECT linked_item_id FROM {table} {WithNoLock} WHERE item_id = @itemId AND link_id = @linkId";
+                    query = $@"SELECT {query} FROM {table} {WithNoLock} WHERE item_id = @itemId AND link_id = @linkId";
                 }
                 else
                 {
-                    query = returnAll ? "item_id, linked_item_id" : "DISTINCT linked_item_id";
                     query = $@"SELECT {query} FROM {table} {WithNoLock} where item_id in ({itemIds}) AND link_id = @linkId";
                 }
             }
@@ -176,16 +176,15 @@ namespace Quantumart.QPublishing.Database
                 var attrName = SqlQuerySyntaxHelper.FieldName(DatabaseType, attr.Name);
 
                 table = IsStage ? $@"content_{attr.ContentId}_united" : $@"content_{attr.ContentId}";
+                query = returnAll
+                    ? $"[{attr.Name}] as item_id, content_item_id as linked_item_id"
+                    : "DISTINCT content_item_id";
                 if (ids.Length == 1)
                 {
-                    query = $"SELECT content_item_id FROM {table} {WithNoLock} WHERE {attrName} = @itemId";
+                    query = $"SELECT {query} FROM {table} {WithNoLock} WHERE {attrName} = @itemId";
                 }
                 else
                 {
-                    query = returnAll
-                        ? $"[{attr.Name}] as item_id, content_item_id as linked_item_id"
-                        : "DISTINCT content_item_id";
-
                     query = $@"SELECT {query} FROM {table} {WithNoLock} WHERE {attrName} in ({itemIds})";
                 }
             }
