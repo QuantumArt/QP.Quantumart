@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
-using NLog.Fluent;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.Info;
 using Quantumart.QPublishing.Info.Subscription;
@@ -148,7 +147,7 @@ namespace Quantumart.QPublishing.Database
         private void InternalExceptionHandler(Exception ex, string code, WebRequest request)
         {
             var message = $"Unhandled exception occurs. Code: {code}, URL: {request?.RequestUri}";
-            _logger.Error().Exception(ex).Message(message).Write();
+            _logger.ForErrorEvent().Exception(ex).Message(message).Log();
 
             if (ThrowNotificationExceptions)
             {
@@ -763,7 +762,7 @@ namespace Quantumart.QPublishing.Database
                                 {
                                     mailMess.Subject = "Error while building mail message.";
                                     mailMess.Body = $"An error has occurred while building notification theme or message body for article with id {contentItemId}. Error message: {ex.Message}";
-                                    _logger.Error().Exception(ex).Message("Error while building message").Write();
+                                    _logger.ForErrorEvent().Exception(ex).Message("Error while building message").Log();
                                     doAttachFiles = false;
                                 }
 
@@ -841,7 +840,7 @@ namespace Quantumart.QPublishing.Database
                     {
                         mailMessage.Subject = "Error while building mail message.";
                         mailMessage.Body = $"An error has occurred while building notification theme or message body for articles with ids {string.Join(", ", contentItemIds)}. Error message: {ex.Message}";
-                        _logger.Error().Exception(ex).Message("Error while building message").Write();
+                        _logger.ForErrorEvent().Exception(ex).Message("Error while building message").Log();
                     }
 
                     string strSqlRegisterNotifyForUsers = string.Empty;
@@ -955,7 +954,7 @@ namespace Quantumart.QPublishing.Database
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error().Exception(ex).Message("Error while building or sending message").Write();
+                    _logger.ForErrorEvent().Exception(ex).Message("Error while building or sending message").Log();
                 }
             }
         }

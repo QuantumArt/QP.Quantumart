@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using NLog;
 using Npgsql;
 using NpgsqlTypes;
 using NLog.Fluent;
@@ -260,10 +261,10 @@ namespace Quantumart.QPublishing.Database
                 }
                 catch (PostgresException ex)
                 {
-                    _logger.Error()
+                    _logger.ForErrorEvent()
                         .Exception(ex)
                         .Message("Error while persisting article with xml: {xml}\n Query: {sql}", xml, sql)
-                        .Write();
+                        .Log();
 
                     throw;
                 }
