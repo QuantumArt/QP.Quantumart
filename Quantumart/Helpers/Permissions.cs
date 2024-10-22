@@ -1,9 +1,7 @@
 using System;
 using System.Data;
 using Quantumart.QPublishing.Database;
-
 using NLog;
-using NLog.Fluent;
 using QP.ConfigurationService.Models;
 
 // ReSharper disable once CheckNamespace
@@ -84,7 +82,7 @@ namespace Quantumart.QPublishing.Helpers
             }
             catch (Exception ex)
             {
-                LogManager.GetCurrentClassLogger().Error().Exception(ex).Message("Error while authenticating user").Write();
+                LogManager.GetCurrentClassLogger().ForErrorEvent().Exception(ex).Message("Error while authenticating user").Log();
                 return 0;
             }
             return dt.Rows.Count > 0 ? DBConnector.GetNumInt(dt.Rows[0]["user_id"]) : 0;

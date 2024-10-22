@@ -3,8 +3,8 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Globalization;
+using NLog;
 using Quantumart.QPublishing.Info;
-using NLog.Fluent;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
@@ -460,7 +460,7 @@ namespace Quantumart.QPublishing.Database
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error().Exception(ex).Message("Error while updating db").Write();
+                            _logger.ForErrorEvent().Exception(ex).Message("Error while updating db").Log();
                         }
 
                         if (retry == 0)
@@ -470,7 +470,7 @@ namespace Quantumart.QPublishing.Database
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error().Exception(ex).Message("Error while updating db").Write();
+                        _logger.ForErrorEvent().Exception(ex).Message("Error while updating db").Log();
                     }
                 }
                 finally
