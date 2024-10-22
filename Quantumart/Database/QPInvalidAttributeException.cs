@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database
 {
-    public class QpInvalidAttributeException : ApplicationException
+    public class QpInvalidAttributeException : ArgumentException
     {
         public QpInvalidAttributeException()
         {
@@ -20,6 +20,7 @@ namespace Quantumart.QPublishing.Database
         {
         }
 
+        [Obsolete("Obsolete")]
         public QpInvalidAttributeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
