@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Globalization;
 using NLog;
 using Quantumart.QPublishing.Info;
-using NLog.Fluent;
 
 // ReSharper disable once CheckNamespace
 namespace Quantumart.QPublishing.Database

@@ -1,9 +1,7 @@
 using System;
 using System.Data;
 using Quantumart.QPublishing.Database;
-
 using NLog;
-using NLog.Fluent;
 using QP.ConfigurationService.Models;
 
 // ReSharper disable once CheckNamespace

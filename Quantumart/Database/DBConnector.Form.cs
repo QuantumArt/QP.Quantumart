@@ -12,7 +12,6 @@ using System.Xml.Linq;
 using NLog;
 using Npgsql;
 using NpgsqlTypes;
-using NLog.Fluent;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Helpers;
