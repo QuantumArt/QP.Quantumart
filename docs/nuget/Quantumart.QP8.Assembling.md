@@ -10,6 +10,10 @@
 
 ## Quantumart.QP8.Assembling 1.x
 
+### Quantumart.QP8.Assembling 1.2.0
+
+Переход на .NET8
+
 ### Quantumart.QP8.Assembling 1.1.1
 
 В маппинг добавлен атрибут dbType (#173103)
