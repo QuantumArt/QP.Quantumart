@@ -23,12 +23,8 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4936635F-9151-49F8-9017-615B9C828491}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug_AspnetCore|Any CPU
-		{4936635F-9151-49F8-9017-615B9C828491}.Debug_AspnetCore|Any CPU.Build.0 = Debug_AspnetCore|Any CPU
 		{4936635F-9151-49F8-9017-615B9C828491}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4936635F-9151-49F8-9017-615B9C828491}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4936635F-9151-49F8-9017-615B9C828491}.Release_AspnetCore|Any CPU.ActiveCfg = Release_AspnetCore|Any CPU
-		{4936635F-9151-49F8-9017-615B9C828491}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{4936635F-9151-49F8-9017-615B9C828491}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4936635F-9151-49F8-9017-615B9C828491}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ABA32EEB-7B9A-4BD8-973B-CD483F076237}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug|Any CPU
@@ -39,20 +35,12 @@ Global
 		{ABA32EEB-7B9A-4BD8-973B-CD483F076237}.Release_AspnetCore|Any CPU.Build.0 = Release|Any CPU
 		{ABA32EEB-7B9A-4BD8-973B-CD483F076237}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ABA32EEB-7B9A-4BD8-973B-CD483F076237}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug_AspnetCore|Any CPU
-		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Debug_AspnetCore|Any CPU.Build.0 = Debug_AspnetCore|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release_AspnetCore|Any CPU.ActiveCfg = Release_AspnetCore|Any CPU
-		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F0A136E3-E12D-4697-AEDA-03502DAEE949}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.ActiveCfg = Debug_AspnetCore|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug_AspnetCore|Any CPU.Build.0 = Debug_AspnetCore|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.ActiveCfg = Release_AspnetCore|Any CPU
-		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release_AspnetCore|Any CPU.Build.0 = Release_AspnetCore|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D74D7FD-F697-4E31-B419-94F2ED8D83DB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection

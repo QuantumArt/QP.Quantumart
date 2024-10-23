@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.2.0
+
+* Переход на .NET8
+
 ### Quantumart.AspNetCore.6.1.2
 
 * Обновлены nuget-пакеты `Npgsql`, `SixLabors.ImageSharp` и `Microsoft.Extensions.Caching.Memory` в связи с найденными уязвимостями (#176358)

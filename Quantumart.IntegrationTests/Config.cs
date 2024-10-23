@@ -1,4 +1,5 @@
 using System;
+using Npgsql;
 using NUnit.Framework;
 
 namespace Quantumart.IntegrationTests
@@ -10,6 +11,7 @@ namespace Quantumart.IntegrationTests
         public void SetUp()
         {
             AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
         }
     }
 }
