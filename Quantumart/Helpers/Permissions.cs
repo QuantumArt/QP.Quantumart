@@ -70,11 +70,14 @@ namespace Quantumart.QPublishing.Helpers
 
         public int AuthenticateUser(string username, string password)
         {
-            var cmd = _dbConnector.CreateDbCommand("qp_authenticate");
-            cmd.CommandType = CommandType.StoredProcedure;
+            var sql = _dbConnector.DatabaseType == DatabaseType.Postgres ?
+                "select qp_authenticate(@login, @password)" : "qp_authenticate";
+            var type = _dbConnector.DatabaseType == DatabaseType.Postgres ?
+                CommandType.Text : CommandType.StoredProcedure;
+            var cmd = _dbConnector.CreateDbCommand(sql);
+            cmd.CommandType = type;
             cmd.Parameters.AddWithValue("@login", username);
             cmd.Parameters.AddWithValue("@password", password);
-
             DataTable dt;
             try
             {
