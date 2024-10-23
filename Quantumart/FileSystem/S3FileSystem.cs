@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.StaticFiles;
 using Minio;
+using Minio.ApiEndpoints;
 using Minio.DataModel.Args;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
