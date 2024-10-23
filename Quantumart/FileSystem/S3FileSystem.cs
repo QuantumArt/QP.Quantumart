@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Reactive.Linq;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.StaticFiles;
 using Minio;
-using Minio.ApiEndpoints;
 using Minio.DataModel.Args;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -64,25 +62,20 @@ public class S3FileSystem : IFileSystem
 
     public void RemoveDirectory(string path)
     {
-        var result = new List<string>();
-            path = FixPathSeparator(path);
-            path = RemoveLeadingSeparator(path);
-            path = AddTrailingSeparator(path);
+        path = FixPathSeparator(path);
+        path = RemoveLeadingSeparator(path);
+        path = AddTrailingSeparator(path);
 
-            var listObjectArgs = new ListObjectsArgs()
-                .WithBucket(_bucket)
-                .WithPrefix(path)
-                .WithVersions(false);
-            var observable = _client.ListObjectsAsync(listObjectArgs);
-            Task.Run(async () =>
-                await observable.Do(item =>
-                {
-                    if (!item.IsDir)
-                    {
-                        result.Add(item.Key);
-                    }
-                }).LastOrDefaultAsync()
-            ).Wait();
+        var listObjectArgs = new ListObjectsArgs()
+            .WithBucket(_bucket)
+            .WithPrefix(path)
+            .WithVersions(false);
+
+        var result = _client.ListObjectsEnumAsync(listObjectArgs)
+            .ToBlockingEnumerable()
+            .Where(n => !n.IsDir)
+            .Select(n => n.Key)
+            .ToList();
 
         var objectArgs = new RemoveObjectsArgs().WithBucket(_bucket).WithObjects(result);
         Task.Run(async () => await _client.RemoveObjectsAsync(objectArgs)).Wait();
