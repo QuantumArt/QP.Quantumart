@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.2.1
+
+* Обновлён nuget-пакет `QP.ConfigurationService.Client`
+
 ### Quantumart.AspNetCore.6.2.0
 
 * Переход на .NET8

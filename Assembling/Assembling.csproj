@@ -43,7 +43,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Npgsql" Version="8.0.5" />
-    <PackageReference Include="QP.ConfigurationService.Client" Version="0.2.0" />
+    <PackageReference Include="QP.ConfigurationService.Client" Version="0.3.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
   </ItemGroup>
