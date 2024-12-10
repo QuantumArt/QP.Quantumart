@@ -10,6 +10,10 @@
 
 ## Quantumart.QP8.Assembling 1.x
 
+### Quantumart.QP8.Assembling 1.2.1
+
+* Обновление nuget-пакетов
+
 ### Quantumart.QP8.Assembling 1.2.0
 
 Переход на .NET8

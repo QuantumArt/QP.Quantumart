@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.2.2
+
+* Обновление nuget-пакетов
+
 ### Quantumart.AspNetCore.6.2.1
 
 * Обновлён nuget-пакет `QP.ConfigurationService.Client`
