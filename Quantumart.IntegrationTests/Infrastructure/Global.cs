@@ -32,7 +32,7 @@ namespace Quantumart.IntegrationTests.Infrastructure
                     return $"{basePart}User Id={EnvHelpers.PgDbLoginToRunTests};Password={EnvHelpers.PgDbPasswordToRunTests}";
                 }
 
-                return $"{basePart}Integrated Security=True;Connection Timeout=600";
+                return $"{basePart}Integrated Security=True;TrustServerCertificate=true;Connection Timeout=600";
             }
         }
 
