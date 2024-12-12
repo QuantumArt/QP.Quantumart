@@ -3,7 +3,7 @@ using Npgsql;
 using QP.ConfigurationService.Models;
 using Quantumart.QPublishing.FileSystem;
 using Quantumart.QPublishing.Resizer;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;

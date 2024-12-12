@@ -10,6 +10,10 @@
 
 ## Quantumart.QP8.Assembling 1.x
 
+### Quantumart.QP8.Assembling 1.3.0
+
+* Переход с `System.Data.SqlClient` на `Microsoft.Data.SqlClient`
+
 ### Quantumart.QP8.Assembling 1.2.1
 
 * Обновление nuget-пакетов
