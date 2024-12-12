@@ -4,7 +4,7 @@
 <xsl:template match="schema">
 using System.Linq;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Data.SqlClient;
 using System.Data.Linq;
 using System.Data.Linq.Mapping;
 
