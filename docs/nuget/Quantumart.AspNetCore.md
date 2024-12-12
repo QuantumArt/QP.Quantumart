@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.3.0
+
+* Переход с `System.Data.SqlClient` на `Microsoft.Data.SqlClient`
+
 ### Quantumart.AspNetCore.6.2.2
 
 * Обновление nuget-пакетов

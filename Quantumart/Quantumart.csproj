@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Version>6.2.2</Version>
+    <Version>6.3.0</Version>
     <Authors>Pavel Celut, Koryakin Sergey</Authors>
     <Company>Quantum Art</Company>
     <Product>QP8.Framework</Product>
@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <PackageReference Include="Fluid.Core" Version="2.15.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Minio" Version="6.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Collections" Version="4.3.0" PrivateAssets="None" />
@@ -48,6 +49,5 @@
     <PackageReference Include="Npgsql" Version="8.0.6" />
     <PackageReference Include="QP.ConfigurationService.Client" Version="0.3.1" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 </Project>
