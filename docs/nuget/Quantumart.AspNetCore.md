@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.3.1
+
+* Обновлена библиотека SixLabors.ImageSharp до 3.1.7 (#177953)
+
 ### Quantumart.AspNetCore.6.3.0
 
 * Переход с `System.Data.SqlClient` на `Microsoft.Data.SqlClient`
