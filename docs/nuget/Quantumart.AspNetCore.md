@@ -10,6 +10,10 @@
 
 ## Quantumart.AspNetCore 6.x
 
+### Quantumart.AspNetCore.6.3.2
+
+* Обновлена библиотека SixLabors.ImageSharp до 3.1.11, удалён лишний легаси референс на либу netstandard версии 2.1
+
 ### Quantumart.AspNetCore.6.3.1
 
 * Обновлена библиотека SixLabors.ImageSharp до 3.1.7 (#177953)
